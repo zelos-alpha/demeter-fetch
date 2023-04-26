@@ -1,16 +1,26 @@
-# This is a sample Python script.
+import os
+import sys
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import toml
 
+import _typing as types
+import utils
+import downloader
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    if len(sys.argv) == 1:
+        print("please set a config file. in toml format. eg: 'python main.py config.toml'.")
+        exit(1)
+    if not os.path.exists(sys.argv[1]):
+        print("config file not found,")
+        exit(1)
+    config_file = toml.load(sys.argv[1])
+    try:
+        config: types.Config = utils.convert_to_config(config_file)
+    except RuntimeError as e:
+        print(e)
+        exit(1)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    print(config)
+
+    downloader.download(config)

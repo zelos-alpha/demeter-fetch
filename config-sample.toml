@@ -1,0 +1,30 @@
+[from]
+chain = "polygon"
+datasource = "rpc" # big_query or rpc or file
+pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
+
+[from.big_query]
+start = "2022-3-16"
+end = "2022-3-17"
+auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json"
+
+[from.rpc]
+end_point = "https://localhost:8545"
+#auth_string = "Basic Y3J0Yzo3NKY3TjY"
+http_proxy = "http://localhost:8080"
+start_height = 30194000
+end_height = 30232000
+batch_size = 500
+#proxy_file_path= ""
+
+[from.file]
+file_path = ""
+folder = "" # choose file_path or folder
+#proxy_file_path= ""
+
+[to]
+type = "minute" # minute or tick
+save_path = "./sample-data"
+
+[to.minute]
+enable_proxy = false
