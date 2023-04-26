@@ -12,3 +12,10 @@
   * 考察一下是否支持rpc下载(因为要额外下载proxy的log)
 * 两种下载统一参数
 * 使用配置文件
+
+## 使用
+
+```shell
+python main.py config.toml
+
+```

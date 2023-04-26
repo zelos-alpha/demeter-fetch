@@ -68,6 +68,11 @@ class ToConfig:
     save_path: str
     minute_config: MinuteConfig
 
+class OnchainTxType(Enum):
+    MINT = 0
+    SWAP = 2
+    BURN = 1
+    COLLECT = 3
 
 @dataclass
 class Config:

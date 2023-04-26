@@ -31,8 +31,8 @@ def convert_to_config(conf_file: dict) -> Config:
             if "folder" in conf_file["from"]["file"]:
                 folder = conf_file["from"]["file"]["folder"]
             proxy_file_path = None
-            if "proxy_file_path" in conf_file["from"]["rpc"]:
-                proxy_file_path = conf_file["from"]["rpc"]["proxy_file_path"]
+            if "proxy_file_path" in conf_file["from"]["file"]:
+                proxy_file_path = conf_file["from"]["file"]["proxy_file_path"]
             if file_path is None and folder is None:
                 raise RuntimeError("file_path and folder can not both null")
             if to_config.minute_config.enable_proxy and not proxy_file_path:
