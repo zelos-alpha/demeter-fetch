@@ -28,6 +28,7 @@ class BigQueryConfig:
     start: date
     end: date
     auth_file: str
+    http_proxy: str | None = None
 
 
 @dataclass

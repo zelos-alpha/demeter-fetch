@@ -7,6 +7,7 @@ pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
 start = "2022-3-16"
 end = "2022-3-17"
 auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json"
+http_proxy = "http://localhost:8080"
 
 [from.rpc]
 end_point = "https://localhost:8545"

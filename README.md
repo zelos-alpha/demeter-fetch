@@ -36,6 +36,6 @@ step2: 将原始文件导出成不同的格式
 ## 使用
 
 ```shell
-python main.py config.toml
+python downloader.py config.toml
 
 ```

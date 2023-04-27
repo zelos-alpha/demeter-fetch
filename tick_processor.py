@@ -2,10 +2,11 @@ import datetime
 import glob
 import os
 from decimal import Decimal
+from typing import List
 
 import pandas as pd
 import _typing
-import constant
+import constants
 
 
 def decode_file_name(file_path, file_name: str) -> (str, datetime.date):
@@ -13,13 +14,12 @@ def decode_file_name(file_path, file_name: str) -> (str, datetime.date):
     date_str = temp_str[-10:]
     pool_address = temp_str[:-10]
     date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-
     return pool_address, date
 
 
 def check_file(file_path, file_name, pool, start_date, end_date) -> bool:
     pool_address, date = decode_file_name(file_path, file_name)
-    is_in = start_date < date < end_date
+    is_in = date > start_date and date < end_date
     return is_in and pool == pool_address
 
 
@@ -47,22 +47,27 @@ def hex_to_address(topic_str):
     return "0x" + topic_str[26:]
 
 
+def split_topic(value: str) -> List[str]:
+    value = value.strip("[]").replace("\"", "").replace("'", "").replace(" ", "").replace("\n", ",")
+    return value.split(",")
+
+
 def handle_proxy_event(topic_str):
     if topic_str is None:
         return None
-    topic_list = topic_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
+    topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
-            type_topic == constant.INCREASE_LIQUIDITY or type_topic == constant.DECREASE_LIQUIDITY or type_topic == constant.COLLECT):
+            type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT):
         return int(topic_list[1], 16)
     else:
         return None
 
 
 def get_tx_type(topics_str):
-    topic_list = topics_str.strip("[]").replace("\"", "").replace(" ", "").split(",")
+    topic_list = split_topic(topics_str)
     type_topic = topic_list[0]
-    tx_type = constant.type_dict[type_topic]
+    tx_type = constants.type_dict[type_topic]
     return tx_type
 
 
@@ -70,50 +75,46 @@ def handle_event(transaction_hash, tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
     liquidity = sqrtPriceX96 = receipt = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = None
-    topic_list = topics_str.strip("[]").replace("\"", "").replace(" ", "").split(",")
+    topic_list = topics_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
 
     # data_hex = data.values[0]
 
     no_0x_data = data_hex[2:]
     chunk_size = 64
     chunks = len(no_0x_data)
+    match tx_type:
+        case _typing.OnchainTxType.SWAP:
+            sender = hex_to_address(topic_list[1])
+            receipt = hex_to_address(topic_list[2])
+            split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
+            amount0, amount1, sqrtPriceX96, current_liquidity, current_tick = [signed_int(onedata) for onedata in split_data]
 
-    if tx_type == _typing.OnchainTxType.SWAP:
-        sender = hex_to_address(topic_list[1])
-        receipt = hex_to_address(topic_list[2])
-        split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        amount0, amount1, sqrtPriceX96, current_liquidity, current_tick = [signed_int(onedata) for onedata in
-                                                                           split_data]
+        case _typing.OnchainTxType.BURN:
+            sender = hex_to_address(topic_list[1])
+            tick_lower = signed_int(topic_list[2])
+            tick_upper = signed_int(topic_list[3])
+            split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
+            liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data]
+            delta_liquidity = -liquidity
+        case _typing.OnchainTxType.MINT:
+            # sender = topic_str_to_address(topic_list[1])
+            owner = hex_to_address(topic_list[1])
+            tick_lower = signed_int(topic_list[2])
+            tick_upper = signed_int(topic_list[3])
+            split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
+            sender = hex_to_address(split_data[0])
+            liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
+            delta_liquidity = liquidity
+        case _typing.OnchainTxType.COLLECT:
+            tick_lower = signed_int(topic_list[2])
+            tick_upper = signed_int(topic_list[3])
+            split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
+            sender = hex_to_address(split_data[0])
+            amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
 
-    elif tx_type == _typing.OnchainTxType.BURN:
-        sender = hex_to_address(topic_list[1])
-        tick_lower = signed_int(topic_list[2])
-        tick_upper = signed_int(topic_list[3])
-        split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data]
-        delta_liquidity = -liquidity
-
-    elif tx_type == _typing.OnchainTxType.MINT:
-        # sender = topic_str_to_address(topic_list[1])
-        owner = hex_to_address(topic_list[1])
-        tick_lower = signed_int(topic_list[2])
-        tick_upper = signed_int(topic_list[3])
-        split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        sender = hex_to_address(split_data[0])
-        liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
-        delta_liquidity = liquidity
-
-    elif tx_type == _typing.OnchainTxType.COLLECT:
-        tick_lower = signed_int(topic_list[2])
-        tick_upper = signed_int(topic_list[3])
-        split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        sender = hex_to_address(split_data[0])
-        amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
-
-    else:
-        raise ValueError("not support tx type")
-    return sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, \
-        current_tick, tick_lower, tick_upper, liquidity, delta_liquidity
+        case _:
+            raise ValueError("not support tx type")
+    return sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, current_tick, tick_lower, tick_upper, liquidity, delta_liquidity
 
 
 def process_duplicate_row(index, row, row_to_remove, df_count, df):
@@ -177,16 +178,16 @@ def convert_to_decimal(value):
 
 def preprocess_one(df):
     df["tx_type"] = df.apply(lambda x: get_tx_type(x.pool_topics), axis=1)
-    # df["key"] = df.apply(lambda x: x.transaction_hash + str(x.pool_log_index), axis=1)
-    # drop_duplicate(df)
+    df["key"] = df.apply(lambda x: x.transaction_hash + str(x.pool_log_index), axis=1)
+    drop_duplicate(df)
     # FIXME BUG: start == end。  merge fail
     df[["sender", "receipt", "amount0", "amount1",
         "sqrtPriceX96", "total_liquidity", "current_tick", "tick_lower", "tick_upper", "liquidity",
         "total_liquidity_delta"]] = df.apply(
         lambda x: handle_event(x.transaction_hash, x.tx_type, x.pool_topics, x.pool_data), axis=1, result_type="expand")
-    #    block_number, block_timestamp, tx_type, transaction_hash, pool_tx_index, pool_log_index, proxy_log_index, sender, receipt, amount0, amount1, total_liquidity, total_liquidity_delta, sqrtPriceX96, current_tick, position_id, tick_lower, tick_upper, liquidity
-    # df["position_id"] = df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
-    df = df.drop(columns=["pool_topics", "pool_data"])
+    # block_number, block_timestamp, tx_type, transaction_hash, pool_tx_index, pool_log_index, proxy_log_index, sender, receipt, amount0, amount1, total_liquidity, total_liquidity_delta, sqrtPriceX96, current_tick, position_id, tick_lower, tick_upper, liquidity
+    df["position_id"] = df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
+    df = df.drop(columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"])
     df = df.sort_values(['block_number', 'pool_log_index'], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
         ["sqrtPriceX96", "total_liquidity", "current_tick"]].fillna(method="ffill")
@@ -204,7 +205,7 @@ def preprocess_one(df):
     df["block_timestamp"] = df["block_timestamp"].apply(lambda x: x.split("+")[0])
     df["tx_type"] = df.apply(lambda x: x.tx_type.name, axis=1)
     order = ["block_number", "block_timestamp", "tx_type", "transaction_hash", "pool_tx_index", "pool_log_index",
-             "sender", "receipt", "amount0", "amount1", "total_liquidity", "total_liquidity_delta",
-             "sqrtPriceX96", "current_tick", "tick_lower", "tick_upper", "liquidity"]
+             "proxy_log_index", "sender", "receipt", "amount0", "amount1", "total_liquidity", "total_liquidity_delta",
+             "sqrtPriceX96", "current_tick", "position_id", "tick_lower", "tick_upper", "liquidity"]
     df = df[order]
     return df

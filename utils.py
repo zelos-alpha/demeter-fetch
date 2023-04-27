@@ -3,6 +3,10 @@ from datetime import datetime
 from _typing import *
 
 
+def get_file_name(chain: ChainType, pool_address, day: date, is_raw=True):
+    return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.{'raw' if is_raw else 'processed'}.csv"
+
+
 def convert_to_config(conf_file: dict) -> Config:
     to_type = ToType[conf_file["to"]["type"]]
     save_path = "./"
@@ -17,7 +21,7 @@ def convert_to_config(conf_file: dict) -> Config:
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
-    pool_address = conf_file["from"]["pool_address"]
+    pool_address = conf_file["from"]["pool_address"].lower()
 
     from_config = FromConfig(chain, data_source, pool_address)
     if data_source not in from_config.chain.value["allow"]:
@@ -72,6 +76,9 @@ def convert_to_config(conf_file: dict) -> Config:
             start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
-            from_config.big_query = BigQueryConfig(start_time, end_time, auth_file)
+            http_proxy = None
+            if "http_proxy" in conf_file["from"]["big_query"]:
+                http_proxy = conf_file["from"]["big_query"]["http_proxy"]
+            from_config.big_query = BigQueryConfig(start_time, end_time, auth_file, http_proxy)
 
     return Config(from_config, to_config)
