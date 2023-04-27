@@ -18,7 +18,10 @@ batch_size = 500
 #proxy_file_path= ""
 
 [from.file]
-file_path = ""
+files = [
+    "",
+    ""
+]
 folder = "" # choose file_path or folder
 #proxy_file_path= ""
 
@@ -26,5 +29,5 @@ folder = "" # choose file_path or folder
 type = "minute" # minute or tick
 save_path = "./sample-data"
 
-[to.minute]
-enable_proxy = false
+[to.tick]
+get_position_id = false  # 只在source=rpc or file有效. 因为bigquery获取position id并没有额外的成本

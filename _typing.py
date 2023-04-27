@@ -1,6 +1,7 @@
 from datetime import date
 from enum import Enum
 from dataclasses import dataclass
+from typing import List
 
 
 class DataSource(Enum):
@@ -10,11 +11,11 @@ class DataSource(Enum):
 
 
 class ChainType(Enum):
-    ethereum = 1
-    polygon = 2
-    optimism = 3
-    arbitrum = 4
-    celo = 5
+    ethereum = {"id": 1, "allow": [DataSource.big_query, DataSource.rpc, DataSource.file]}
+    polygon = {"id": 2, "allow": [DataSource.big_query, DataSource.rpc, DataSource.file]}
+    optimism = {"id": 3, "allow": [DataSource.rpc, DataSource.file]}
+    arbitrum = {"id": 4, "allow": [DataSource.rpc, DataSource.file]}
+    celo = {"id": 5, "allow": [DataSource.rpc, DataSource.file]}
 
 
 class ToType(Enum):
@@ -42,7 +43,7 @@ class RpcConfig:
 
 @dataclass
 class FileConfig:
-    file_path: str | None = None
+    files: List[str] | None = None
     folder: str | None = None  # choose file_path or folder
     proxy_file_path: str | None = None
 
@@ -58,21 +59,23 @@ class FromConfig:
 
 
 @dataclass
-class MinuteConfig:
-    enable_proxy = False
+class TickConfig:
+    get_position_id = False
 
 
 @dataclass
 class ToConfig:
     type: ToType  # minute or tick
     save_path: str
-    minute_config: MinuteConfig
+    tick_config: TickConfig
+
 
 class OnchainTxType(Enum):
     MINT = 0
     SWAP = 2
     BURN = 1
     COLLECT = 3
+
 
 @dataclass
 class Config:
