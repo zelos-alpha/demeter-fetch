@@ -24,7 +24,7 @@ def convert_to_config(conf_file: dict) -> Config:
     pool_address = conf_file["from"]["pool_address"].lower()
 
     from_config = FromConfig(chain, data_source, pool_address)
-    if data_source not in from_config.chain.value["allow"]:
+    if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
         raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")
     match data_source:
         case DataSource.file:

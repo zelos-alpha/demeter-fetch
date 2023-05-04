@@ -4,23 +4,32 @@ from dataclasses import dataclass
 from typing import List
 
 
-class DataSource(Enum):
-    big_query = 1
-    rpc = 2
-    file = 3
+class DataSource(str,Enum):
+    big_query = "big_query"
+    rpc = "rpc"
+    file = "file"
 
 
-class ChainType(Enum):
-    ethereum = {"id": 1, "allow": [DataSource.big_query, DataSource.rpc, DataSource.file]}
-    polygon = {"id": 2, "allow": [DataSource.big_query, DataSource.rpc, DataSource.file]}
-    optimism = {"id": 3, "allow": [DataSource.rpc, DataSource.file]}
-    arbitrum = {"id": 4, "allow": [DataSource.rpc, DataSource.file]}
-    celo = {"id": 5, "allow": [DataSource.rpc, DataSource.file]}
+class ChainType(str,Enum):
+    ethereum = "ethereum"
+    polygon = "polygon"
+    optimism = "optimism"
+    arbitrum = "arbitrum"
+    celo = "celo"
 
 
-class ToType(Enum):
-    minute = 1
-    tick = 2
+ChainTypeConfig = {
+    ChainType.ethereum: {"allow": [DataSource.big_query, DataSource.rpc, DataSource.file]},
+    ChainType.polygon: {"allow": [DataSource.big_query, DataSource.rpc, DataSource.file]},
+    ChainType.optimism: {"allow": [DataSource.rpc, DataSource.file]},
+    ChainType.arbitrum: {"allow": [DataSource.rpc, DataSource.file]},
+    ChainType.celo: {"allow": [DataSource.rpc, DataSource.file]},
+}
+
+
+class ToType(str,Enum):
+    minute = "minute"
+    tick = "tick"
 
 
 @dataclass
@@ -71,11 +80,11 @@ class ToConfig:
     tick_config: TickConfig
 
 
-class OnchainTxType(Enum):
-    MINT = 0
-    SWAP = 2
-    BURN = 1
-    COLLECT = 3
+class OnchainTxType(str,Enum):
+    MINT = "MINT"
+    SWAP = "SWAP"
+    BURN = "BURN"
+    COLLECT = "COLLECT"
 
 
 @dataclass

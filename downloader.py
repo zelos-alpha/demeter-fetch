@@ -1,11 +1,13 @@
+import dataclasses
+import json
 import os
 import sys
 
 import toml
 
 import _typing as types
-import utils
 import uniswap_downloader
+import utils
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
@@ -20,7 +22,6 @@ if __name__ == '__main__':
     except RuntimeError as e:
         print(e)
         exit(1)
-
-    print(config)
+    print("Download config:", json.dumps(dataclasses.asdict(config), indent=4))
 
     uniswap_downloader.download(config)
