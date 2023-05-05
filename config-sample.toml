@@ -27,7 +27,7 @@ folder = "" # choose file_path or folder
 #proxy_file_path= ""
 
 [to]
-type = "minute" # minute or tick
+type = "minute" # minute or tick or raw
 save_path = "./sample-data"
 
 [to.tick]

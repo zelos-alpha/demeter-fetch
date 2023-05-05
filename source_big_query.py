@@ -88,4 +88,5 @@ on pool.transaction_hash=proxy.transaction_hash
 """
     query_job = client.query(query)  # Make an API request.
     result = query_job.to_dataframe(create_bqstorage_client=False)
+    result = result.sort_values(['block_number', 'pool_log_index'], ascending=[True, True])
     return result
