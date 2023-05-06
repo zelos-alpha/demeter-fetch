@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 from _typing import *
@@ -64,14 +65,14 @@ def convert_to_config(conf_file: dict) -> Config:
             if "http_proxy" in conf_file["from"]["rpc"]:
                 http_proxy = conf_file["from"]["rpc"]["http_proxy"]
             end_point = conf_file["from"]["rpc"]["end_point"]
-            start_height = int(conf_file["from"]["rpc"]["start_height"])
-            end_height = int(conf_file["from"]["rpc"]["end_height"])
+            start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
+            end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
             batch_size = int(conf_file["from"]["rpc"]["batch_size"])
             if to_config.tick_config.get_position_id and not proxy_file_path:
                 raise RuntimeError("no proxy file")
             from_config.rpc = RpcConfig(end_point=end_point,
-                                        start_height=start_height,
-                                        end_height=end_height,
+                                        start=start_time,
+                                        end=end_time,
                                         batch_size=batch_size,
                                         auth_string=auth_string,
                                         http_proxy=http_proxy,
@@ -85,7 +86,10 @@ def convert_to_config(conf_file: dict) -> Config:
             http_proxy = None
             if "http_proxy" in conf_file["from"]["big_query"]:
                 http_proxy = conf_file["from"]["big_query"]["http_proxy"]
-            from_config.big_query = BigQueryConfig(start_time, end_time, auth_file, http_proxy)
+            from_config.big_query = BigQueryConfig(start=start_time,
+                                                   end=end_time,
+                                                   auth_file=auth_file,
+                                                   http_proxy=http_proxy)
 
     return Config(from_config, to_config)
 
@@ -143,3 +147,13 @@ class DataUtil(object):
             index_minute = index_minute + timedelta(minutes=1)
 
         return new_list
+
+
+class ComplexEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        else:
+            return json.JSONEncoder.default(self, obj)

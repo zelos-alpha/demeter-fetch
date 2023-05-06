@@ -22,6 +22,6 @@ if __name__ == '__main__':
     except RuntimeError as e:
         utils.print_log(e)
         exit(1)
-    utils.print_log("Download config:", json.dumps(dataclasses.asdict(config), indent=4))
+    utils.print_log("Download config:", json.dumps(dataclasses.asdict(config), cls=utils.ComplexEncoder, indent=4))
 
     uniswap_downloader.download(config)

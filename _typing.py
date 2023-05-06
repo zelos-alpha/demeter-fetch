@@ -16,14 +16,35 @@ class ChainType(str, Enum):
     optimism = "optimism"
     arbitrum = "arbitrum"
     celo = "celo"
+    bsc = "bsc"
 
 
+# closest: 'before' or 'after'
 ChainTypeConfig = {
-    ChainType.ethereum: {"allow": [DataSource.big_query, DataSource.rpc, DataSource.file]},
-    ChainType.polygon: {"allow": [DataSource.big_query, DataSource.rpc, DataSource.file]},
-    ChainType.optimism: {"allow": [DataSource.rpc, DataSource.file]},
-    ChainType.arbitrum: {"allow": [DataSource.rpc, DataSource.file]},
-    ChainType.celo: {"allow": [DataSource.rpc, DataSource.file]},
+    ChainType.ethereum: {
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+    },
+    ChainType.polygon: {
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+    },
+    ChainType.optimism: {
+        "allow": [DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+    },
+    ChainType.arbitrum: {
+        "allow": [DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+    },
+    ChainType.celo: {
+        "allow": [DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+    },
+    ChainType.bsc: {
+        "allow": [DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2"
+    }
 }
 
 
@@ -44,8 +65,8 @@ class BigQueryConfig:
 @dataclass
 class RpcConfig:
     end_point: str
-    start_height: int
-    end_height: int
+    start: date
+    end: date
     batch_size: int = 500
     auth_string: str | None = None
     http_proxy: str | None = None

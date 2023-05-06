@@ -6,6 +6,7 @@ from tqdm import tqdm
 import processor_tick
 import processor_minute
 import source_big_query
+import source_rpc
 import source_file
 from _typing import *
 from utils import print_log
@@ -15,7 +16,17 @@ def download(config: Config):
     raw_file_list = []
     match config.from_config.data_source:
         case DataSource.rpc:
-            raise NotImplementedError()  # TODO : rpc可以通过查询浏览器的api, 自动从时间获取高度
+            raw_file_list = source_rpc.download_event(chain=config.from_config.chain,
+                                                      pool_addr=config.from_config.pool_address,
+                                                      end_point=config.from_config.rpc.end_point,
+                                                      start=config.from_config.rpc.start,
+                                                      end=config.from_config.rpc.end,
+                                                      batch_size=config.from_config.rpc.batch_size,
+                                                      auth_string=config.from_config.rpc.auth_string,
+                                                      http_proxy=config.from_config.rpc.http_proxy)
+            proxy_path = config.from_config.rpc.proxy_file_path
+            # if need proxy:
+            #     merge
         case DataSource.big_query:
             raw_file_list = source_big_query.download_event(config.from_config.chain,
                                                             config.from_config.pool_address,
@@ -28,12 +39,14 @@ def download(config: Config):
             raw_file_list, proxy_path = source_file.load_raw_files(config.from_config.file)
             # if need proxy:
             #     merge
+    print("\n")
+    print_log(f"Download finish")
     if config.to_config.type != ToType.raw:
+        print_log(f"Start generate {len(raw_file_list)} files")
         generate_to_files(config.to_config, raw_file_list)
 
 
 def generate_to_files(to_config: ToConfig, raw_files: List[str]):
-    print_log(f"generate {len(raw_files)} files")
     with tqdm(total=len(raw_files), ncols=150) as pbar:
         for file in raw_files:
             df = pd.read_csv(file)
