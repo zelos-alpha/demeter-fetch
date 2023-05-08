@@ -16,14 +16,15 @@ def download(config: Config):
     raw_file_list = []
     match config.from_config.data_source:
         case DataSource.rpc:
-            raw_file_list = source_rpc.download_event(chain=config.from_config.chain,
-                                                      pool_addr=config.from_config.pool_address,
-                                                      end_point=config.from_config.rpc.end_point,
-                                                      start=config.from_config.rpc.start,
-                                                      end=config.from_config.rpc.end,
-                                                      batch_size=config.from_config.rpc.batch_size,
-                                                      auth_string=config.from_config.rpc.auth_string,
-                                                      http_proxy=config.from_config.rpc.http_proxy)
+            raw_file_list = source_rpc.query_uniswap_pool_logs(chain=config.from_config.chain,
+                                                               pool_addr=config.from_config.pool_address,
+                                                               end_point=config.from_config.rpc.end_point,
+                                                               start=config.from_config.rpc.start,
+                                                               end=config.from_config.rpc.end,
+                                                               save_path=config.to_config.save_path,
+                                                               batch_size=config.from_config.rpc.batch_size,
+                                                               auth_string=config.from_config.rpc.auth_string,
+                                                               http_proxy=config.from_config.rpc.http_proxy)
             proxy_path = config.from_config.rpc.proxy_file_path
             # if need proxy:
             #     merge

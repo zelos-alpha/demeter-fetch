@@ -1,4 +1,4 @@
-from _typing import OnchainTxType
+from ._typing import OnchainTxType
 
 MINT_KECCAK = "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde"
 SWAP_KECCAK = "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"

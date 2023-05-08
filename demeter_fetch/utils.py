@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 
-from _typing import *
+from ._typing import *
 
 
 def get_file_name(chain: ChainType, pool_address, day: date, is_raw=True):
@@ -16,7 +16,7 @@ def print_log(*args):
 
 def convert_to_config(conf_file: dict) -> Config:
     to_type = ToType[conf_file["to"]["type"]]
-    save_path = "./"
+    save_path = "../"
     if "save_path" in conf_file["to"]:
         save_path = conf_file["to"]["save_path"]
     tick_config = TickConfig()

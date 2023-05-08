@@ -179,3 +179,9 @@ MinuteDataNames = [
     "inAmount1",
     "currentLiquidity",
 ]
+
+
+class EthError(Exception):
+    def __init__(self, code, message):
+        self.code = code
+        self.message = message
