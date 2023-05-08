@@ -3,13 +3,13 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
-import processor_tick
-import processor_minute
-import source_big_query
-import source_rpc
-import source_file
-from _typing import *
-from utils import print_log
+import demeter_fetch.processor_minute as processor_minute
+import demeter_fetch.processor_tick as processor_tick
+import demeter_fetch.source_big_query as source_big_query
+import demeter_fetch.source_file as source_file
+import demeter_fetch.source_rpc as source_rpc
+from ._typing import *
+from .utils import print_log
 
 
 def download(config: Config):

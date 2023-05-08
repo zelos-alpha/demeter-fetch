@@ -1,8 +1,8 @@
 import os
 from typing import List, Tuple
 
-import _typing
-from utils import print_log
+import demeter_fetch._typing as _typing
+from .utils import print_log
 
 
 def load_raw_files(file_config: _typing.FileConfig) -> Tuple[List[str], str | None]:

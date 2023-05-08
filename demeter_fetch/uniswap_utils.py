@@ -1,7 +1,7 @@
 from typing import List
 
-import _typing
-import constants
+import demeter_fetch._typing as _typing
+import demeter_fetch.constants as constants
 
 
 def signed_int(h):

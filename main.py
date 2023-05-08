@@ -5,9 +5,9 @@ import sys
 
 import toml
 
-import _typing as types
-import uniswap_downloader
-import utils
+import demeter_fetch._typing as types
+import demeter_fetch.uniswap_downloader as uniswap_downloader
+import demeter_fetch.utils as utils
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:

@@ -4,12 +4,12 @@ from enum import Enum
 from typing import List
 
 import pandas as pd
+from google.cloud import bigquery
 from tqdm import tqdm
 
-import _typing
-import constants
-import utils
-from google.cloud import bigquery
+import demeter_fetch._typing as _typing
+import demeter_fetch.constants as constants
+import demeter_fetch.utils as utils
 
 
 class BigQueryChain(Enum):

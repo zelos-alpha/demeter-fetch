@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pandas as pd
 
-import _typing
-import uniswap_utils
+import demeter_fetch._typing as _typing
+import demeter_fetch.uniswap_utils as uniswap_utils
 
 
 def decode_file_name(file_path, file_name: str) -> (str, datetime.date):

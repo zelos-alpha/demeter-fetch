@@ -4,9 +4,9 @@ import pandas
 import pandas as pd
 from pandas import Timestamp
 
-import uniswap_utils
-from _typing import MinuteData, OnchainTxType, MinuteDataNames
-from utils import TextUtil, TimeUtil, DataUtil
+import demeter_fetch.uniswap_utils as uniswap_utils
+from ._typing import MinuteData, OnchainTxType, MinuteDataNames
+from .utils import TextUtil, TimeUtil, DataUtil
 
 
 class ModuleUtils(object):
