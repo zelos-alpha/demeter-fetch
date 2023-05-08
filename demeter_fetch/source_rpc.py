@@ -44,6 +44,9 @@ class HeightCacheManager:
             self.block_dict: Dict[int, datetime] = {}
             utils.print_log("Can not find a height cache, will generate one")
 
+    def has(self, height: int):
+        return height in self.block_dict
+
     def get(self, height: int):
         if height in self.block_dict:
             return self.block_dict[height]
@@ -123,12 +126,12 @@ def cut(obj, sec):
     return [obj[i:i + sec] for i in range(0, len(obj), sec)]
 
 
-def fill_block_info(log, client: EthRpcClient, block_dict):
+def fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
     height = log['block_number']
-    if height not in block_dict:
+    if not block_dict.has(height):
         block_dt = client.get_block_timestamp(height)
-        block_dict[height] = block_dt
-    log['block_timestamp'] = block_dict[height].isoformat()
+        block_dict.set(height, block_dt)
+    log['block_timestamp'] = block_dict.get(height).isoformat()
     # log['block_dt'] = block_dict[height]
     return log
 
@@ -222,12 +225,16 @@ def query_event_by_height(chain: ChainType,
                 tmp_file_names.append(save_one_day(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
                 logs_to_save = []
             pbar.update(n=len(height_slice))
+        if batch_count % save_every_query != 0:  # save tail queries
+            logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
+            end_blk = end
+            tmp_file_names.append(save_one_day(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
         return tmp_file_names
 
 
 def save_one_day(save_path, logs, start, end, chain, address):
     file_name = os.path.join(save_path, f"{chain.name}-{address}-{start}-{end}.tmp.csv")
-    with open(os.path.join(save_path, file_name), 'w') as csvfile:
+    with open(file_name, 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'transaction_index', 'log_index', 'data', 'topics'])
         writer.writeheader()
         for item in logs:
