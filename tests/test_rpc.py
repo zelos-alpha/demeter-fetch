@@ -12,6 +12,7 @@ import toml
 class UniLpDataTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         self.config = toml.load("./config.toml")
+
         super(UniLpDataTest, self).__init__(*args, **kwargs)
 
     # ==========lines=========================
@@ -21,7 +22,7 @@ class UniLpDataTest(unittest.TestCase):
 
     def test_query_event_by_height(self):
         client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
-        height_cache = HeightCacheManager(typing.ChainType.polygon, "./sample-data")
+        height_cache = HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
         files = query_event_by_height(chain=typing.ChainType.polygon,
                                       client=client,
                                       contract_config=ContractConfig("0x45dda9cb7c25131df268515131f647d726f50608",
@@ -29,7 +30,7 @@ class UniLpDataTest(unittest.TestCase):
                                       start_height=42447801,
                                       end_height=42448800,
                                       height_cache=height_cache,
-                                      save_path="../sample-data",
+                                      save_path=self.config["to_path"],
                                       save_every_query=2,
                                       batch_size=500)
         height_cache.save()
@@ -38,7 +39,7 @@ class UniLpDataTest(unittest.TestCase):
 
     def test_query_event_by_height_save_rest(self):
         client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
-        height_cache = HeightCacheManager(typing.ChainType.polygon, "./sample-data")
+        height_cache = HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
         files = query_event_by_height(chain=typing.ChainType.polygon,
                                       client=client,
                                       contract_config=ContractConfig("0x45dda9cb7c25131df268515131f647d726f50608",
@@ -46,7 +47,7 @@ class UniLpDataTest(unittest.TestCase):
                                       start_height=42447301,  # height difference can not be divided by 2*500
                                       end_height=42448800,
                                       height_cache=height_cache,
-                                      save_path="../sample-data",
+                                      save_path=self.config["to_path"],
                                       save_every_query=2,
                                       batch_size=500)
         height_cache.save()
