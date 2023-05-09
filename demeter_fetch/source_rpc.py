@@ -141,7 +141,7 @@ def query_uniswap_pool_logs(chain: ChainType,
     # save rest to file
     raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
     # 删除临时文件
-    [os.remove(f) for f in tmp_files_path]
+    # [os.remove(f) for f in tmp_files_path]
     return raw_file_list
 
 
@@ -218,6 +218,8 @@ def query_event_by_height(chain: ChainType,
             if batch_count % save_every_query == 0:
                 start_blk = start
                 tmp_end_blk = start + batch_size * save_every_query - 1
+                if tmp_end_blk >= end_height:
+                    tmp_end_blk = end_height
                 # 下载之前检测文件是否已经存在, 如果存在跳过下载
                 tmp_file_path = _get_tmp_file_path(save_path, start_blk, tmp_end_blk, chain, contract_config.address)
                 if os.path.exists(tmp_file_path):
