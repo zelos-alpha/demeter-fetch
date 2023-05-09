@@ -1,13 +1,14 @@
-import csv
 import json
+import csv
 import os.path
 import pickle
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime
 from operator import itemgetter
 from typing import List, Dict
-
+from datetime import timezone
 import requests
 from tqdm import tqdm  # process bar
 
@@ -66,6 +67,7 @@ def query_blockno_from_time(chain: ChainType, time: datetime, isBefore: bool = T
     proxies = {"http": proxy, "https": proxy, } if proxy else {}
     before_or_after = "before" if isBefore else "after"
     url = utils.ChainTypeConfig[chain]["query_height_api"]
+    time = time.replace(tzinfo=timezone.utc)
     result = requests.get(url.replace("%1", str(int(time.timestamp()))).replace("%2", before_or_after), proxies=proxies)
     if result.status_code != 200:
         raise RuntimeError("request block number failed, code: " + str(result.status_code))
@@ -73,34 +75,42 @@ def query_blockno_from_time(chain: ChainType, time: datetime, isBefore: bool = T
     if int(result_json["status"]) == 1:
         return int(result_json["result"])
     else:
-        raise RuntimeError("request block number failed, message: " + result_json["message"])
+        raise RuntimeError("request block number failed, message: " + str(result_json))
 
 
 def query_uniswap_pool_logs(chain: ChainType,
                             pool_addr: str,
                             end_point: str,
-                            start: date,
-                            end: date,
                             save_path: str,
+                            start: date = None,
+                            end: date = None,
+                            start_height: int = None,
+                            end_height: int = None,
                             batch_size: int = 500,
                             auth_string: str | None = None,
                             http_proxy: str | None = None):
     # 从start and end 时间获取高度
-    start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy)
-    end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.min.time()), True, http_proxy)
+    if start_height is None and end_height is None:
+        if start is None and end is None:
+            raise RuntimeError("Ether fill start/end date or start end height")
+        start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy)
+        utils.print_log("Querying end timestamp, wait for 5 seconds to prevent max rate limit")
+        time.sleep(5.2)  # to prevent request limit
+        end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy)
+
     # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
     client = EthRpcClient(end_point, http_proxy, auth_string)
-
+    utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
-        tmp_file_path = query_event_by_height(chain,
-                                              client,
-                                              ContractConfig(pool_addr,
-                                                             [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
-                                              start_height,
-                                              end_height,
-                                              save_path=save_path,
-                                              batch_size=batch_size,
-                                              one_by_one=False)
+        tmp_files_path: List[str] = \
+            query_event_by_height(chain,
+                                  client,
+                                  ContractConfig(pool_addr, [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
+                                  start_height,
+                                  end_height,
+                                  save_path=save_path,
+                                  batch_size=batch_size,
+                                  one_by_one=False)
     except Exception as e:
         print(e)
         import traceback
@@ -108,11 +118,42 @@ def query_uniswap_pool_logs(chain: ChainType,
         exit(1)
 
     # 根据高度加载临时文件, 然后按天重新组织成raw文件
+    # 注意: tmp文件中的log是已经排序过的
+    current_day: date | None = None
+    current_day_logs = []
+    raw_file_list = []
+    for tmp_file in tmp_files_path:
+        logs: List[Dict] = _load_tmp_file(tmp_file)
+        for log in logs:
+            log_day = log["block_dt"].date()
+            if not current_day:
+                current_day = log_day
+            if log_day != current_day:  # save current day logs to file
+                raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
+                current_day_logs = []
+            del log["block_dt"]  # append to write
+            log["pool_tx_index"] = log.pop("transaction_index")
+            log["pool_log_index"] = log.pop("log_index")
+            log["pool_topics"] = log.pop("topics")
+            log["pool_data"] = log.pop("data")
+            current_day_logs.append(log)
 
+    # save rest to file
+    raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
     # 删除临时文件
+    [os.remove(f) for f in tmp_files_path]
+    return raw_file_list
 
-    # return downloaded_day if downloaded_day else []
-    return None
+
+def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data: List[Dict], chain: ChainType):
+    full_path = os.path.join(save_path, utils.get_file_name(chain, contract_address, day, True))
+    with open(full_path, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile,
+                                fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'pool_tx_index', 'pool_log_index', 'pool_topics', 'pool_data'])
+        writer.writeheader()
+        for item in one_day_data:
+            writer.writerow(item)
+    return full_path
 
 
 # def dict_factory(cursor, row):
@@ -120,20 +161,6 @@ def query_uniswap_pool_logs(chain: ChainType,
 #     for idx, col in enumerate(cursor.description):
 #         d[col[0]] = row[idx]
 #     return d
-
-
-def cut(obj, sec):
-    return [obj[i:i + sec] for i in range(0, len(obj), sec)]
-
-
-def fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
-    height = log['block_number']
-    if not block_dict.has(height):
-        block_dt = client.get_block_timestamp(height)
-        block_dict.set(height, block_dt)
-    log['block_timestamp'] = block_dict.get(height).isoformat()
-    # log['block_dt'] = block_dict[height]
-    return log
 
 
 def query_event_by_height(chain: ChainType,
@@ -175,17 +202,32 @@ def query_event_by_height(chain: ChainType,
     """
 
     collect_dt, logs_to_save, collect_start = None, [], None  # collect date, date log by day，collect start time
-    tmp_file_names = []
+    tmp_file_full_pathes = []
     if not height_cache:
         height_cache = HeightCacheManager(chain, save_path)
     batch_count = start_blk = end_blk = 0
-    # TODO: 下载之前检测文件是否已经存在, 如果存在跳过下载
+    skip_until = -1
     with tqdm(total=(end_height - start_height + 1), ncols=150) as pbar:
-        for height_slice in cut([i for i in range(start_height, end_height + 1)], batch_size):
+        for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]
             end = height_slice[-1]
+            if end <= skip_until:
+                batch_count += 1
+                pbar.update(n=len(height_slice))
+                continue
             if batch_count % save_every_query == 0:
                 start_blk = start
+                tmp_end_blk = start + batch_size * save_every_query - 1
+                # 下载之前检测文件是否已经存在, 如果存在跳过下载
+                tmp_file_path = _get_tmp_file_path(save_path, start_blk, tmp_end_blk, chain, contract_config.address)
+                if os.path.exists(tmp_file_path):
+                    skip_until = tmp_end_blk
+                    batch_count += 1
+                    pbar.update(n=len(height_slice))
+                    tmp_file_full_pathes.append(tmp_file_path)
+                    continue
+            # 下载之前检测文件是否已经存在, 如果存在跳过下载
+
             if one_by_one:
                 logs = []
                 for topic_hex in contract_config.topics:
@@ -210,7 +252,7 @@ def query_event_by_height(chain: ChainType,
             with ThreadPoolExecutor(max_workers=10) as t:
                 obj_lst = []
                 for data in log_lst:
-                    obj = t.submit(fill_block_info, data, client, height_cache)
+                    obj = t.submit(_fill_block_info, data, client, height_cache)
                     obj_lst.append(obj)
                 for future in as_completed(obj_lst):
                     data = future.result()
@@ -222,21 +264,49 @@ def query_event_by_height(chain: ChainType,
                 # save tmp file
                 logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
                 end_blk = end
-                tmp_file_names.append(save_one_day(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
+                tmp_file_full_pathes.append(_save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
                 logs_to_save = []
             pbar.update(n=len(height_slice))
-        if batch_count % save_every_query != 0:  # save tail queries
-            logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
-            end_blk = end
-            tmp_file_names.append(save_one_day(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
-        return tmp_file_names
+    if batch_count % save_every_query != 0:  # save tail queries
+        logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
+        end_blk = end
+        tmp_file_full_pathes.append(_save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
+    height_cache.save()
+    return tmp_file_full_pathes
 
 
-def save_one_day(save_path, logs, start, end, chain, address):
-    file_name = os.path.join(save_path, f"{chain.name}-{address}-{start}-{end}.tmp.csv")
-    with open(file_name, 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'transaction_index', 'log_index', 'data', 'topics'])
-        writer.writeheader()
-        for item in logs:
-            writer.writerow(item)
-    return file_name
+def _load_tmp_file(full_path) -> List:
+    with open(full_path, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
+def _get_tmp_file_path(save_path, start, end, chain, address):
+    return os.path.join(save_path, f"{chain.name}-{address}-{start}-{end}.tmp.pkl")
+
+
+def _save_tmp_file(save_path, logs, start, end, chain, address):
+    file_path = _get_tmp_file_path(save_path, start, end, chain, address)
+    with open(file_path, 'wb') as f:
+        pickle.dump(logs, f)
+        # writer = csv.DictWriter(csvfile, fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'transaction_index', 'log_index', 'data', 'topics'])
+        # writer.writeheader()
+        # for item in logs:
+        #     writer.writerow(item)
+    return file_path
+
+
+def _cut(obj, sec):
+    return [obj[i:i + sec] for i in range(0, len(obj), sec)]
+
+
+def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
+    height = log['block_number']
+    if not block_dict.has(height):
+        block_dt = client.get_block_timestamp(height)
+        block_dict.set(height, block_dt)
+    log['block_timestamp'] = block_dict.get(height).isoformat()
+    log['block_dt'] = block_dict.get(height)
+    log["log_index"] = int(log["log_index"], 16)
+    log["transaction_index"] = int(log["transaction_index"], 16)
+    return log

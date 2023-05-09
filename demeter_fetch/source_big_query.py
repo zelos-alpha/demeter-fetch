@@ -34,6 +34,8 @@ def download_event(chain: _typing.ChainType,
     with tqdm(total=len(date_generated), ncols=150) as pbar:
         for one_day in date_generated:
             df = download_event_one_day(bq_chain, contract_address, one_day)
+            df["pool_topics"] = df["pool_topics"].apply(lambda x: str(x).replace("\n", ","))
+            df["proxy_topics"] = df["proxy_topics"].apply(lambda x: str(x).replace("\n", ","))
             file_name = os.path.join(data_save_path, utils.get_file_name(chain, contract_address, one_day))
             df.to_csv(file_name, header=True, index=False)
             file_names.append(file_name)
@@ -45,14 +47,14 @@ def download_event(chain: _typing.ChainType,
 def download_event_one_day(chain: BigQueryChain, contract_address, one_date) -> pd.DataFrame:
     client = bigquery.Client()
     query = f"""
-SELECT block_number, transaction_hash, block_timestamp, transaction_index  as pool_tx_index, log_index pool_log_index, topics as pool_topics, DATA as pool_data, [] as proxy_topics, '' as proxy_data,null as proxy_log_index
+SELECT block_number,block_timestamp, transaction_hash , transaction_index  as pool_tx_index, log_index pool_log_index, topics as pool_topics, DATA as pool_data, [] as proxy_topics, '' as proxy_data,null as proxy_log_index
         FROM {chain.value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in ('{constants.SWAP_KECCAK}')
             AND DATE(block_timestamp) >=  DATE("{one_date}") AND DATE(block_timestamp) <=  DATE("{one_date}") AND address = "{contract_address}"
 
 union all
 
-select pool.block_number, pool.transaction_hash, pool.block_timestamp, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
+select pool.block_number, pool.block_timestamp, pool.transaction_hash, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
 (SELECT block_number, transaction_hash, block_timestamp, transaction_index, log_index, topics, DATA FROM {chain.value["table_name"]}
         WHERE topics[SAFE_OFFSET(0)] in ('{constants.MINT_KECCAK}')
             AND DATE(block_timestamp) >=  DATE("{one_date}") AND DATE(block_timestamp) <=  DATE("{one_date}") AND address = "{contract_address}") as pool
@@ -64,7 +66,7 @@ on pool.transaction_hash=proxy.transaction_hash
 
 union all
 
-select pool.block_number, pool.transaction_hash, pool.block_timestamp, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
+select pool.block_number, pool.block_timestamp, pool.transaction_hash, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
 (SELECT block_number, transaction_hash, block_timestamp, transaction_index, log_index, topics, DATA FROM {chain.value["table_name"]}
         WHERE topics[SAFE_OFFSET(0)] in ('{constants.COLLECT_KECCAK}')
             AND DATE(block_timestamp) >=  DATE("{one_date}") AND DATE(block_timestamp) <=  DATE("{one_date}") AND address = "{contract_address}") as pool
@@ -76,7 +78,7 @@ on pool.transaction_hash=proxy.transaction_hash
 
 union all
 
-select pool.block_number, pool.transaction_hash, pool.block_timestamp, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
+select pool.block_number, pool.block_timestamp, pool.transaction_hash, pool.transaction_index as pool_tx_index, pool.log_index as pool_log_index,pool.topics as pool_topics, pool.DATA as pool_data,  proxy.topics as proxy_topics, proxy.DATA as proxy_data, proxy.log_index as proxy_log_index from
 (SELECT block_number, transaction_hash, block_timestamp, transaction_index, log_index, topics, DATA FROM  {chain.value["table_name"]}
         WHERE topics[SAFE_OFFSET(0)] in ('{constants.BURN_KECCAK}')
             AND DATE(block_timestamp) >=  DATE("{one_date}") AND DATE(block_timestamp) <=  DATE("{one_date}") AND address = "{contract_address}") as pool
