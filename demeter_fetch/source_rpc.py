@@ -179,7 +179,7 @@ def query_event_by_height(chain: ChainType,
     if not height_cache:
         height_cache = HeightCacheManager(chain, save_path)
     batch_count = start_blk = end_blk = 0
-
+    # TODO: 下载之前检测文件是否已经存在, 如果存在跳过下载
     with tqdm(total=(end_height - start_height + 1), ncols=150) as pbar:
         for height_slice in cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]

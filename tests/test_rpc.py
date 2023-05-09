@@ -30,6 +30,7 @@ class UniLpDataTest(unittest.TestCase):
                                       batch_size=500)
         height_cache.save()
         print(files)
+        self.assertTrue(len(files) == 1)
 
     def test_query_event_by_height_save_rest(self):
         client = EthRpcClient(end_point, "127.0.0.1:7890")
@@ -38,7 +39,7 @@ class UniLpDataTest(unittest.TestCase):
                                       client=client,
                                       contract_config=ContractConfig("0x45dda9cb7c25131df268515131f647d726f50608",
                                                                      [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
-                                      start_height=42447301, # height diff can not be divided by 2*500
+                                      start_height=42447301,  # height difference can not be divided by 2*500
                                       end_height=42448800,
                                       height_cache=height_cache,
                                       save_path="./sample-data",
@@ -46,3 +47,4 @@ class UniLpDataTest(unittest.TestCase):
                                       batch_size=500)
         height_cache.save()
         print(files)
+        self.assertTrue(len(files) == 2)
