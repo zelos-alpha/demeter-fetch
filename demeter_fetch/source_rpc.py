@@ -63,12 +63,12 @@ class HeightCacheManager:
         utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
 
-def query_blockno_from_time(chain: ChainType, time: datetime, isBefore: bool = True, proxy=""):
+def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy=""):
     proxies = {"http": proxy, "https": proxy, } if proxy else {}
-    before_or_after = "before" if isBefore else "after"
+    before_or_after = "before" if is_before else "after"
     url = utils.ChainTypeConfig[chain]["query_height_api"]
-    time = time.replace(tzinfo=timezone.utc)
-    result = requests.get(url.replace("%1", str(int(time.timestamp()))).replace("%2", before_or_after), proxies=proxies)
+    blk_time = blk_time.replace(tzinfo=timezone.utc)
+    result = requests.get(url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after), proxies=proxies)
     if result.status_code != 200:
         raise RuntimeError("request block number failed, code: " + str(result.status_code))
     result_json = result.json()

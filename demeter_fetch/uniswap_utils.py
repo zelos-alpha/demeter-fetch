@@ -45,7 +45,7 @@ def handle_event(tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
     liquidity = sqrtPriceX96 = receipt = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = None
-    topic_list = topics_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
+    topic_list = topics_str.strip("[]").replace("\"", "").replace("'", "").replace(" ", "").split(",")
 
     # data_hex = data.values[0]
 
