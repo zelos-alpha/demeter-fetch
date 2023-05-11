@@ -41,11 +41,33 @@ def get_tx_type(topics_str):
     return tx_type
 
 
+def compare_int_with_error(a: int, b: int, error=1) -> bool:
+    return abs(a - b) <= error
+
+
+def compare_burn_data(a: str, b: str) -> bool:
+    """
+    0x0000000000000000000000000000000000000000000000000014aca30ddf7569
+      000000000000000000000000000000000000000000000000000041b051acc70d
+      0000000000000000000000000000000000000000000000000000000000000000
+
+    """
+    if len(a) != 194 or len(b) != 194:
+        return False
+    if a[0: 66] != b[0: 66]:
+        return False
+    if not compare_int_with_error(int("0x" + a[66:66 + 64], 16), int("0x" + b[66:66 + 64], 16)):
+        return False
+    if not compare_int_with_error(int("0x" + a[66 + 64:66 + 2 * 64], 16), int("0x" + b[66 + 64:66 + 2 * 64], 16)):
+        return False
+    return True
+
+
 def handle_event(tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
     liquidity = sqrtPriceX96 = receipt = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = None
-    topic_list = topics_str.strip("[]").replace("\"", "").replace("'", "").replace(" ", "").split(",")
+    topic_list = split_topic(topics_str)
 
     # data_hex = data.values[0]
 

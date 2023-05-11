@@ -19,12 +19,8 @@ def convert_to_config(conf_file: dict) -> Config:
     save_path = "../"
     if "save_path" in conf_file["to"]:
         save_path = conf_file["to"]["save_path"]
-    tick_config = TickConfig()
-    if "tick" in conf_file["to"]:
-        get_position_id = conf_file["to"]["tick"]["get_position_id"]
-        tick_config.get_position_id = get_position_id
 
-    to_config = ToConfig(to_type, save_path, tick_config)
+    to_config = ToConfig(to_type, save_path)
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
@@ -43,21 +39,13 @@ def convert_to_config(conf_file: dict) -> Config:
             folder = None
             if "folder" in conf_file["from"]["file"]:
                 folder = conf_file["from"]["file"]["folder"]
-            proxy_file_path = None
-            if "proxy_file_path" in conf_file["from"]["file"]:
-                proxy_file_path = conf_file["from"]["file"]["proxy_file_path"]
             if files is None and folder is None:
                 raise RuntimeError("file_path and folder can not both null")
-            if to_config.tick_config.get_position_id and not proxy_file_path:
-                raise RuntimeError("no proxy file")
 
-            from_config.file = FileConfig(files, folder, proxy_file_path)
+            from_config.file = FileConfig(files, folder)
         case DataSource.rpc:
             if "rpc" not in conf_file["from"]:
                 raise RuntimeError("should have [from.rpc]")
-            proxy_file_path = None
-            if "proxy_file_path" in conf_file["from"]["rpc"]:
-                proxy_file_path = conf_file["from"]["rpc"]["proxy_file_path"]
             auth_string = None
             if "auth_string" in conf_file["from"]["rpc"]:
                 auth_string = conf_file["from"]["rpc"]["auth_string"]
@@ -68,15 +56,13 @@ def convert_to_config(conf_file: dict) -> Config:
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
             batch_size = int(conf_file["from"]["rpc"]["batch_size"])
-            if to_config.tick_config.get_position_id and not proxy_file_path:
-                raise RuntimeError("no proxy file")
+
             from_config.rpc = RpcConfig(end_point=end_point,
                                         start=start_time,
                                         end=end_time,
                                         batch_size=batch_size,
                                         auth_string=auth_string,
-                                        http_proxy=http_proxy,
-                                        proxy_file_path=proxy_file_path)
+                                        http_proxy=http_proxy)
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")

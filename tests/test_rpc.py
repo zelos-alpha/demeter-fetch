@@ -1,12 +1,12 @@
 import unittest
-from datetime import datetime, date
-import sys
+from datetime import datetime
 
-from demeter_fetch import constants
-from demeter_fetch.source_rpc import query_blockno_from_time, query_event_by_height, ContractConfig, HeightCacheManager, query_uniswap_pool_logs
-import demeter_fetch._typing as typing
-from demeter_fetch.eth_rpc_client import EthRpcClient
 import toml
+
+import demeter_fetch._typing as typing
+from demeter_fetch import constants
+from demeter_fetch.eth_rpc_client import EthRpcClient, HeightCacheManager
+from demeter_fetch.source_rpc import query_blockno_from_time, query_event_by_height, ContractConfig, query_uniswap_pool_logs, append_proxy_file
 
 
 class UniLpDataTest(unittest.TestCase):
@@ -61,3 +61,13 @@ class UniLpDataTest(unittest.TestCase):
                                         save_path=self.config["to_path"],
                                         http_proxy="127.0.0.1:7890")
         print(files)
+
+    def test_append_proxy_file(self):
+        append_proxy_file(raw_file_list=["../sample-data/polygon-0x45dda9cb7c25131df268515131f647d726f50608-2023-05-06.raw.csv"],
+                          start_height=42353301,
+                          end_height=42393181,
+                          chain=typing.ChainType.polygon,
+                          end_point=self.config["end_point"],
+                          save_path=self.config["to_path"],
+                          batch_size=500,
+                          http_proxy="127.0.0.1:7890")

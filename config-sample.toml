@@ -16,7 +16,6 @@ http_proxy = "http://localhost:8080"
 start = "2022-3-16"
 end = "2022-3-17"
 batch_size = 500
-#proxy_file_path= ""
 
 [from.file]
 files = [
@@ -29,6 +28,3 @@ folder = "" # choose file_path or folder
 [to]
 type = "minute" # minute or tick or raw
 save_path = "./sample-data"
-
-[to.tick]
-get_position_id = false  # 只在source=rpc or file有效. 因为bigquery获取position id并没有额外的成本

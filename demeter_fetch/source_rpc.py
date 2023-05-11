@@ -1,66 +1,24 @@
-import json
 import csv
+import json
 import os.path
-import pickle
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from datetime import date, datetime
-from operator import itemgetter
-from typing import List, Dict
 from datetime import timezone
+from typing import List, Dict
+
+import pandas as pd
 import requests
-from tqdm import tqdm  # process bar
 
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
-from ._typing import ChainType
-from .eth_rpc_client import EthRpcClient, GetLogsParam
+from ._typing import ChainType, ChainTypeConfig, OnchainTxType
+from .eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
+from .uniswap_utils import compare_burn_data
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.
 
 """
-
-
-@dataclass
-class ContractConfig:
-    address: str
-    topics: List[str]
-
-
-class HeightCacheManager:
-    """
-    高度缓存
-    """
-    height_cache_file_name = "_height_timestamp.pkl"
-
-    def __init__(self, chain: ChainType, save_path: str):
-        self.height_cache_path = os.path.join(save_path, chain.value + HeightCacheManager.height_cache_file_name)
-        if os.path.exists(self.height_cache_path):
-            with open(self.height_cache_path, 'rb') as f:
-                self.block_dict = pickle.load(f)
-                utils.print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
-        else:
-            self.block_dict: Dict[int, datetime] = {}
-            utils.print_log("Can not find a height cache, will generate one")
-
-    def has(self, height: int):
-        return height in self.block_dict
-
-    def get(self, height: int):
-        if height in self.block_dict:
-            return self.block_dict[height]
-        else:
-            return None
-
-    def set(self, height: int, timestamp: datetime):
-        self.block_dict[height] = timestamp
-
-    def save(self):
-        with open(self.height_cache_path, 'wb') as f:
-            pickle.dump(self.block_dict, f)
-        utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
 
 def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy=""):
@@ -102,15 +60,18 @@ def query_uniswap_pool_logs(chain: ChainType,
     client = EthRpcClient(end_point, http_proxy, auth_string)
     utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
-        tmp_files_path: List[str] = \
-            query_event_by_height(chain,
-                                  client,
-                                  ContractConfig(pool_addr, [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
-                                  start_height,
-                                  end_height,
-                                  save_path=save_path,
-                                  batch_size=batch_size,
-                                  one_by_one=False)
+        tmp_files_paths: List[str] = query_event_by_height(chain,
+                                                           client,
+                                                           ContractConfig(pool_addr,
+                                                                          [constants.SWAP_KECCAK,
+                                                                           constants.BURN_KECCAK,
+                                                                           constants.COLLECT_KECCAK,
+                                                                           constants.MINT_KECCAK]),
+                                                           start_height,
+                                                           end_height,
+                                                           save_path=save_path,
+                                                           batch_size=batch_size,
+                                                           one_by_one=False)
     except Exception as e:
         print(e)
         import traceback
@@ -122,8 +83,8 @@ def query_uniswap_pool_logs(chain: ChainType,
     current_day: date | None = None
     current_day_logs = []
     raw_file_list = []
-    for tmp_file in tmp_files_path:
-        logs: List[Dict] = _load_tmp_file(tmp_file)
+    for tmp_file in tmp_files_paths:
+        logs: List[Dict] = load_tmp_file(tmp_file)
         for log in logs:
             log_day = log["block_dt"].date()
             if not current_day:
@@ -140,9 +101,120 @@ def query_uniswap_pool_logs(chain: ChainType,
 
     # save rest to file
     raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
-    # 删除临时文件
+    # remove tmp files
+    # [os.remove(f) for f in tmp_files_paths]
+    return raw_file_list, start_height, end_height
+
+
+def append_proxy_file(raw_file_list: List[str],
+                      start_height: int,
+                      end_height: int,
+                      chain: ChainType,
+                      end_point: str,
+                      save_path: str,
+                      batch_size: int = 500,
+                      auth_string: str | None = None,
+                      http_proxy: str | None = None):
+    # download logs first
+    client = EthRpcClient(end_point, http_proxy, auth_string)
+    tmp_files_paths: List[str] = query_event_by_height(chain,
+                                                       client,
+                                                       ContractConfig(ChainTypeConfig[chain]["proxy_addr"],
+                                                                      [constants.INCREASE_LIQUIDITY,
+                                                                       constants.DECREASE_LIQUIDITY,
+                                                                       constants.COLLECT]),
+                                                       start_height,
+                                                       end_height,
+                                                       save_path=save_path,
+                                                       batch_size=batch_size,
+                                                       one_by_one=True,
+                                                       skip_timestamp=True)
+
+    # merge logs to file
+    for raw_file_path in raw_file_list:
+        # load tmp file in match height
+        daily_pool_logs: pd.DataFrame = pd.read_csv(raw_file_path)
+        day_start_height = daily_pool_logs.head(1)["block_number"].iloc[0]
+        day_end_height = daily_pool_logs.tail(1)["block_number"].iloc[0]
+        # load tmp files
+        matched_tmp_files = _find_matched_tmp_file(day_start_height, day_end_height, tmp_files_paths)
+        proxy_log_list = []
+        for tmp_file in matched_tmp_files:
+            proxy_log_list.extend(load_tmp_file(tmp_file))
+        # match proxy logs to pool logs
+        proxy_log_df: pd.DataFrame = pd.DataFrame(proxy_log_list)
+        proxy_log_df.set_index("transaction_hash", inplace=True)
+        proxy_log_df = _process_topic(proxy_log_df, True)
+        daily_pool_logs = _process_topic(daily_pool_logs)
+        daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
+        _match_proxy_log(daily_pool_logs, proxy_log_df)
+
+        # save new raw files
+        daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
+
+        order = ["block_number", "transaction_hash", "block_timestamp", "pool_tx_index", "pool_log_index",
+                 "pool_topics", "pool_data", "proxy_topics", "proxy_data", "proxy_log_index"]
+        daily_pool_logs = daily_pool_logs[order]
+        # print(daily_pool_logs)
+        daily_pool_logs.to_csv(raw_file_path, index=False)
+    # remove tmp files
     # [os.remove(f) for f in tmp_files_path]
-    return raw_file_list
+
+
+def _process_topic(df, is_proxy=False):
+    if is_proxy:
+        df["topic_array"] = df.apply(lambda x: json.loads(x.topics), axis=1)
+    else:
+        df["topic_array"] = df.apply(lambda x: json.loads(x.pool_topics), axis=1)
+    df["topic_name"] = df.apply(lambda x: x.topic_array[0], axis=1)
+    return df
+
+
+def _add_proxy_log(df, index, proxy_row):
+    df.loc[index, "proxy_data"] = proxy_row.data
+    df.loc[index, "proxy_topics"] = proxy_row.topics
+    df.loc[index, "proxy_log_index"] = proxy_row.log_index
+
+
+def _match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
+    for index, row in pool_logs.iterrows():
+        if row.tx_type == OnchainTxType.SWAP:
+            continue
+        if row.transaction_hash not in proxy_logs.index:
+            continue
+        proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
+        proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
+
+        for pindex, possible_match in proxy_tx_matched.iterrows():
+            if row.tx_type == OnchainTxType.MINT:
+                if row.pool_data[66:] == possible_match.data[2:]:
+                    _add_proxy_log(pool_logs, index, possible_match)
+                    break
+            elif row.tx_type == OnchainTxType.COLLECT or row.tx_type == OnchainTxType.BURN:
+                if compare_burn_data(row.pool_data, possible_match.data):
+                    _add_proxy_log(pool_logs, index, possible_match)
+                    break
+            else:
+                raise ValueError("not support tx type")
+
+    if "proxy_topics" not in pool_logs.columns:
+        pool_logs["proxy_data"] = None
+        pool_logs["proxy_topics"] = None
+        pool_logs["proxy_log_index"] = None
+
+
+def _find_matched_tmp_file(start, end, tmp_files):
+    s_list = []
+    e_list = []
+    for index, fname in enumerate(tmp_files):
+        head, tail = os.path.split(fname)
+        tail = tail.replace(".tmp.pkl", "").split("-")
+        s_list.append(int(tail[2]))
+        e_list.append(int(tail[3]))
+
+    begin_index = s_list.index(start + max(filter(lambda y: y < 0, map(lambda x: x - start, s_list))))
+    end_index = e_list.index(end + min(filter(lambda y: y > 0, map(lambda x: x - end, e_list))))
+    return tmp_files[begin_index:end_index + 1]
 
 
 def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data: List[Dict], chain: ChainType):
@@ -155,160 +227,8 @@ def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data
             writer.writerow(item)
     return full_path
 
-
 # def dict_factory(cursor, row):
 #     d = {}
 #     for idx, col in enumerate(cursor.description):
 #         d[col[0]] = row[idx]
 #     return d
-
-
-def query_event_by_height(chain: ChainType,
-                          client: EthRpcClient,
-                          contract_config: ContractConfig,
-                          start_height: int,
-                          end_height: int,
-                          height_cache: HeightCacheManager = None,
-                          save_path: str = "./",
-                          save_every_query: int = 10,
-                          batch_size: int = 500,
-                          one_by_one: bool = False) -> List[str]:
-    """
-    根据输入参数, 下载对应高度的log,
-    log会按照高度划分, 保存为临时文件.
-
-    :param chain: chain
-    :type chain:
-    :param client: eth rpc client
-    :type client:
-    :param contract_config: 配置信息
-    :type contract_config:
-    :param start_height: 开始高度
-    :type start_height:
-    :param end_height: 结束高度
-    :type end_height:
-    :param height_cache: 高度-时间戳 缓存的路径
-    :type height_cache:
-    :param save_path: 临时文件保存路径
-    :type save_path:
-    :param save_every_query: 多少次查询会保存一次临时文件. save_every_query * batch_size = 临时文件里的数据条数.
-    :type save_every_query:
-    :param batch_size: 一次下载多少个block的log
-    :type batch_size:
-    :param one_by_one: 逐个下载每一个topic, 还是下载所有的topic再筛选掉不需要的.
-    :type one_by_one:
-    :return: 临时文件的文件名
-    :rtype:
-    """
-
-    collect_dt, logs_to_save, collect_start = None, [], None  # collect date, date log by day，collect start time
-    tmp_file_full_pathes = []
-    if not height_cache:
-        height_cache = HeightCacheManager(chain, save_path)
-    batch_count = start_blk = end_blk = 0
-    skip_until = -1
-    with tqdm(total=(end_height - start_height + 1), ncols=150) as pbar:
-        for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
-            start = height_slice[0]
-            end = height_slice[-1]
-            if end <= skip_until:
-                batch_count += 1
-                pbar.update(n=len(height_slice))
-                continue
-            if batch_count % save_every_query == 0:
-                start_blk = start
-                tmp_end_blk = start + batch_size * save_every_query - 1
-                if tmp_end_blk >= end_height:
-                    tmp_end_blk = end_height
-                # 下载之前检测文件是否已经存在, 如果存在跳过下载
-                tmp_file_path = _get_tmp_file_path(save_path, start_blk, tmp_end_blk, chain, contract_config.address)
-                if os.path.exists(tmp_file_path):
-                    skip_until = tmp_end_blk
-                    batch_count += 1
-                    pbar.update(n=len(height_slice))
-                    tmp_file_full_pathes.append(tmp_file_path)
-                    continue
-            # 下载之前检测文件是否已经存在, 如果存在跳过下载
-
-            if one_by_one:
-                logs = []
-                for topic_hex in contract_config.topics:
-                    tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
-                    logs.extend(tmp_logs)
-            else:
-                logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
-            log_lst = []
-            for log in logs:
-                log['blockNumber'] = int(log['blockNumber'], 16)
-                if len(log['topics']) > 0 and (log['topics'][0] in contract_config.topics):
-                    if log["removed"]:
-                        continue
-                    log_lst.append({
-                        'block_number': log['blockNumber'],
-                        'transaction_hash': log['transactionHash'],
-                        'transaction_index': log['transactionIndex'],
-                        'log_index': log['logIndex'],
-                        'data': log["data"],
-                        'topics': json.dumps(log['topics'])
-                    })
-            with ThreadPoolExecutor(max_workers=10) as t:
-                obj_lst = []
-                for data in log_lst:
-                    obj = t.submit(_fill_block_info, data, client, height_cache)
-                    obj_lst.append(obj)
-                for future in as_completed(obj_lst):
-                    data = future.result()
-                    logs_to_save.append(data)
-
-            # if got enough blocks, save file
-            batch_count += 1
-            if batch_count % save_every_query == 0:
-                # save tmp file
-                logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
-                end_blk = end
-                tmp_file_full_pathes.append(_save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
-                logs_to_save = []
-            pbar.update(n=len(height_slice))
-    if batch_count % save_every_query != 0:  # save tail queries
-        logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
-        end_blk = end
-        tmp_file_full_pathes.append(_save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
-    height_cache.save()
-    return tmp_file_full_pathes
-
-
-def _load_tmp_file(full_path) -> List:
-    with open(full_path, 'rb') as f:
-        data = pickle.load(f)
-    return data
-
-
-def _get_tmp_file_path(save_path, start, end, chain, address):
-    return os.path.join(save_path, f"{chain.name}-{address}-{start}-{end}.tmp.pkl")
-
-
-def _save_tmp_file(save_path, logs, start, end, chain, address):
-    file_path = _get_tmp_file_path(save_path, start, end, chain, address)
-    with open(file_path, 'wb') as f:
-        pickle.dump(logs, f)
-        # writer = csv.DictWriter(csvfile, fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'transaction_index', 'log_index', 'data', 'topics'])
-        # writer.writeheader()
-        # for item in logs:
-        #     writer.writerow(item)
-    return file_path
-
-
-def _cut(obj, sec):
-    return [obj[i:i + sec] for i in range(0, len(obj), sec)]
-
-
-def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
-    height = log['block_number']
-    if not block_dict.has(height):
-        block_dt = client.get_block_timestamp(height)
-        block_dict.set(height, block_dt)
-    log['block_timestamp'] = block_dict.get(height).isoformat()
-    log['block_dt'] = block_dict.get(height)
-    log["log_index"] = int(log["log_index"], 16)
-    log["transaction_index"] = int(log["transaction_index"], 16)
-    return log

@@ -24,26 +24,32 @@ ChainTypeConfig = {
     ChainType.ethereum: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
     },
     ChainType.optimism: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
     },
     ChainType.arbitrum: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
     },
     ChainType.celo: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a"
     },
     ChainType.bsc: {
         "allow": [DataSource.rpc, DataSource.file],
-        "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2"
+        "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613"
     }
 }
 
@@ -70,14 +76,12 @@ class RpcConfig:
     batch_size: int = 500
     auth_string: str | None = None
     http_proxy: str | None = None
-    proxy_file_path: str | None = None
 
 
 @dataclass
 class FileConfig:
     files: List[str] | None = None
     folder: str | None = None  # choose file_path or folder
-    proxy_file_path: str | None = None
 
 
 @dataclass
@@ -91,15 +95,9 @@ class FromConfig:
 
 
 @dataclass
-class TickConfig:
-    get_position_id = False
-
-
-@dataclass
 class ToConfig:
     type: ToType  # minute or tick
     save_path: str
-    tick_config: TickConfig
 
 
 class OnchainTxType(str, Enum):

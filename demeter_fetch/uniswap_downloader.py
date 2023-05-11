@@ -16,17 +16,25 @@ def download(config: Config):
     raw_file_list = []
     match config.from_config.data_source:
         case DataSource.rpc:
-            raw_file_list = source_rpc.query_uniswap_pool_logs(chain=config.from_config.chain,
-                                                               pool_addr=config.from_config.pool_address,
-                                                               end_point=config.from_config.rpc.end_point,
-                                                               start=config.from_config.rpc.start,
-                                                               end=config.from_config.rpc.end,
-                                                               save_path=config.to_config.save_path,
-                                                               batch_size=config.from_config.rpc.batch_size,
-                                                               auth_string=config.from_config.rpc.auth_string,
-                                                               http_proxy=config.from_config.rpc.http_proxy)
-            proxy_path = config.from_config.rpc.proxy_file_path
-            # if need proxy:
+            raw_file_list, start, end = source_rpc.query_uniswap_pool_logs(chain=config.from_config.chain,
+                                                                           pool_addr=config.from_config.pool_address,
+                                                                           end_point=config.from_config.rpc.end_point,
+                                                                           start=config.from_config.rpc.start,
+                                                                           end=config.from_config.rpc.end,
+                                                                           save_path=config.to_config.save_path,
+                                                                           batch_size=config.from_config.rpc.batch_size,
+                                                                           auth_string=config.from_config.rpc.auth_string,
+                                                                           http_proxy=config.from_config.rpc.http_proxy)
+            print_log("Pool logs has downloaded, now will download proxy logs")
+            source_rpc.append_proxy_file(raw_file_list=raw_file_list,
+                                         start_height=start,
+                                         end_height=end,
+                                         chain=config.from_config.chain,
+                                         end_point=config.from_config.rpc.end_point,
+                                         save_path=config.to_config.save_path,
+                                         batch_size=config.from_config.rpc.batch_size,
+                                         auth_string=config.from_config.rpc.auth_string,
+                                         http_proxy=config.from_config.rpc.http_proxy)
             #     merge
         case DataSource.big_query:
             raw_file_list = source_big_query.download_event(config.from_config.chain,
@@ -38,8 +46,6 @@ def download(config: Config):
                                                             config.from_config.big_query.http_proxy)
         case DataSource.file:
             raw_file_list, proxy_path = source_file.load_raw_files(config.from_config.file)
-            # if need proxy:
-            #     merge
     print("\n")
     print_log(f"Download finish")
     if config.to_config.type != ToType.raw:
