@@ -24,7 +24,9 @@ def download(config: Config):
                                                                            save_path=config.to_config.save_path,
                                                                            batch_size=config.from_config.rpc.batch_size,
                                                                            auth_string=config.from_config.rpc.auth_string,
-                                                                           http_proxy=config.from_config.rpc.http_proxy)
+                                                                           http_proxy=config.from_config.rpc.http_proxy,
+                                                                           keep_tmp_files=config.from_config.rpc.keep_tmp_files
+                                                                           )
             print_log("Pool logs has downloaded, now will download proxy logs")
             source_rpc.append_proxy_file(raw_file_list=raw_file_list,
                                          start_height=start,
@@ -34,7 +36,9 @@ def download(config: Config):
                                          save_path=config.to_config.save_path,
                                          batch_size=config.from_config.rpc.batch_size,
                                          auth_string=config.from_config.rpc.auth_string,
-                                         http_proxy=config.from_config.rpc.http_proxy)
+                                         http_proxy=config.from_config.rpc.http_proxy,
+                                         keep_tmp_files=config.from_config.rpc.keep_tmp_files
+                                         )
             #     merge
         case DataSource.big_query:
             raw_file_list = source_big_query.download_event(config.from_config.chain,

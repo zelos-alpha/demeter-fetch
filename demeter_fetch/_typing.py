@@ -76,6 +76,7 @@ class RpcConfig:
     batch_size: int = 500
     auth_string: str | None = None
     http_proxy: str | None = None
+    keep_tmp_files: bool = False
 
 
 @dataclass

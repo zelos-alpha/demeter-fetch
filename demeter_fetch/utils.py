@@ -52,6 +52,9 @@ def convert_to_config(conf_file: dict) -> Config:
             http_proxy = None
             if "http_proxy" in conf_file["from"]["rpc"]:
                 http_proxy = conf_file["from"]["rpc"]["http_proxy"]
+            keep_tmp_files = None
+            if "keep_tmp_files" in conf_file["from"]["rpc"]:
+                keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
             end_point = conf_file["from"]["rpc"]["end_point"]
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
@@ -62,7 +65,8 @@ def convert_to_config(conf_file: dict) -> Config:
                                         end=end_time,
                                         batch_size=batch_size,
                                         auth_string=auth_string,
-                                        http_proxy=http_proxy)
+                                        http_proxy=http_proxy,
+                                        keep_tmp_files=keep_tmp_files)
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")

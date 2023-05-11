@@ -46,14 +46,15 @@ def query_uniswap_pool_logs(chain: ChainType,
                             end_height: int = None,
                             batch_size: int = 500,
                             auth_string: str | None = None,
-                            http_proxy: str | None = None):
+                            http_proxy: str | None = None,
+                            keep_tmp_files: bool = False):
     # 从start and end 时间获取高度
     if start_height is None and end_height is None:
         if start is None and end is None:
             raise RuntimeError("Ether fill start/end date or start end height")
         start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy)
-        utils.print_log("Querying end timestamp, wait for 5 seconds to prevent max rate limit")
-        time.sleep(5.2)  # to prevent request limit
+        utils.print_log("Querying end timestamp, wait for 8 seconds to prevent max rate limit")
+        time.sleep(8)  # to prevent request limit
         end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy)
 
     # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
@@ -102,7 +103,8 @@ def query_uniswap_pool_logs(chain: ChainType,
     # save rest to file
     raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
     # remove tmp files
-    # [os.remove(f) for f in tmp_files_paths]
+    if not keep_tmp_files:
+        [os.remove(f) for f in tmp_files_paths]
     return raw_file_list, start_height, end_height
 
 
@@ -114,7 +116,8 @@ def append_proxy_file(raw_file_list: List[str],
                       save_path: str,
                       batch_size: int = 500,
                       auth_string: str | None = None,
-                      http_proxy: str | None = None):
+                      http_proxy: str | None = None,
+                      keep_tmp_files: bool = False):
     # download logs first
     client = EthRpcClient(end_point, http_proxy, auth_string)
     tmp_files_paths: List[str] = query_event_by_height(chain,
@@ -158,7 +161,8 @@ def append_proxy_file(raw_file_list: List[str],
         # print(daily_pool_logs)
         daily_pool_logs.to_csv(raw_file_path, index=False)
     # remove tmp files
-    # [os.remove(f) for f in tmp_files_path]
+    if not keep_tmp_files:
+        [os.remove(f) for f in tmp_files_paths]
 
 
 def _process_topic(df, is_proxy=False):
@@ -196,11 +200,13 @@ def _match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
                     break
             else:
                 raise ValueError("not support tx type")
-
+    # if no column is generated
     if "proxy_topics" not in pool_logs.columns:
         pool_logs["proxy_data"] = None
-        pool_logs["proxy_topics"] = None
+        pool_logs["proxy_topics"] = []
         pool_logs["proxy_log_index"] = None
+    else:
+        pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
 
 
 def _find_matched_tmp_file(start, end, tmp_files):
@@ -212,8 +218,8 @@ def _find_matched_tmp_file(start, end, tmp_files):
         s_list.append(int(tail[2]))
         e_list.append(int(tail[3]))
 
-    begin_index = s_list.index(start + max(filter(lambda y: y < 0, map(lambda x: x - start, s_list))))
-    end_index = e_list.index(end + min(filter(lambda y: y > 0, map(lambda x: x - end, e_list))))
+    begin_index = s_list.index(start + max(filter(lambda y: y <= 0, map(lambda x: x - start, s_list))))
+    end_index = e_list.index(end + min(filter(lambda y: y >= 0, map(lambda x: x - end, e_list))))
     return tmp_files[begin_index:end_index + 1]
 
 

@@ -32,7 +32,8 @@ class UniLpDataTest(unittest.TestCase):
                                       height_cache=height_cache,
                                       save_path=self.config["to_path"],
                                       save_every_query=2,
-                                      batch_size=500)
+                                      batch_size=500,
+                                      )
         print(files)
         self.assertTrue(len(files) == 1)
 
@@ -70,4 +71,5 @@ class UniLpDataTest(unittest.TestCase):
                           end_point=self.config["end_point"],
                           save_path=self.config["to_path"],
                           batch_size=500,
-                          http_proxy="127.0.0.1:7890")
+                          http_proxy="127.0.0.1:7890",
+                          keep_tmp_files=True)
