@@ -36,6 +36,6 @@ step2: 将原始文件导出成不同的格式
 ## usage
 
 ```shell
-python main.py config.toml
+python main.py config-sample.toml
 
 ```
