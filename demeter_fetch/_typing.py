@@ -108,6 +108,13 @@ class OnchainTxType(str, Enum):
     COLLECT = "COLLECT"
 
 
+class AaveOnChainTxType(str, Enum):
+    RESERVE_DATA_UPDATED = 'RESERVE_DATA_UPDATED'
+    SUPPLY = 'SUPPLY'
+    BORROW = 'BORROW'
+    REPAY = 'REPAY'
+    WITHDRAW = 'WITHDRAW'
+
 @dataclass
 class Config:
     from_config: FromConfig
