@@ -114,6 +114,78 @@ def query_uniswap_pool_logs(chain: ChainType,
     return raw_file_list, start_height, end_height
 
 
+def query_aave_pool_logs(chain: ChainType,
+                            pool_addr: str,
+                            end_point: str,
+                            save_path: str,
+                            start: date = None,
+                            end: date = None,
+                            start_height: int = None,
+                            end_height: int = None,
+                            batch_size: int = 500,
+                            auth_string: str | None = None,
+                            http_proxy: str | None = None,
+                            keep_tmp_files: bool = False):
+    # 从start and end 时间获取高度
+    if start_height is None and end_height is None:
+        if start is None and end is None:
+            raise RuntimeError("Ether fill start/end date or start end height")
+        start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy)
+        utils.print_log("Querying end timestamp, wait for 8 seconds to prevent max rate limit")
+        time.sleep(8)  # to prevent request limit
+        end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy)
+
+    # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
+    client = EthRpcClient(end_point, http_proxy, auth_string)
+    utils.print_log(f"Will download from height {start_height} to {end_height}")
+    try:
+        tmp_files_paths: List[str] = query_event_by_height(chain,
+                                                           client,
+                                                           ContractConfig(pool_addr,
+                                                                          [constants.SWAP_KECCAK,
+                                                                           constants.BURN_KECCAK,
+                                                                           constants.COLLECT_KECCAK,
+                                                                           constants.MINT_KECCAK]),
+                                                           start_height,
+                                                           end_height,
+                                                           save_path=save_path,
+                                                           batch_size=batch_size,
+                                                           one_by_one=False)
+    except Exception as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
+        exit(1)
+
+    # 根据高度加载临时文件, 然后按天重新组织成raw文件
+    # 注意: tmp文件中的log是已经排序过的
+    current_day: date | None = None
+    current_day_logs = []
+    raw_file_list = []
+    for tmp_file in tmp_files_paths:
+        logs: List[Dict] = load_tmp_file(tmp_file)
+        for log in logs:
+            log_day = log["block_dt"].date()
+            if not current_day:
+                current_day = log_day
+            if log_day != current_day:  # save current day logs to file
+                raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
+                current_day_logs = []
+            del log["block_dt"]  # append to write
+            log["pool_tx_index"] = log.pop("transaction_index")
+            log["pool_log_index"] = log.pop("log_index")
+            log["pool_topics"] = log.pop("topics")
+            log["pool_data"] = log.pop("data")
+            current_day_logs.append(log)
+
+    # save rest to file
+    raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
+    # remove tmp files
+    if not keep_tmp_files:
+        [os.remove(f) for f in tmp_files_paths]
+    return raw_file_list, start_height, end_height
+
+
 def append_proxy_file(raw_file_list: List[str],
                       start_height: int,
                       end_height: int,
