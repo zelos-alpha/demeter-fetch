@@ -14,6 +14,8 @@ import demeter_fetch.utils as utils
 from ._typing import ChainType, ChainTypeConfig, OnchainTxType
 from .eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
 from .uniswap_utils import compare_burn_data
+from tqdm import tqdm  # process bar
+from .utils import print_log
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.
@@ -84,6 +86,7 @@ def query_uniswap_pool_logs(chain: ChainType,
     current_day: date | None = None
     current_day_logs = []
     raw_file_list = []
+    print_log("generate daily files")
     for tmp_file in tmp_files_paths:
         logs: List[Dict] = load_tmp_file(tmp_file)
         for log in logs:
@@ -93,6 +96,8 @@ def query_uniswap_pool_logs(chain: ChainType,
             if log_day != current_day:  # save current day logs to file
                 raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
                 current_day_logs = []
+                current_day = log_day
+                print_log(f"save raw file in day {str(current_day)}, log count: {len(current_day_logs)}")
             del log["block_dt"]  # append to write
             log["pool_tx_index"] = log.pop("transaction_index")
             log["pool_log_index"] = log.pop("log_index")
@@ -132,34 +137,36 @@ def append_proxy_file(raw_file_list: List[str],
                                                        batch_size=batch_size,
                                                        one_by_one=True,
                                                        skip_timestamp=True)
+    print_log("start merge pool and proxy files")
+    with tqdm(total=len(raw_file_list), ncols=150) as pbar:
+        # merge logs to file
+        for raw_file_path in raw_file_list:
+            # load tmp file in match height
+            daily_pool_logs: pd.DataFrame = pd.read_csv(raw_file_path)
+            day_start_height = daily_pool_logs.head(1)["block_number"].iloc[0]
+            day_end_height = daily_pool_logs.tail(1)["block_number"].iloc[0]
+            # load tmp files
+            matched_tmp_files = _find_matched_tmp_file(day_start_height, day_end_height, tmp_files_paths)
+            proxy_log_list = []
+            for tmp_file in matched_tmp_files:
+                proxy_log_list.extend(load_tmp_file(tmp_file))
+            # match proxy logs to pool logs
+            proxy_log_df: pd.DataFrame = pd.DataFrame(proxy_log_list)
+            proxy_log_df.set_index("transaction_hash", inplace=True)
+            proxy_log_df = _process_topic(proxy_log_df, True)
+            daily_pool_logs = _process_topic(daily_pool_logs)
+            daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
+            _match_proxy_log(daily_pool_logs, proxy_log_df)
 
-    # merge logs to file
-    for raw_file_path in raw_file_list:
-        # load tmp file in match height
-        daily_pool_logs: pd.DataFrame = pd.read_csv(raw_file_path)
-        day_start_height = daily_pool_logs.head(1)["block_number"].iloc[0]
-        day_end_height = daily_pool_logs.tail(1)["block_number"].iloc[0]
-        # load tmp files
-        matched_tmp_files = _find_matched_tmp_file(day_start_height, day_end_height, tmp_files_paths)
-        proxy_log_list = []
-        for tmp_file in matched_tmp_files:
-            proxy_log_list.extend(load_tmp_file(tmp_file))
-        # match proxy logs to pool logs
-        proxy_log_df: pd.DataFrame = pd.DataFrame(proxy_log_list)
-        proxy_log_df.set_index("transaction_hash", inplace=True)
-        proxy_log_df = _process_topic(proxy_log_df, True)
-        daily_pool_logs = _process_topic(daily_pool_logs)
-        daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
-        _match_proxy_log(daily_pool_logs, proxy_log_df)
+            # save new raw files
+            daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
 
-        # save new raw files
-        daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
-
-        order = ["block_number", "transaction_hash", "block_timestamp", "pool_tx_index", "pool_log_index",
-                 "pool_topics", "pool_data", "proxy_topics", "proxy_data", "proxy_log_index"]
-        daily_pool_logs = daily_pool_logs[order]
-        # print(daily_pool_logs)
-        daily_pool_logs.to_csv(raw_file_path, index=False)
+            order = ["block_number", "transaction_hash", "block_timestamp", "pool_tx_index", "pool_log_index",
+                     "pool_topics", "pool_data", "proxy_topics", "proxy_data", "proxy_log_index"]
+            daily_pool_logs = daily_pool_logs[order]
+            # print(daily_pool_logs)
+            daily_pool_logs.to_csv(raw_file_path, index=False)
+            pbar.update()
     # remove tmp files
     if not keep_tmp_files:
         [os.remove(f) for f in tmp_files_paths]
@@ -203,7 +210,7 @@ def _match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
     # if no column is generated
     if "proxy_topics" not in pool_logs.columns:
         pool_logs["proxy_data"] = None
-        pool_logs["proxy_topics"] = []
+        pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
         pool_logs["proxy_log_index"] = None
     else:
         pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
