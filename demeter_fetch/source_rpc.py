@@ -95,9 +95,10 @@ def query_uniswap_pool_logs(chain: ChainType,
                 current_day = log_day
             if log_day != current_day:  # save current day logs to file
                 raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
+                print_log(f"save raw file in day {str(current_day)}, log count: {len(current_day_logs)}")
                 current_day_logs = []
                 current_day = log_day
-                print_log(f"save raw file in day {str(current_day)}, log count: {len(current_day_logs)}")
+
             del log["block_dt"]  # append to write
             log["pool_tx_index"] = log.pop("transaction_index")
             log["pool_log_index"] = log.pop("log_index")
