@@ -19,11 +19,12 @@ end = "2022-3-17"
 #keep_tmp_files = false
 
 [from.file] # keep this section according to from.datasource
-files = [
+#  either file_path or folder
+files = [ # full file path you need to convert
     "",
     ""
 ]
-folder = "" # choose file_path or folder
+folder = "" # Will convert all raw files in this folder.
 
 [to]
 type = "minute" # minute or tick or raw

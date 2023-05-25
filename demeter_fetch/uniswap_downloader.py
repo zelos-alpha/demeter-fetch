@@ -49,7 +49,7 @@ def download(config: Config):
                                                             config.from_config.big_query.auth_file,
                                                             config.from_config.big_query.http_proxy)
         case DataSource.file:
-            raw_file_list, proxy_path = source_file.load_raw_files(config.from_config.file)
+            raw_file_list = source_file.load_raw_files(config.from_config.file)
     print("\n")
     print_log(f"Download finish")
     if config.to_config.type != ToType.raw:
