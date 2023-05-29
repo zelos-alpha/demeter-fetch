@@ -1,3 +1,5 @@
 .idea
 auth
 sample-data
+/tests/config.toml
+/config.toml
