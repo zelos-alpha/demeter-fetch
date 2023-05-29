@@ -5,7 +5,7 @@ import demeter_fetch._typing as _typing
 from .utils import print_log
 
 
-def convert_log_file_to_standard(file_config: _typing.FileConfig) -> List[str]:
+def load_raw_files(file_config: _typing.FileConfig) -> List[str]:
     if file_config.files and file_config.folder:
         print_log("both file and folder is specified, will process file")
     file_list = []
@@ -15,8 +15,4 @@ def convert_log_file_to_standard(file_config: _typing.FileConfig) -> List[str]:
         file_list = os.listdir(file_config.folder)
         file_list = filter(lambda e: e.endswith(".csv") or e.endswith(".CSV"), file_list)
         file_list = list(map(lambda e: os.path.join(file_config.folder, e), file_list))
-
-    for f in file_list:
-        raise NotImplementedError("to do")
-
-    # todo convert file to raw files
+    return file_list

@@ -8,6 +8,7 @@ class DataSource(str, Enum):
     big_query = "big_query"
     rpc = "rpc"
     file = "file"
+    chifra_log = "chifra_log"
 
 
 class ChainType(str, Enum):
@@ -77,6 +78,7 @@ class RpcConfig:
     auth_string: str | None = None
     http_proxy: str | None = None
     keep_tmp_files: bool = False
+    ignore_position_id : bool= False # TODO if set to true, will not download proxy logs and leave a empty column
 
 
 @dataclass
@@ -93,6 +95,7 @@ class FromConfig:
     big_query: BigQueryConfig | None = None
     rpc: RpcConfig | None = None
     file: FileConfig | None = None
+    chifra_log: FileConfig | None = None
 
 
 @dataclass
