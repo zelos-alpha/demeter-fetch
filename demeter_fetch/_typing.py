@@ -78,7 +78,7 @@ class RpcConfig:
     auth_string: str | None = None
     http_proxy: str | None = None
     keep_tmp_files: bool = False
-    ignore_position_id : bool= False # TODO if set to true, will not download proxy logs and leave a empty column
+    ignore_position_id : bool= False # if set to true, will not download proxy logs and leave a empty column
 
 
 @dataclass

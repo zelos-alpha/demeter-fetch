@@ -70,6 +70,8 @@ def convert_to_config(conf_file: dict) -> Config:
             keep_tmp_files = None
             if "keep_tmp_files" in conf_file["from"]["rpc"]:
                 keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
+            if "ignore_position_id" in conf_file["from"]["rpc"]:
+                ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
             end_point = conf_file["from"]["rpc"]["end_point"]
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
@@ -81,7 +83,8 @@ def convert_to_config(conf_file: dict) -> Config:
                                         batch_size=batch_size,
                                         auth_string=auth_string,
                                         http_proxy=http_proxy,
-                                        keep_tmp_files=keep_tmp_files)
+                                        keep_tmp_files=keep_tmp_files,
+                                        ignore_position_id=ignore_position_id)
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")

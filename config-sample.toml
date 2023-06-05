@@ -17,10 +17,12 @@ start = "2022-3-16"
 end = "2022-3-17"
 #batch_size = 500 # default is 500
 #keep_tmp_files = false
+ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+
 
 [from.file] # keep this section according to from.datasource
 #  either file_path or folder
-files = [ # full file path you need to convert
+files = [# full file path you need to convert
     "",
     ""
 ]
@@ -28,12 +30,12 @@ folder = "" # Will convert all raw files in this folder.
 
 [from.chifra_log] # keep this section according to from.datasource
 #  either file_path or folder
-files = [ # full file path you need to convert
+files = [# full file path you need to convert
     "",
     ""
 ]
 folder = "" # Will convert all raw files in this folder.
 
 [to]
-type = "minute" # minute or tick or raw
+type = "tick" # minute or tick or raw
 save_path = "./sample-data"

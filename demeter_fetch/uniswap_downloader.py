@@ -28,18 +28,21 @@ def download(config: Config):
                                                                            http_proxy=config.from_config.rpc.http_proxy,
                                                                            keep_tmp_files=config.from_config.rpc.keep_tmp_files
                                                                            )
-            print_log("Pool logs has downloaded, now will download proxy logs")
-            source_rpc.append_proxy_file(raw_file_list=raw_file_list,
-                                         start_height=start,
-                                         end_height=end,
-                                         chain=config.from_config.chain,
-                                         end_point=config.from_config.rpc.end_point,
-                                         save_path=config.to_config.save_path,
-                                         batch_size=config.from_config.rpc.batch_size,
-                                         auth_string=config.from_config.rpc.auth_string,
-                                         http_proxy=config.from_config.rpc.http_proxy,
-                                         keep_tmp_files=config.from_config.rpc.keep_tmp_files
-                                         )
+            if config.from_config.rpc.ignore_position_id:
+                source_rpc.append_empty_proxy_log(raw_file_list)
+            else:
+                print_log("Pool logs has downloaded, now will download proxy logs")
+                source_rpc.append_proxy_log(raw_file_list=raw_file_list,
+                                            start_height=start,
+                                            end_height=end,
+                                            chain=config.from_config.chain,
+                                            end_point=config.from_config.rpc.end_point,
+                                            save_path=config.to_config.save_path,
+                                            batch_size=config.from_config.rpc.batch_size,
+                                            auth_string=config.from_config.rpc.auth_string,
+                                            http_proxy=config.from_config.rpc.http_proxy,
+                                            keep_tmp_files=config.from_config.rpc.keep_tmp_files
+                                            )
             #     merge
         case DataSource.big_query:
             raw_file_list = source_big_query.download_event(config.from_config.chain,

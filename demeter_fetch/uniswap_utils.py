@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 import demeter_fetch._typing as _typing
@@ -23,7 +24,7 @@ def split_topic(value: str) -> List[str]:
 
 
 def handle_proxy_event(topic_str):
-    if topic_str is None:
+    if topic_str is None or math.isnan(topic_str):
         return None
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]

@@ -114,16 +114,26 @@ def query_uniswap_pool_logs(chain: ChainType,
     return raw_file_list, start_height, end_height
 
 
-def append_proxy_file(raw_file_list: List[str],
-                      start_height: int,
-                      end_height: int,
-                      chain: ChainType,
-                      end_point: str,
-                      save_path: str,
-                      batch_size: int = 500,
-                      auth_string: str | None = None,
-                      http_proxy: str | None = None,
-                      keep_tmp_files: bool = False):
+def append_empty_proxy_log(raw_file_list: List[str]):
+    for raw_file_path in raw_file_list:
+        # load tmp file in match height
+        daily_pool_logs: pd.DataFrame = pd.read_csv(raw_file_path)
+        daily_pool_logs["proxy_topics"] = None
+        daily_pool_logs["proxy_data"] = None
+        daily_pool_logs["proxy_log_index"] = None
+        daily_pool_logs.to_csv(raw_file_path, index=False)
+
+
+def append_proxy_log(raw_file_list: List[str],
+                     start_height: int,
+                     end_height: int,
+                     chain: ChainType,
+                     end_point: str,
+                     save_path: str,
+                     batch_size: int = 500,
+                     auth_string: str | None = None,
+                     http_proxy: str | None = None,
+                     keep_tmp_files: bool = False):
     # download logs first
     client = EthRpcClient(end_point, http_proxy, auth_string)
     tmp_files_paths: List[str] = query_event_by_height(chain,
