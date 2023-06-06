@@ -24,7 +24,7 @@ def split_topic(value: str) -> List[str]:
 
 
 def handle_proxy_event(topic_str):
-    if topic_str is None or math.isnan(topic_str):
+    if topic_str is None or isinstance(topic_str, float):  # is none or nan
         return None
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
