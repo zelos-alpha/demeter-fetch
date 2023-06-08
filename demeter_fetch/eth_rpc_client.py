@@ -155,7 +155,7 @@ def query_event_by_height(chain: ChainType,
         height_cache = HeightCacheManager(chain, save_path)
     batch_count = start_blk = end_blk = 0
     skip_until = -1
-    last_has_append = False
+    # last_has_append = False
     with tqdm(total=(end_height - start_height + 1), ncols=150) as pbar:
         for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]
@@ -169,7 +169,7 @@ def query_event_by_height(chain: ChainType,
                 tmp_end_blk = start + batch_size * save_every_query - 1
                 if tmp_end_blk >= end_height:
                     tmp_end_blk = end_height
-                    last_has_append = True
+                    # last_has_append = True
                 # 下载之前检测文件是否已经存在, 如果存在跳过下载
                 tmp_file_path = get_tmp_file_path(save_path, start_blk, tmp_end_blk, chain, contract_config.address)
                 if os.path.exists(tmp_file_path):
@@ -225,7 +225,7 @@ def query_event_by_height(chain: ChainType,
                 tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
                 logs_to_save = []
             pbar.update(n=len(height_slice))
-    if batch_count % save_every_query != 0 and not last_has_append:  # save tail queries
+    if batch_count % save_every_query != 0:  # and not last_has_append:  # save tail queries
         logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
         end_blk = end
         tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
