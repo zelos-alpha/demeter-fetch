@@ -3,6 +3,8 @@ from typing import List
 
 import demeter_fetch._typing as _typing
 import demeter_fetch.constants as constants
+import numpy as np
+from decimal import Decimal
 
 
 def signed_int(h):
@@ -67,7 +69,12 @@ def compare_burn_data(a: str, b: str) -> bool:
 def handle_event(tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
-    liquidity = sqrtPriceX96 = receipt = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = None
+    receipt = current_tick = tick_lower = tick_upper = None
+    liquidity = Decimal(np.nan)
+    delta_liquidity = Decimal(np.nan)
+    current_liquidity = Decimal(np.nan)
+    sqrtPriceX96 = Decimal(np.nan)
+
     topic_list = split_topic(topics_str)
 
     # data_hex = data.values[0]
@@ -107,4 +114,5 @@ def handle_event(tx_type, topics_str, data_hex):
 
         case _:
             raise ValueError("not support tx type")
-    return sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, current_tick, tick_lower, tick_upper, liquidity, delta_liquidity
+    return sender, receipt, Decimal(amount0), Decimal(amount1), Decimal(sqrtPriceX96), Decimal(current_liquidity), \
+        current_tick, tick_lower, tick_upper, Decimal(liquidity), Decimal(delta_liquidity)

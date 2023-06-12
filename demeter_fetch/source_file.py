@@ -13,10 +13,7 @@ def convert_log_file_to_standard(file_config: _typing.FileConfig) -> List[str]:
         file_list = file_config.files
     elif file_config.folder:
         file_list = os.listdir(file_config.folder)
-        file_list = filter(lambda e: e.endswith(".csv") or e.endswith(".CSV"), file_list)
+        file_list = filter(lambda e: e.endswith(".raw.csv"), file_list)
         file_list = list(map(lambda e: os.path.join(file_config.folder, e), file_list))
 
-    for f in file_list:
-        raise NotImplementedError("to do")
-
-    # todo convert file to raw files
+    return file_list
