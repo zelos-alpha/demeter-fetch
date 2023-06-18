@@ -5,3 +5,5 @@ sample-data
 /config.toml
 /folder1
 /toys
+*.pyc
+/.vscode
