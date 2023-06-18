@@ -1,7 +1,9 @@
+import asyncore
 import datetime
 import glob
 import os
 from decimal import Decimal
+from typing import Tuple
 
 import pandas as pd
 
@@ -9,7 +11,7 @@ import demeter_fetch._typing as _typing
 import demeter_fetch.uniswap_utils as uniswap_utils
 
 
-def decode_file_name(file_path, file_name: str) -> (str, datetime.date):
+def decode_file_name(file_path, file_name: str) -> Tuple[str, datetime.date]:
     temp_str = file_name.replace(file_path, "").replace(".csv", "").strip("/")
     date_str = temp_str[-10:]
     pool_address = temp_str[:-10]
@@ -47,6 +49,29 @@ def data_is_not_empty(data):
         return True
     return False
 
+def compare_int_with_error(a,b, error=1):
+    if int(a,16)-int(b,16)>error:
+        return False
+    return True
+
+def is_collect_data_same(a:str,b:str)->bool:
+    if a==b:
+        return True
+    if not compare_int_with_error(a[66:130],b[66:130]):
+        return False
+    if not compare_int_with_error(a[130:],b[130:]):
+       return False
+    return True
+
+
+def is_burn_data_same(a:str,b:str)->bool: 
+    if a==b:
+        return True
+    if not compare_int_with_error(a[0:66],a[0:66]):
+        return False
+    if not compare_int_with_error(a[66:130],a[66:130]):
+        return False
+    return compare_int_with_error(a[130:],a[130:])
 
 def drop_duplicate(df: pd.Series):
     """
@@ -65,8 +90,11 @@ def drop_duplicate(df: pd.Series):
         elif row.tx_type == _typing.OnchainTxType.MINT:
             if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
-        elif row.tx_type == _typing.OnchainTxType.COLLECT or row.tx_type == _typing.OnchainTxType.BURN:
-            if data_is_not_empty(row.proxy_data) and row.pool_data != row.proxy_data:
+        elif row.tx_type == _typing.OnchainTxType.COLLECT :
+            if data_is_not_empty(row.proxy_data) and not is_collect_data_same( row.pool_data, row.proxy_data):
+                process_duplicate_row(index, row, row_to_remove, df_count, df)
+        elif row.tx_type == _typing.OnchainTxType.BURN:
+            if data_is_not_empty(row.proxy_data) and not is_burn_data_same(row.pool_data, row.proxy_data):
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
         else:
             raise ValueError("not support tx type")

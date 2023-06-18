@@ -109,7 +109,8 @@ def handle_event(tx_type, topics_str, data_hex):
             tick_lower = signed_int(topic_list[2])
             tick_upper = signed_int(topic_list[3])
             split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-            sender = hex_to_address(split_data[0])
+            sender = hex_to_address(topic_list[1])
+            receipt = hex_to_address(split_data[0])
             amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
 
         case _:
