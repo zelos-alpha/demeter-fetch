@@ -56,7 +56,7 @@ def data_is_not_empty(data):
 
 
 def compare_int_with_error(a, b, error=1):
-    if int(a, 16) - int(b, 16) > error:
+    if abs(int(a, 16) - int(b, 16)) > error:
         return False
     return True
 
@@ -74,11 +74,11 @@ def is_collect_data_same(a: str, b: str) -> bool:
 def is_burn_data_same(a: str, b: str) -> bool:
     if a == b:
         return True
-    if not compare_int_with_error(a[0:66], a[0:66]):
+    if not compare_int_with_error(a[0:66], b[0:66]):
         return False
-    if not compare_int_with_error(a[66:130], a[66:130]):
+    if not compare_int_with_error(a[66:130], b[66:130]):
         return False
-    return compare_int_with_error(a[130:], a[130:])
+    return compare_int_with_error(a[130:], b[130:])
 
 
 def drop_duplicate(df: pd.Series):
@@ -121,20 +121,26 @@ def drop_duplicate(df: pd.Series):
     row_to_remove = []
     df_count: pd.Series = df["key"].value_counts()
     df_count: pd.Series = df_count[df_count > 1]
-    
-    taken_proxy_log:Dict[str,Set[int]]={}
+
+    taken_proxy_log: Dict[str, Set[int]] = {}
     for key, value in df_count.items():
-        duplicate_txes = df[df["key"]==key]
-        taken=False
-        
+        duplicate_txes = df[df["key"] == key]
+        taken = False
+
         for dup_index, dup_value in duplicate_txes.iterrows():
             # init taken_proxy_log
             if dup_value["transaction_hash"] not in taken_proxy_log:
                 taken_proxy_log[dup_value["transaction_hash"]] = set()
-                taken=False
-            if not taken and dup_value["proxy_log_index"] not in taken_proxy_log[dup_value["transaction_hash"]]:
-                taken_proxy_log[dup_value["transaction_hash"]].add(dup_value["proxy_log_index"])
-                taken=True
+                taken = False
+            if (
+                not taken
+                and dup_value["proxy_log_index"]
+                not in taken_proxy_log[dup_value["transaction_hash"]]
+            ):
+                taken_proxy_log[dup_value["transaction_hash"]].add(
+                    dup_value["proxy_log_index"]
+                )
+                taken = True
             else:
                 row_to_remove.append(dup_index)
 
