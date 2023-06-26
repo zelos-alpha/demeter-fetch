@@ -110,7 +110,9 @@ def query_uniswap_pool_logs(chain: ChainType,
     raw_file_list.append(_save_one_day(save_path, current_day, pool_addr, current_day_logs, chain))
     # remove tmp files
     if not keep_tmp_files:
-        [os.remove(f) for f in tmp_files_paths]
+        for f in tmp_files_paths:
+            if os.path.exists(f):
+                os.remove(f)
     return raw_file_list, start_height, end_height
 
 
