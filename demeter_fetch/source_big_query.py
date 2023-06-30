@@ -31,7 +31,7 @@ def download_event(chain: _typing.ChainType,
     bq_chain = BigQueryChain[chain.name]
     date_generated = [date_begin + timedelta(days=x) for x in range(0, 1 + (date_end - date_begin).days)]
     file_names = []
-    with tqdm(total=len(date_generated), ncols=150) as pbar:
+    with tqdm(total=len(date_generated), ncols=120) as pbar:
         for one_day in date_generated:
             df = download_event_one_day(bq_chain, contract_address, one_day)
             df["pool_topics"] = df["pool_topics"].apply(lambda x: str(x).replace("\n", ","))

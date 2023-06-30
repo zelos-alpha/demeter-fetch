@@ -11,6 +11,7 @@ import demeter_fetch.source_rpc as source_rpc
 import demeter_fetch.source_chifra_log as source_chifra_log
 from ._typing import *
 from .utils import print_log
+from multiprocessing import Pool
 
 
 def download(config: Config):
@@ -63,25 +64,36 @@ def download(config: Config):
         generate_to_files(config.to_config, raw_file_list)
 
 
-def generate_to_files(to_config: ToConfig, raw_files: List[str]):
-    with tqdm(total=len(raw_files), ncols=150) as pbar:
-        for file in raw_files:
-            df = pd.read_csv(file)
-            # df = df.rename(columns={
-            #     "log_index": "pool_log_index",
-            #     "transaction_index": "pool_tx_index",
-            #     "DATA": "pool_data",
-            #     "topics": "pool_topics",
-            # })
-            result_df = pd.DataFrame()
-            df = df.sort_values(['block_number', 'pool_log_index'], ascending=[True, True], ignore_index=True)
+def generate_one(param):
+    file, to_config = param
+    df = pd.read_csv(file)
+    # df = df.rename(columns={
+    #     "log_index": "pool_log_index",
+    #     "transaction_index": "pool_tx_index",
+    #     "DATA": "pool_data",
+    #     "topics": "pool_topics",
+    # })
+    result_df = pd.DataFrame()
+    df = df.sort_values(['block_number', 'pool_log_index'], ascending=[True, True], ignore_index=True)
 
-            match to_config.type:
-                case ToType.minute:
-                    result_df = processor_minute.preprocess_one(df)
-                case ToType.tick:
-                    result_df = processor_tick.preprocess_one(df)
-            file_name = os.path.basename(file)
-            file_name_and_ext = os.path.splitext(file_name)
-            result_df.to_csv(os.path.join(to_config.save_path, f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}"), index=False)
-            pbar.update()
+    match to_config.type:
+        case ToType.minute:
+            result_df = processor_minute.preprocess_one(df)
+        case ToType.tick:
+            result_df = processor_tick.preprocess_one(df)
+    file_name = os.path.basename(file)
+    file_name_and_ext = os.path.splitext(file_name)
+    result_df.to_csv(os.path.join(to_config.save_path, f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}"), index=False)
+
+
+def generate_to_files(to_config: ToConfig, raw_files: List[str]):
+    if to_config.multi_process:
+        cpu_count = os.cpu_count()
+        files_with_config = [(x, to_config) for x in raw_files]
+        with Pool(cpu_count) as p:
+            list(tqdm(p.imap(generate_one, files_with_config), ncols=120, total=len(files_with_config)))
+    else:
+        with tqdm(total=len(raw_files), ncols=120) as pbar:
+            for file in raw_files:
+                generate_one((file, to_config))
+                pbar.update()

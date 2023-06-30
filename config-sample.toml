@@ -39,3 +39,4 @@ folder = "" # Will convert all raw files in this folder.
 [to]
 type = "tick" # minute or tick or raw
 save_path = "./sample-data"
+multi_process = false # process in multi_process, defaut: False

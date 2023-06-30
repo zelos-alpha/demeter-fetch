@@ -1,6 +1,7 @@
 import asyncore
 import datetime
 import glob
+import math
 import os
 from decimal import Decimal
 from typing import Dict, Set, Tuple
@@ -46,6 +47,7 @@ def process_duplicate_row(index, row, row_to_remove, df_count, df):
         row_to_remove.append(index)
     else:
         df.loc[index, "proxy_topics"] = ""
+        df.loc[index, "proxy_log_index"] = math.nan
         pass
 
 
@@ -55,18 +57,20 @@ def data_is_not_empty(data):
     return False
 
 
-def compare_int_with_error(a, b, error=1):
+def compare_int_with_error(a, b, error=3):
     if abs(int(a, 16) - int(b, 16)) > error:
         return False
     return True
 
 
-def is_collect_data_same(a: str, b: str) -> bool:
+def is_collect_data_same(a: str, b: str, error=3) -> bool:
     if a == b:
         return True
-    if not compare_int_with_error(a[66:130], b[66:130]):
+    if a[0:66] != b[0:66]:
         return False
-    if not compare_int_with_error(a[130:], b[130:]):
+    if not compare_int_with_error(a[66:130], b[66:130], error):
+        return False
+    if not compare_int_with_error(a[130:], b[130:], error):
         return False
     return True
 
@@ -81,6 +85,10 @@ def is_burn_data_same(a: str, b: str) -> bool:
     return compare_int_with_error(a[130:], b[130:])
 
 
+def only_action_in_tx(row: pd.Series, df: pd.Series) -> bool:
+    return len(df[(df.transaction_hash == row.transaction_hash) & (df.tx_type == row.tx_type)]) == 1
+
+
 def drop_duplicate(df: pd.Series):
     """
     由于sql用pool表join proxy表. 虽然用一个tx_hash做join条件, 但是当一个tx_hash中有多个mint或者burn的时候, 会产生冗余记录.
@@ -93,26 +101,33 @@ def drop_duplicate(df: pd.Series):
     row_to_remove = []
     df_count = df["key"].value_counts()
     for index, row in df.iterrows():
-        if row.tx_type == _typing.OnchainTxType.SWAP:
-            pass
-        elif row.tx_type == _typing.OnchainTxType.MINT:
-            if (
-                data_is_not_empty(row.proxy_data)
-                and row.pool_data[66:] != row.proxy_data[2:]
-            ):
-                process_duplicate_row(index, row, row_to_remove, df_count, df)
-        elif row.tx_type == _typing.OnchainTxType.COLLECT:
-            if data_is_not_empty(row.proxy_data) and not is_collect_data_same(
-                row.pool_data, row.proxy_data
-            ):
-                process_duplicate_row(index, row, row_to_remove, df_count, df)
-        elif row.tx_type == _typing.OnchainTxType.BURN:
-            if data_is_not_empty(row.proxy_data) and not is_burn_data_same(
-                row.pool_data, row.proxy_data
-            ):
-                process_duplicate_row(index, row, row_to_remove, df_count, df)
-        else:
-            raise ValueError("not support tx type")
+        match row.tx_type:
+            case _typing.OnchainTxType.SWAP:
+                pass
+            case _typing.OnchainTxType.MINT:
+                if data_is_not_empty(row.proxy_data) \
+                        and row.pool_data[66:] != row.proxy_data[2:]:
+                    process_duplicate_row(index, row, row_to_remove, df_count, df)
+            case _typing.OnchainTxType.COLLECT:
+                """
+                极端例子: 
+                1. https://polygonscan.com/tx/0x2d88b0cc9f8008135accc8667aa907931edf0be01d311fe437336be7cfe511fd#eventlog, log: 371,382 需要分离
+                2. https://polygonscan.com/tx/0xca50d94a36bc730a4ebb46b9e7535075d7da8a4efbbf9cc53638b058516dc907#eventlog, collect金额相差过大 
+                """
+                #
+                if data_is_not_empty(row.proxy_data):
+                    # 如果是tx中唯一的一对collect, 通常是是用户在页面上发起的, 此时使用较大的容许误差. (对于polygon-0x45dda9cb7c25131df268515131f647d726f50608, 最大见过的有25)
+                    allow_error = 3  # 如果有多个collect. 说明是合约发起的. 通常不会有很大误差.
+                    if only_action_in_tx(row, df):
+                        allow_error = 50
+                    if not is_collect_data_same(row.pool_data, row.proxy_data, allow_error):
+                        process_duplicate_row(index, row, row_to_remove, df_count, df)
+            case _typing.OnchainTxType.BURN:
+                if data_is_not_empty(row.proxy_data) \
+                        and not is_burn_data_same(row.pool_data, row.proxy_data):
+                    process_duplicate_row(index, row, row_to_remove, df_count, df)
+            case _:
+                raise ValueError("not support tx type")
     df.drop(index=row_to_remove, inplace=True)
 
     # 用另一种方式重新处理一次, 用于处理同一个交易中data相同的情况
@@ -133,9 +148,9 @@ def drop_duplicate(df: pd.Series):
                 taken_proxy_log[dup_value["transaction_hash"]] = set()
                 taken = False
             if (
-                not taken
-                and dup_value["proxy_log_index"]
-                not in taken_proxy_log[dup_value["transaction_hash"]]
+                    not taken
+                    and dup_value["proxy_log_index"]
+                    not in taken_proxy_log[dup_value["transaction_hash"]]
             ):
                 taken_proxy_log[dup_value["transaction_hash"]].add(
                     dup_value["proxy_log_index"]

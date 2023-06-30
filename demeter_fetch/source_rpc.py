@@ -151,7 +151,7 @@ def append_proxy_log(raw_file_list: List[str],
                                                        one_by_one=True,
                                                        skip_timestamp=True)
     print_log("start merge pool and proxy files")
-    with tqdm(total=len(raw_file_list), ncols=150) as pbar:
+    with tqdm(total=len(raw_file_list), ncols=120) as pbar:
         # merge logs to file
         for raw_file_path in raw_file_list:
             # load tmp file in match height

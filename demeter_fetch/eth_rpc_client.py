@@ -156,7 +156,7 @@ def query_event_by_height(chain: ChainType,
     batch_count = start_blk = end_blk = 0
     skip_until = -1
     # last_has_append = False
-    with tqdm(total=(end_height - start_height + 1), ncols=150) as pbar:
+    with tqdm(total=(end_height - start_height + 1), ncols=120) as pbar:
         for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]
             end = height_slice[-1]

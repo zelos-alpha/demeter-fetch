@@ -19,8 +19,10 @@ def convert_to_config(conf_file: dict) -> Config:
     save_path = "../"
     if "save_path" in conf_file["to"]:
         save_path = conf_file["to"]["save_path"]
-
-    to_config = ToConfig(to_type, save_path)
+    multi_process = False
+    if "multi_process" in conf_file["to"]:
+        multi_process = conf_file["to"]["multi_process"]
+    to_config = ToConfig(to_type, save_path, multi_process)
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
