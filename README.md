@@ -9,9 +9,9 @@ Demeter-fetch support download from the following source:
 * Google BigQuery: just support Ethereum and Polygon, But will fetch faster than rpc
 
 Demeter-fetch support export data in following type:
-* raw: Original event log
-* minute: process uniswap data and resample it to minute
-* tick: process uniswap data, each log will be decoded and listed.
+* raw: Original event log. sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.raw.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.raw.csv)
+* minute: process uniswap data and resample it to minute, sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.minute.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.minute.csv)
+* tick: process uniswap data, each log will be decoded and listed. sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.tick.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.tick.csv)
 
 # how to use
 
