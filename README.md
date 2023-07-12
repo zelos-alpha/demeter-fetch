@@ -1,23 +1,27 @@
 # README
 
-## What's this: 
+## What's this:
 
-Download uniswap pool event log, and convert it to different format for demeter.   
+Download uniswap pool event log, and convert it to different format for demeter.
 
 Demeter-fetch support download from the following source:
-* RPC: query data from rpc interface of any Ethereum like chain node. 
+
+* RPC: query data from rpc interface of any Ethereum like chain node.
 * Google BigQuery: just support Ethereum and Polygon, But will fetch faster than rpc
 
 Demeter-fetch support export data in following type:
-* raw: Original event log. sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.raw.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.raw.csv)
-* minute: process uniswap data and resample it to minute, sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.minute.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.minute.csv)
-* tick: process uniswap data, each log will be decoded and listed. sample: [polygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.tick.csv](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2021-12-22.tick.csv)
+
+* raw: Original event log. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.raw.csv)
+* minute: process uniswap data and resample it to
+  minute, [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.minute.csv)
+* tick: process uniswap data, each log will be decoded and
+  listed. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.tick.csv)
 
 # how to use
 
 Prepare a config.toml file according to [config-sample.toml](config-sample.toml)
 
-then execute: 
+then execute:
 
 ```shell
 python main.py config.toml
