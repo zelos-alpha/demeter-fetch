@@ -8,7 +8,6 @@ class DataSource(str, Enum):
     big_query = "big_query"
     rpc = "rpc"
     file = "file"
-    chifra_log = "chifra_log"
 
 
 class ChainType(str, Enum):
@@ -95,7 +94,6 @@ class FromConfig:
     big_query: BigQueryConfig | None = None
     rpc: RpcConfig | None = None
     file: FileConfig | None = None
-    chifra_log: FileConfig | None = None
 
 
 @dataclass

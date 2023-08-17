@@ -1,6 +1,6 @@
 [from]
 chain = "polygon"
-datasource = "rpc" # big_query or rpc or file or chifra_log
+datasource = "rpc" # big_query or rpc or file
 pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
 
 [from.big_query] # keep this section according to from.datasource
@@ -21,14 +21,6 @@ ignore_position_id = false # if set to true, will not download uniswap proxy log
 
 
 [from.file] # keep this section according to from.datasource
-#  either file_path or folder
-files = [# full file path you need to convert
-    "",
-    ""
-]
-folder = "" # Will convert all raw files in this folder.
-
-[from.chifra_log] # keep this section according to from.datasource
 #  either file_path or folder
 files = [# full file path you need to convert
     "",

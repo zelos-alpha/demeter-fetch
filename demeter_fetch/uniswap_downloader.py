@@ -8,7 +8,6 @@ import demeter_fetch.processor_tick as processor_tick
 import demeter_fetch.source_big_query as source_big_query
 import demeter_fetch.source_file as source_file
 import demeter_fetch.source_rpc as source_rpc
-import demeter_fetch.source_chifra_log as source_chifra_log
 from ._typing import *
 from .utils import print_log
 from multiprocessing import Pool
@@ -55,8 +54,7 @@ def download(config: Config):
                                                             config.from_config.big_query.http_proxy)
         case DataSource.file:
             raw_file_list = source_file.convert_log_file_to_standard(config.from_config.file)
-        case DataSource.chifra_log:
-            raw_file_list = source_chifra_log.load_raw_files(config.from_config.file)
+
     print("\n")
     print_log(f"Download finish")
     if config.to_config.type != ToType.raw:

@@ -45,21 +45,7 @@ def convert_to_config(conf_file: dict) -> Config:
                 raise RuntimeError("file_path and folder can not both null")
 
             from_config.file = FileConfig(files, folder)
-        case DataSource.chifra_log:
-            if "chifra_log" not in conf_file["from"]:
-                raise RuntimeError("should have [from.chifra_log]")
-            files = None
-            if "files" in conf_file["from"]["chifra_log"]:
-                files = conf_file["from"]["chifra_log"]["files"]
-            folder = None
-            if "folder" in conf_file["from"]["chifra_log"]:
-                folder = conf_file["from"]["chifra_log"]["folder"]
-            if files is None and folder is None:
-                raise RuntimeError("file_path and folder can not both null")
 
-            from_config.chifra_log = FileConfig(files, folder)
-            if to_config.type not in [ToType.raw, ToType.tick]:
-                raise RuntimeError("to type should be tick or raw")
         case DataSource.rpc:
             if "rpc" not in conf_file["from"]:
                 raise RuntimeError("should have [from.rpc]")
