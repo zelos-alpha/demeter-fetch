@@ -1,5 +1,12 @@
-from demeter_fetch import Config
+import os
+from multiprocessing import Pool
+from typing import List
 
+from tqdm import tqdm
 
-def download(config: Config):
+from ._typing import Config, DataSource, ToType, ToConfig
+from .general_downloader import GeneralDownloader
+from .utils import print_log
+
+class Downloader(GeneralDownloader):
     pass

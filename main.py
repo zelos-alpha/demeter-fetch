@@ -9,6 +9,7 @@ import demeter_fetch as df
 import demeter_fetch.uniswap_downloader as uniswap_downloader
 import demeter_fetch.aave_downloader as aave_downloader
 import demeter_fetch.utils as utils
+from demeter_fetch import general_downloader
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -29,9 +30,11 @@ if __name__ == "__main__":
         "Download config:",
         json.dumps(dataclasses.asdict(config), cls=utils.ComplexEncoder, indent=4),
     )
-
+    downloader = general_downloader.GeneralDownloader()
     match config.from_config.dapp_type:
         case df.DappType.uniswap:
-            uniswap_downloader.download(config)
+            downloader = uniswap_downloader.Downloader()
         case df.DappType.aave:
-            aave_downloader.download(config)
+            downloader = aave_downloader.Downloader()
+
+    downloader.download(config)
