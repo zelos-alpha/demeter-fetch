@@ -18,7 +18,7 @@ def download(config: Config):
     match config.from_config.data_source:
         case DataSource.rpc:
             raw_file_list, start, end = source_rpc.query_uniswap_pool_logs(chain=config.from_config.chain,
-                                                                           pool_addr=config.from_config.pool_address,
+                                                                           pool_addr=config.from_config.uniswap_config.pool_address,
                                                                            end_point=config.from_config.rpc.end_point,
                                                                            start=config.from_config.rpc.start,
                                                                            end=config.from_config.rpc.end,
@@ -46,7 +46,7 @@ def download(config: Config):
             #     merge
         case DataSource.big_query:
             raw_file_list = source_big_query.download_event(config.from_config.chain,
-                                                            config.from_config.pool_address,
+                                                            config.from_config.uniswap_config.pool_address,
                                                             config.from_config.big_query.start,
                                                             config.from_config.big_query.end,
                                                             config.to_config.save_path,

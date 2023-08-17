@@ -24,33 +24,33 @@ ChainTypeConfig = {
     ChainType.ethereum: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.optimism: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.arbitrum: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"
+        "proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.celo: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a"
+        "proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
     },
     ChainType.bsc: {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
-        "proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613"
-    }
+        "proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
+    },
 }
 
 
@@ -58,6 +58,11 @@ class ToType(str, Enum):
     minute = "minute"
     tick = "tick"
     raw = "raw"
+
+
+class DappType(str, Enum):
+    uniswap = "uniswap"
+    aave = "aave"
 
 
 @dataclass
@@ -77,7 +82,9 @@ class RpcConfig:
     auth_string: str | None = None
     http_proxy: str | None = None
     keep_tmp_files: bool = False
-    ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
+    ignore_position_id: bool = (
+        False  # if set to true, will not download proxy logs and leave a empty column
+    )
 
 
 @dataclass
@@ -87,10 +94,22 @@ class FileConfig:
 
 
 @dataclass
+class UniswapConfig:
+    pool_address: str
+
+
+@dataclass
+class AaveConfig:
+    tokens: List[str]
+
+
+@dataclass
 class FromConfig:
     chain: ChainType
     data_source: DataSource
-    pool_address: str
+    dapp_type: DappType
+    uniswap_config: UniswapConfig | None = None
+    aave_config: AaveConfig | None = None
     big_query: BigQueryConfig | None = None
     rpc: RpcConfig | None = None
     file: FileConfig | None = None
@@ -117,7 +136,6 @@ class Config:
 
 
 class MinuteData(object):
-
     def __init__(self):
         self.timestamp = None
         self.netAmount0 = 0
@@ -141,7 +159,7 @@ class MinuteData(object):
             self.highestTick,
             self.inAmount0,
             self.inAmount1,
-            self.currentLiquidity
+            self.currentLiquidity,
         ]
 
     def __repr__(self):
@@ -158,14 +176,27 @@ class MinuteData(object):
         """
         if prev_data is None:
             prev_data = MinuteData()
-        self.closeTick = self.closeTick if self.closeTick is not None else prev_data.closeTick
-        self.openTick = self.openTick if self.openTick is not None else prev_data.closeTick
-        self.lowestTick = self.lowestTick if self.lowestTick is not None else prev_data.closeTick
-        self.highestTick = self.highestTick if self.highestTick is not None else prev_data.closeTick
-        self.currentLiquidity = self.currentLiquidity if self.currentLiquidity is not None \
+        self.closeTick = (
+            self.closeTick if self.closeTick is not None else prev_data.closeTick
+        )
+        self.openTick = (
+            self.openTick if self.openTick is not None else prev_data.closeTick
+        )
+        self.lowestTick = (
+            self.lowestTick if self.lowestTick is not None else prev_data.closeTick
+        )
+        self.highestTick = (
+            self.highestTick if self.highestTick is not None else prev_data.closeTick
+        )
+        self.currentLiquidity = (
+            self.currentLiquidity
+            if self.currentLiquidity is not None
             else prev_data.currentLiquidity
+        )
 
-        return False if (self.closeTick is None or self.currentLiquidity is None) else True
+        return (
+            False if (self.closeTick is None or self.currentLiquidity is None) else True
+        )
 
 
 MinuteDataNames = [

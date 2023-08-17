@@ -26,11 +26,22 @@ def convert_to_config(conf_file: dict) -> Config:
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
-    pool_address = conf_file["from"]["pool_address"].lower()
 
-    from_config = FromConfig(chain, data_source, pool_address)
+    dapp_type = DappType[conf_file["from"]["dapp_type"]]
+
+    from_config = FromConfig(chain, data_source, dapp_type)
+
+    if dapp_type == DappType.uniswap:
+        pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
+        from_config.uniswap_config = UniswapConfig(pool_address)
+    elif dapp_type == DappType.aave:
+        token_addresses = [x.lower() for x in conf_file["from"]["aave"]["tokens"]]
+        from_config.aave_config = AaveConfig(token_addresses)
+
     if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
-        raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")
+        raise RuntimeError(
+            f"{data_source.name} is not allowed to download from {from_config.chain.name}"
+        )
     match data_source:
         case DataSource.file:
             if "file" not in conf_file["from"]:
@@ -58,34 +69,47 @@ def convert_to_config(conf_file: dict) -> Config:
             keep_tmp_files = None
             if "keep_tmp_files" in conf_file["from"]["rpc"]:
                 keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
+            ignore_position_id = False
             if "ignore_position_id" in conf_file["from"]["rpc"]:
                 ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
             end_point = conf_file["from"]["rpc"]["end_point"]
-            start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
+            start_time = datetime.strptime(
+                conf_file["from"]["rpc"]["start"], "%Y-%m-%d"
+            ).date()
+            end_time = datetime.strptime(
+                conf_file["from"]["rpc"]["end"], "%Y-%m-%d"
+            ).date()
             batch_size = int(conf_file["from"]["rpc"]["batch_size"])
 
-            from_config.rpc = RpcConfig(end_point=end_point,
-                                        start=start_time,
-                                        end=end_time,
-                                        batch_size=batch_size,
-                                        auth_string=auth_string,
-                                        http_proxy=http_proxy,
-                                        keep_tmp_files=keep_tmp_files,
-                                        ignore_position_id=ignore_position_id)
+            from_config.rpc = RpcConfig(
+                end_point=end_point,
+                start=start_time,
+                end=end_time,
+                batch_size=batch_size,
+                auth_string=auth_string,
+                http_proxy=http_proxy,
+                keep_tmp_files=keep_tmp_files,
+                ignore_position_id=ignore_position_id,
+            )
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")
-            start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
+            start_time = datetime.strptime(
+                conf_file["from"]["big_query"]["start"], "%Y-%m-%d"
+            ).date()
+            end_time = datetime.strptime(
+                conf_file["from"]["big_query"]["end"], "%Y-%m-%d"
+            ).date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
             http_proxy = None
             if "http_proxy" in conf_file["from"]["big_query"]:
                 http_proxy = conf_file["from"]["big_query"]["http_proxy"]
-            from_config.big_query = BigQueryConfig(start=start_time,
-                                                   end=end_time,
-                                                   auth_file=auth_file,
-                                                   http_proxy=http_proxy)
+            from_config.big_query = BigQueryConfig(
+                start=start_time,
+                end=end_time,
+                auth_file=auth_file,
+                http_proxy=http_proxy,
+            )
 
     return Config(from_config, to_config)
 
@@ -110,12 +134,11 @@ class HexUtil(object):
         Converts hex values to signed integers.
         """
         s = bytes.fromhex(h[2:])
-        i = int.from_bytes(s, 'big', signed=True)
+        i = int.from_bytes(s, "big", signed=True)
         return i
 
 
 class DataUtil(object):
-
     @staticmethod
     def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:
         if len(data_list) < 1:
@@ -130,7 +153,9 @@ class DataUtil(object):
 
         start_day = data_list[0].timestamp.day
         while index_minute.day == start_day:
-            if (data_list_index < len(data_list)) and (index_minute == data_list[data_list_index].timestamp):
+            if (data_list_index < len(data_list)) and (
+                index_minute == data_list[data_list_index].timestamp
+            ):
                 item = data_list[data_list_index]
                 data_list_index += 1
             else:
@@ -148,8 +173,8 @@ class DataUtil(object):
 class ComplexEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
-            return obj.strftime('%Y-%m-%d %H:%M:%S')
+            return obj.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(obj, date):
-            return obj.strftime('%Y-%m-%d')
+            return obj.strftime("%Y-%m-%d")
         else:
             return json.JSONEncoder.default(self, obj)
