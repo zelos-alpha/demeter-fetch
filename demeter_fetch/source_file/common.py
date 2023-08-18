@@ -1,11 +1,11 @@
 import os
-from typing import List, Tuple
+from typing import List
 
 import demeter_fetch._typing as _typing
-from .utils import print_log
+from demeter_fetch.utils import print_log
 
 
-def convert_log_file_to_standard(file_config: _typing.FileConfig) -> List[str]:
+def load_raw_file_names(file_config: _typing.FileConfig) -> List[str]:
     if file_config.files and file_config.folder:
         print_log("both file and folder is specified, will process file")
     file_list = []

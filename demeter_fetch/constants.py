@@ -29,6 +29,7 @@ topic_dict = {
     "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0": "0x40d0efd1a53d60ecbf40971b9daf7dc90178c3aadc7aab1765632738fa8b8f01",  # collect
 }
 
-aave_reserve_data_updated = (
+AAVE_RESERVE_DATA_UPDATED_KECCAK = (
     "0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a"
 )
+

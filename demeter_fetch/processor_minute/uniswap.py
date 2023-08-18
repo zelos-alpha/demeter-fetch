@@ -5,8 +5,8 @@ import pandas as pd
 from pandas import Timestamp
 
 import demeter_fetch.uniswap_utils as uniswap_utils
-from ._typing import MinuteData, OnchainTxType, MinuteDataNames
-from .utils import TextUtil, TimeUtil, DataUtil
+from demeter_fetch._typing import MinuteData, OnchainTxType, MinuteDataNames
+from demeter_fetch.utils import TextUtil, TimeUtil, DataUtil
 
 
 class ModuleUtils(object):

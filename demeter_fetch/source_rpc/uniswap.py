@@ -11,11 +11,11 @@ import requests
 
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
-from ._typing import ChainType, ChainTypeConfig, OnchainTxType
-from .eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
-from .uniswap_utils import compare_burn_data
+from demeter_fetch._typing import ChainType, ChainTypeConfig, OnchainTxType
+from demeter_fetch.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
+from demeter_fetch.uniswap_utils import compare_burn_data
 from tqdm import tqdm  # process bar
-from .utils import print_log
+from demeter_fetch.utils import print_log
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.
@@ -140,7 +140,7 @@ def append_proxy_log(raw_file_list: List[str],
     client = EthRpcClient(end_point, http_proxy, auth_string)
     tmp_files_paths: List[str] = query_event_by_height(chain,
                                                        client,
-                                                       ContractConfig(ChainTypeConfig[chain]["proxy_addr"],
+                                                       ContractConfig(ChainTypeConfig[chain]["uniswap_proxy_addr"],
                                                                       [constants.INCREASE_LIQUIDITY,
                                                                        constants.DECREASE_LIQUIDITY,
                                                                        constants.COLLECT]),

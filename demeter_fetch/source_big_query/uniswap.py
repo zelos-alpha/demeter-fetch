@@ -1,6 +1,5 @@
 import os
 from datetime import timedelta, date
-from enum import Enum
 from typing import List
 
 import pandas as pd
@@ -10,33 +9,34 @@ from tqdm import tqdm
 import demeter_fetch._typing as _typing
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
+from .big_query_utils import BigQueryChain, set_environment, get_date_array
 
 
-class BigQueryChain(Enum):
-    ethereum = {"table_name": "bigquery-public-data.crypto_ethereum.logs"}
-    polygon = {"table_name": "public-data-finance.crypto_polygon.logs"}
-
-
-def download_event(chain: _typing.ChainType,
-                   contract_address: str,
-                   date_begin: date,
-                   date_end: date,
-                   data_save_path: os.path,
-                   auth_file: str,
-                   http_proxy: str | None = None) -> List[str]:
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth_file
-    if http_proxy:
-        os.environ['http_proxy'] = http_proxy
-        os.environ['https_proxy'] = http_proxy
-    bq_chain = BigQueryChain[chain.name]
-    date_generated = [date_begin + timedelta(days=x) for x in range(0, 1 + (date_end - date_begin).days)]
+def download_event(
+    chain: _typing.ChainType,
+    contract_address: str,
+    date_begin: date,
+    date_end: date,
+    data_save_path: os.path,
+    auth_file: str,
+    http_proxy: str | None = None,
+) -> List[str]:
+    set_environment(auth_file, http_proxy)
+    bq_chain_name = BigQueryChain[chain.name]
+    date_generated = get_date_array(date_begin, date_end)
     file_names = []
     with tqdm(total=len(date_generated), ncols=120) as pbar:
         for one_day in date_generated:
-            df = download_event_one_day(bq_chain, contract_address, one_day)
-            df["pool_topics"] = df["pool_topics"].apply(lambda x: str(x).replace("\n", ","))
-            df["proxy_topics"] = df["proxy_topics"].apply(lambda x: str(x).replace("\n", ","))
-            file_name = os.path.join(data_save_path, utils.get_file_name(chain, contract_address, one_day))
+            df = download_event_one_day(bq_chain_name, contract_address, one_day)
+            df["pool_topics"] = df["pool_topics"].apply(
+                lambda x: str(x).replace("\n", ",")
+            )
+            df["proxy_topics"] = df["proxy_topics"].apply(
+                lambda x: str(x).replace("\n", ",")
+            )
+            file_name = os.path.join(
+                data_save_path, utils.get_file_name(chain, contract_address, one_day)
+            )
             df.to_csv(file_name, header=True, index=False)
             file_names.append(file_name)
             pbar.update()
@@ -44,7 +44,9 @@ def download_event(chain: _typing.ChainType,
     return file_names
 
 
-def download_event_one_day(chain: BigQueryChain, contract_address, one_date) -> pd.DataFrame:
+def download_event_one_day(
+    chain: BigQueryChain, contract_address, one_date
+) -> pd.DataFrame:
     client = bigquery.Client()
     query = f"""
 SELECT block_number,block_timestamp, transaction_hash , transaction_index  as pool_tx_index, log_index pool_log_index, topics as pool_topics, DATA as pool_data, [] as proxy_topics, '' as proxy_data,null as proxy_log_index
@@ -90,5 +92,7 @@ on pool.transaction_hash=proxy.transaction_hash
 """
     query_job = client.query(query)  # Make an API request.
     result = query_job.to_dataframe(create_bqstorage_client=False)
-    result = result.sort_values(['block_number', 'pool_log_index'], ascending=[True, True])
+    result = result.sort_values(
+        ["block_number", "pool_log_index"], ascending=[True, True]
+    )
     return result

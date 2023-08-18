@@ -1,15 +1,13 @@
-import os
-
 import pandas as pd
 
-import demeter_fetch.processor_minute as processor_minute
-import demeter_fetch.processor_tick as processor_tick
-import demeter_fetch.uni_source_big_query as source_big_query
-import demeter_fetch.uni_source_file as source_file
-import demeter_fetch.uni_source_rpc as source_rpc
+import demeter_fetch.processor_minute.uniswap as processor_minute
+import demeter_fetch.processor_tick.uniswap as processor_tick
+import demeter_fetch.source_big_query.uniswap as source_big_query
+import demeter_fetch.source_file.common as source_file
+import demeter_fetch.source_rpc.uniswap as source_rpc
 from ._typing import *
 from .general_downloader import GeneralDownloader
-from .utils import print_log
+from .utils import print_log, convert_raw_file_name
 
 
 def generate_one(param):
@@ -21,7 +19,6 @@ def generate_one(param):
     #     "DATA": "pool_data",
     #     "topics": "pool_topics",
     # })
-    result_df = pd.DataFrame()
     df = df.sort_values(
         ["block_number", "pool_log_index"], ascending=[True, True], ignore_index=True
     )
@@ -31,13 +28,10 @@ def generate_one(param):
             result_df = processor_minute.preprocess_one(df)
         case ToType.tick:
             result_df = processor_tick.preprocess_one(df)
-    file_name = os.path.basename(file)
-    file_name_and_ext = os.path.splitext(file_name)
+        case _:
+            raise NotImplementedError(f"Convert to {to_config.type} not implied")
     result_df.to_csv(
-        os.path.join(
-            to_config.save_path,
-            f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
-        ),
+        convert_raw_file_name(file, to_config),
         index=False,
     )
 
@@ -89,4 +83,4 @@ class Downloader(GeneralDownloader):
         )
 
     def _download_file(self, config: Config):
-        return source_file.convert_log_file_to_standard(config.from_config.file)
+        return source_file.load_raw_file_names(config.from_config.file)

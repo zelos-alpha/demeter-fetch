@@ -42,10 +42,13 @@ class GeneralDownloader(object):
         print_log(f"Download finish")
         if config.to_config.type != ToType.raw:
             print_log(f"Start generate {len(raw_file_list)} files")
-            self._generate_to_files(config.to_config, raw_file_list, self._get_process_func())
+            GeneralDownloader._generate_to_files(
+                config.to_config, raw_file_list, self._get_process_func()
+            )
 
+    @staticmethod
     def _generate_to_files(
-        self, to_config: ToConfig, raw_files: List[str], func_generate_one
+        to_config: ToConfig, raw_files: List[str], func_generate_one
     ):
         if to_config.multi_process:
             cpu_count = os.cpu_count()

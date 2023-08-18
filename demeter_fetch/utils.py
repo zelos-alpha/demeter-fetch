@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timedelta
 
 from ._typing import *
@@ -6,6 +7,10 @@ from ._typing import *
 
 def get_file_name(chain: ChainType, pool_address, day: date, is_raw=True):
     return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.{'raw' if is_raw else 'processed'}.csv"
+
+
+def get_aave_file_name(chain: ChainType, token_address, day: date, is_raw=True):
+    return f"{chain.name}-aave_v3-{token_address}-{day.strftime('%Y-%m-%d')}.{'raw' if is_raw else 'processed'}.csv"
 
 
 def print_log(*args):
@@ -178,3 +183,41 @@ class ComplexEncoder(json.JSONEncoder):
             return obj.strftime("%Y-%m-%d")
         else:
             return json.JSONEncoder.default(self, obj)
+
+
+def hex_to_length(hex_str: str, new_length: int):
+    """
+    expend hex string to new length, will keep leading 0x if it exists
+    eg:
+    1. hex_str=0x1, length=3, result is 0x001
+    2. hex_str=0x001, length=2, result is 0x01
+    """
+
+    has_0x = hex_str[0:2] == "0x" if len(hex_str) >= 2 else False
+
+    hex_without_0x = hex_str if not has_0x else hex_str[2:]
+
+    if len(hex_without_0x) <= new_length:
+        return (
+            hex_without_0x.zfill(new_length)
+            if not has_0x
+            else "0x" + hex_without_0x.zfill(new_length)
+        )
+    else:
+        if hex_without_0x[-new_length - 1] != "0":
+            raise RuntimeError("Not enough leading zeros to remove")
+        return (
+            hex_without_0x[-new_length:]
+            if not has_0x
+            else "0x" + hex_without_0x[-new_length:]
+        )
+
+
+def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
+    file_name = os.path.basename(file)
+    file_name_and_ext = os.path.splitext(file_name)
+
+    return os.path.join(
+        to_config.save_path,
+        f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
+    )
