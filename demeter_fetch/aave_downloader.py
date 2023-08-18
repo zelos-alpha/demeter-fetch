@@ -1,7 +1,7 @@
 import pandas as pd
 
-import demeter_fetch.processor_minute.aave as processor_minute
-import demeter_fetch.processor_tick.aave as processor_tick
+import demeter_fetch.processor_aave.minute as processor_minute
+import demeter_fetch.processor_aave.tick as processor_tick
 import demeter_fetch.source_big_query.aave as source_big_query
 import demeter_fetch.source_file.common as source_file
 import demeter_fetch.source_rpc.aave as source_rpc

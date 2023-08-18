@@ -12,8 +12,8 @@ import requests
 from tqdm import tqdm  # process bar
 
 import demeter_fetch.utils as utils
-from ._typing import ChainType
-from ._typing import EthError
+from demeter_fetch._typing import ChainType
+from demeter_fetch._typing import EthError
 
 
 @dataclass

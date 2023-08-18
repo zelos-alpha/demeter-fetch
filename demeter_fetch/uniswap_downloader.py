@@ -1,7 +1,7 @@
 import pandas as pd
 
-import demeter_fetch.processor_minute.uniswap as processor_minute
-import demeter_fetch.processor_tick.uniswap as processor_tick
+import demeter_fetch.processor_uniswap.minute as processor_minute
+import demeter_fetch.processor_uniswap.tick as processor_tick
 import demeter_fetch.source_big_query.uniswap as source_big_query
 import demeter_fetch.source_file.common as source_file
 import demeter_fetch.source_rpc.uniswap as source_rpc

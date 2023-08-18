@@ -4,7 +4,7 @@ import pandas
 import pandas as pd
 from pandas import Timestamp
 
-import demeter_fetch.uniswap_utils as uniswap_utils
+import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
 from demeter_fetch._typing import MinuteData, OnchainTxType, MinuteDataNames
 from demeter_fetch.utils import TextUtil, TimeUtil, DataUtil
 

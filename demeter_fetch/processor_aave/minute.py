@@ -1,6 +1,6 @@
 import pandas as pd
 
-from demeter_fetch.aave_utils import decode_event_ReserveDataUpdated
+from demeter_fetch.processor_aave.aave_utils import decode_event_ReserveDataUpdated
 from datetime import datetime
 
 

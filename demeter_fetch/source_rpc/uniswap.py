@@ -12,8 +12,8 @@ import requests
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
 from demeter_fetch._typing import ChainType, ChainTypeConfig, OnchainTxType
-from demeter_fetch.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
-from demeter_fetch.uniswap_utils import compare_burn_data
+from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
+from demeter_fetch.processor_uniswap.uniswap_utils import compare_burn_data
 from tqdm import tqdm  # process bar
 from demeter_fetch.utils import print_log
 

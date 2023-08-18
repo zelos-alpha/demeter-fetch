@@ -5,7 +5,7 @@ import toml
 
 import demeter_fetch._typing as typing
 from demeter_fetch import constants
-from demeter_fetch.eth_rpc_client import EthRpcClient, HeightCacheManager
+from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, HeightCacheManager
 from demeter_fetch.source_rpc import query_blockno_from_time, query_event_by_height, ContractConfig, query_uniswap_pool_logs, append_proxy_log
 
 
