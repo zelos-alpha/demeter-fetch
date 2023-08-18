@@ -13,6 +13,8 @@ from .utils import print_log, convert_raw_file_name
 def process_aave_raw_file(param):
     file, to_config = param
     raw_df = pd.read_csv(file)
+    raw_df["block_timestamp"] = pd.to_datetime(raw_df["block_timestamp"])
+
     raw_df = raw_df.sort_values(
         ["block_number", "log_index"], ascending=[True, True], ignore_index=True
     )
@@ -24,10 +26,7 @@ def process_aave_raw_file(param):
             result_df = processor_tick.preprocess_one(raw_df)
         case _:
             raise NotImplementedError(f"Convert to {to_config.type} not implied")
-    result_df.to_csv(
-        convert_raw_file_name(file, to_config),
-        index=False,
-    )
+    result_df.to_csv(convert_raw_file_name(file, to_config))
 
 
 class Downloader(GeneralDownloader):
