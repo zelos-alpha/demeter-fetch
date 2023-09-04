@@ -15,8 +15,7 @@ from .utils import print_log, convert_raw_file_name
 def process_aave_raw_file(param):
     file, to_config = param
     target_file_name = convert_raw_file_name(file, to_config)
-    if to_config.skip_existed and os.path.exists(target_file_name):
-        return
+
     raw_df = pd.read_csv(file)
     raw_df["block_timestamp"] = pd.to_datetime(raw_df["block_timestamp"])
 

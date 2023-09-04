@@ -16,8 +16,6 @@ def generate_one(param):
     file, to_config = param
 
     target_file_name = convert_raw_file_name(file, to_config)
-    if to_config.skip_existed and os.path.exists(target_file_name):
-        return
 
     df = pd.read_csv(file)
     # df = df.rename(columns={
