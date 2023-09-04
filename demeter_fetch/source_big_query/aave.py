@@ -31,9 +31,7 @@ def download_event(
             df["token"] = df["topics"].apply(lambda x: utils.hex_to_length(x[1], 40))
             for token in tokens:
                 token_df = df[df["token"] == token]
-                file_name = os.path.join(
-                    data_save_path, utils.get_aave_file_name(chain, token, one_day)
-                )
+                file_name = os.path.join(data_save_path, utils.get_aave_file_name(chain, token, one_day))
 
                 token_df.to_csv(file_name, header=True, index=False)
                 file_names.append(file_name)
@@ -42,9 +40,7 @@ def download_event(
     return file_names
 
 
-def download_event_one_day(
-    chain: _typing.ChainType, one_date: date, tokens: List[str]
-) -> pd.DataFrame:
+def download_event_one_day(chain: _typing.ChainType, one_date: date, tokens: List[str]) -> pd.DataFrame:
     client = bigquery.Client()
     bq_chain_name = BigQueryChain[chain.name]
     token_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tokens])
@@ -60,7 +56,5 @@ def download_event_one_day(
     """
     query_job = client.query(query)  # Make an API request.
     result = query_job.to_dataframe(create_bqstorage_client=False)
-    result = result.sort_values(
-        ["block_number", "log_index"], ascending=[True, True]
-    )
+    result = result.sort_values(["block_number", "log_index"], ascending=[True, True])
     return result

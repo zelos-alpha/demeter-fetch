@@ -30,15 +30,7 @@ def preprocess_one(raw_df: pd.DataFrame):
     if len(raw_df.index) == 0:  # if empty
         return raw_df
     # add start and end of the day, so after resample, there will always be 1440 row
-    raw_df.loc[
-        datetime.combine(
-            raw_df.index[0].date(), datetime.min.time(), raw_df.index[0].tzinfo
-        )
-    ] = raw_df.head(1).iloc[0]
-    raw_df.loc[
-        datetime.combine(
-            raw_df.index[0].date(), datetime.max.time(), raw_df.index[0].tzinfo
-        )
-    ] = raw_df.tail(1).iloc[0]
+    raw_df.loc[datetime.combine(raw_df.index[0].date(), datetime.min.time(), raw_df.index[0].tzinfo)] = raw_df.head(1).iloc[0]
+    raw_df.loc[datetime.combine(raw_df.index[0].date(), datetime.max.time(), raw_df.index[0].tzinfo)] = raw_df.tail(1).iloc[0]
     raw_df = raw_df.resample("1T").last().bfill()
     return raw_df

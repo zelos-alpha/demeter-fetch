@@ -34,7 +34,14 @@ class EthRpcClient:
         self.endpoint = endpoint
         if auth:
             self.headers["Authorization"] = auth
-        self.proxies = {"http": proxy, "https": proxy, } if proxy else {}
+        self.proxies = (
+            {
+                "http": proxy,
+                "https": proxy,
+            }
+            if proxy
+            else {}
+        )
 
     def __del__(self):
         self.session.close()
@@ -51,10 +58,7 @@ class EthRpcClient:
         return content["result"]
 
     def do_post(self, param):
-        return self.session.post(self.endpoint,
-                                 json=param,
-                                 proxies=self.proxies,
-                                 headers=self.headers)
+        return self.session.post(self.endpoint, json=param, proxies=self.proxies, headers=self.headers)
 
     def get_block(self, height):
         return self.send("eth_getBlockByNumber", [hex(height), False])
@@ -83,12 +87,13 @@ class HeightCacheManager:
     """
     高度缓存
     """
+
     height_cache_file_name = "_height_timestamp.pkl"
 
     def __init__(self, chain: ChainType, save_path: str):
         self.height_cache_path = os.path.join(save_path, chain.value + HeightCacheManager.height_cache_file_name)
         if os.path.exists(self.height_cache_path):
-            with open(self.height_cache_path, 'rb') as f:
+            with open(self.height_cache_path, "rb") as f:
                 self.block_dict = pickle.load(f)
                 utils.print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
         else:
@@ -108,7 +113,7 @@ class HeightCacheManager:
         self.block_dict[height] = timestamp
 
     def save(self):
-        with open(self.height_cache_path, 'wb') as f:
+        with open(self.height_cache_path, "wb") as f:
             pickle.dump(self.block_dict, f)
         utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
@@ -119,17 +124,19 @@ class ContractConfig:
     topics: List[str]
 
 
-def query_event_by_height(chain: ChainType,
-                          client: EthRpcClient,
-                          contract_config: ContractConfig,
-                          start_height: int,
-                          end_height: int,
-                          height_cache: HeightCacheManager = None,
-                          save_path: str = "./",
-                          save_every_query: int = 10,
-                          batch_size: int = 500,
-                          one_by_one: bool = False,
-                          skip_timestamp: bool = False) -> List[str]:
+def query_event_by_height(
+    chain: ChainType,
+    client: EthRpcClient,
+    contract_config: ContractConfig,
+    start_height: int,
+    end_height: int,
+    height_cache: HeightCacheManager = None,
+    save_path: str = "./",
+    save_every_query: int = 10,
+    batch_size: int = 500,
+    one_by_one: bool = False,
+    skip_timestamp: bool = False,
+) -> List[str]:
     """
     根据输入参数, 下载对应高度的log,
     log会按照高度划分, 保存为临时文件.
@@ -189,18 +196,20 @@ def query_event_by_height(chain: ChainType,
                 logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
             log_list = []
             for log in logs:
-                log['blockNumber'] = int(log['blockNumber'], 16)
-                if len(log['topics']) > 0 and (log['topics'][0] in contract_config.topics):
+                log["blockNumber"] = int(log["blockNumber"], 16)
+                if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics):
                     if log["removed"]:
                         continue
-                    log_list.append({
-                        'block_number': log['blockNumber'],
-                        'transaction_hash': log['transactionHash'],
-                        'transaction_index': log['transactionIndex'],
-                        'log_index': log['logIndex'],
-                        'data': log["data"],
-                        'topics': json.dumps(log['topics'])
-                    })
+                    log_list.append(
+                        {
+                            "block_number": log["blockNumber"],
+                            "transaction_hash": log["transactionHash"],
+                            "transaction_index": log["transactionIndex"],
+                            "log_index": log["logIndex"],
+                            "data": log["data"],
+                            "topics": json.dumps(log["topics"]),
+                        }
+                    )
             for log in log_list:
                 log["log_index"] = int(log["log_index"], 16)
                 log["transaction_index"] = int(log["transaction_index"], 16)
@@ -220,13 +229,13 @@ def query_event_by_height(chain: ChainType,
             batch_count += 1
             if batch_count % save_every_query == 0:
                 # save tmp file
-                logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
+                logs_to_save = sorted(logs_to_save, key=itemgetter("block_number", "transaction_index", "log_index"))
                 end_blk = end
                 tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
                 logs_to_save = []
             pbar.update(n=len(height_slice))
     if batch_count % save_every_query != 0:  # and not last_has_append:  # save tail queries
-        logs_to_save = sorted(logs_to_save, key=itemgetter('block_number', 'transaction_index', 'log_index'))
+        logs_to_save = sorted(logs_to_save, key=itemgetter("block_number", "transaction_index", "log_index"))
         end_blk = end
         tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
     height_cache.save()
@@ -234,7 +243,7 @@ def query_event_by_height(chain: ChainType,
 
 
 def load_tmp_file(full_path) -> List:
-    with open(full_path, 'rb') as f:
+    with open(full_path, "rb") as f:
         data = pickle.load(f)
     return data
 
@@ -245,21 +254,21 @@ def get_tmp_file_path(save_path, start, end, chain, address):
 
 def save_tmp_file(save_path, logs, start, end, chain, address):
     file_path = get_tmp_file_path(save_path, start, end, chain, address)
-    with open(file_path, 'wb') as f:
+    with open(file_path, "wb") as f:
         pickle.dump(logs, f)
     return file_path
 
 
 def _cut(obj, sec):
-    return [obj[i:i + sec] for i in range(0, len(obj), sec)]
+    return [obj[i : i + sec] for i in range(0, len(obj), sec)]
 
 
 def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
-    height = log['block_number']
+    height = log["block_number"]
     if not block_dict.has(height):
         block_dt = client.get_block_timestamp(height)
         block_dict.set(height, block_dt)
-    log['block_timestamp'] = block_dict.get(height).isoformat()
-    log['block_dt'] = block_dict.get(height)
+    log["block_timestamp"] = block_dict.get(height).isoformat()
+    log["block_dt"] = block_dict.get(height)
 
     return log

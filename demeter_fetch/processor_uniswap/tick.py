@@ -26,15 +26,9 @@ def check_file(file_path, file_name, pool, start_date, end_date) -> bool:
 
 
 def merge_file(start_date, end_date, file_path, pool_address) -> pd.DataFrame:
-    all_files = glob.glob(
-        os.path.join(file_path, "*.csv")
-    )  # advisable to use os.path.join as this makes concatenation OS independent
+    all_files = glob.glob(os.path.join(file_path, "*.csv"))  # advisable to use os.path.join as this makes concatenation OS independent
 
-    wanted_files = [
-        file
-        for file in all_files
-        if check_file(file_path, file, pool_address, start_date, end_date)
-    ]
+    wanted_files = [file for file in all_files if check_file(file_path, file, pool_address, start_date, end_date)]
 
     df_from_each_file = (pd.read_csv(f) for f in wanted_files)
     concatenated_df = pd.concat(df_from_each_file, ignore_index=True)
@@ -104,14 +98,13 @@ def drop_duplicate(df: pd.Series):
             case _typing.OnchainTxType.SWAP:
                 pass
             case _typing.OnchainTxType.MINT:
-                if data_is_not_empty(row.proxy_data) \
-                        and row.pool_data[66:] != row.proxy_data[2:]:
+                if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
             case _typing.OnchainTxType.COLLECT:
                 """
-                极端例子: 
+                极端例子:
                 1. https://polygonscan.com/tx/0x2d88b0cc9f8008135accc8667aa907931edf0be01d311fe437336be7cfe511fd#eventlog, log: 371,382 需要分离
-                2. https://polygonscan.com/tx/0xca50d94a36bc730a4ebb46b9e7535075d7da8a4efbbf9cc53638b058516dc907#eventlog, collect金额相差过大 
+                2. https://polygonscan.com/tx/0xca50d94a36bc730a4ebb46b9e7535075d7da8a4efbbf9cc53638b058516dc907#eventlog, collect金额相差过大
                 """
                 #
                 if data_is_not_empty(row.proxy_data):
@@ -122,8 +115,7 @@ def drop_duplicate(df: pd.Series):
                     if not is_collect_data_same(row.pool_data, row.proxy_data, allow_error):
                         process_duplicate_row(index, row, row_to_remove, df_count, df)
             case _typing.OnchainTxType.BURN:
-                if data_is_not_empty(row.proxy_data) \
-                        and not is_burn_data_same(row.pool_data, row.proxy_data):
+                if data_is_not_empty(row.proxy_data) and not is_burn_data_same(row.pool_data, row.proxy_data):
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
             case _:
                 raise ValueError("not support tx type")
@@ -146,14 +138,8 @@ def drop_duplicate(df: pd.Series):
             if dup_value["transaction_hash"] not in taken_proxy_log:
                 taken_proxy_log[dup_value["transaction_hash"]] = set()
                 taken = False
-            if (
-                    not taken
-                    and dup_value["proxy_log_index"]
-                    not in taken_proxy_log[dup_value["transaction_hash"]]
-            ):
-                taken_proxy_log[dup_value["transaction_hash"]].add(
-                    dup_value["proxy_log_index"]
-                )
+            if not taken and dup_value["proxy_log_index"] not in taken_proxy_log[dup_value["transaction_hash"]]:
+                taken_proxy_log[dup_value["transaction_hash"]].add(dup_value["proxy_log_index"])
                 taken = True
             else:
                 row_to_remove.append(dup_index)
@@ -183,9 +169,7 @@ def convert_to_decimal(value):
 
 def preprocess_one(df):
     df["tx_type"] = df.apply(lambda x: uniswap_utils.get_tx_type(x.pool_topics), axis=1)
-    df["key"] = df.apply(
-        lambda x: x.transaction_hash + "_" + str(x.pool_log_index), axis=1
-    )
+    df["key"] = df.apply(lambda x: x.transaction_hash + "_" + str(x.pool_log_index), axis=1)
     drop_duplicate(df)
     # FIXME BUG: start == end。  merge fail
     df[
@@ -208,37 +192,23 @@ def preprocess_one(df):
         result_type="expand",
     )
     # block_number, block_timestamp, tx_type, transaction_hash, pool_tx_index, pool_log_index, proxy_log_index, sender, receipt, amount0, amount1, total_liquidity, total_liquidity_delta, sqrtPriceX96, current_tick, position_id, tick_lower, tick_upper, liquidity
-    df["position_id"] = df.apply(
-        lambda x: uniswap_utils.handle_proxy_event(x.proxy_topics), axis=1
-    )
-    df = df.drop(
-        columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"]
-    )
+    df["position_id"] = df.apply(lambda x: uniswap_utils.handle_proxy_event(x.proxy_topics), axis=1)
+    df = df.drop(columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"])
     df = df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
-    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
-        ["sqrtPriceX96", "total_liquidity", "current_tick"]
-    ].ffill()
+    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[["sqrtPriceX96", "total_liquidity", "current_tick"]].ffill()
 
     df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
     # convert type to keep decimal
     df["sqrtPriceX96"] = df.apply(lambda x: convert_to_decimal(x.sqrtPriceX96), axis=1)
-    df["total_liquidity_delta"] = df.apply(
-        lambda x: convert_to_decimal(x.total_liquidity_delta), axis=1
-    )
+    df["total_liquidity_delta"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity_delta), axis=1)
     df["liquidity"] = df.apply(lambda x: convert_to_decimal(x.liquidity), axis=1)
-    df["total_liquidity"] = df.apply(
-        lambda x: convert_to_decimal(x.total_liquidity), axis=1
-    )
+    df["total_liquidity"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity), axis=1)
 
     df["total_liquidity_delta"] = df.apply(
-        lambda x: handle_tick(
-            x.tick_lower, x.tick_upper, x.current_tick, x.total_liquidity_delta
-        ),
+        lambda x: handle_tick(x.tick_lower, x.tick_upper, x.current_tick, x.total_liquidity_delta),
         axis=1,
     )
-    df["total_liquidity"] = df.apply(
-        lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1
-    )
+    df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
     df["block_timestamp"] = df["block_timestamp"].apply(lambda x: x.split("+")[0])
     df["tx_type"] = df.apply(lambda x: x.tx_type.name, axis=1)
     order = [

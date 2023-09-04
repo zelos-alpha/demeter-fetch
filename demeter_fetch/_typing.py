@@ -1,6 +1,6 @@
+from dataclasses import dataclass
 from datetime import date
 from enum import Enum
-from dataclasses import dataclass
 from typing import List
 
 
@@ -84,9 +84,7 @@ class RpcConfig:
     auth_string: str | None = None
     http_proxy: str | None = None
     keep_tmp_files: bool = False
-    ignore_position_id: bool = (
-        False  # if set to true, will not download proxy logs and leave a empty column
-    )
+    ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
 
 
 @dataclass
@@ -122,6 +120,7 @@ class ToConfig:
     type: ToType  # minute or tick
     save_path: str
     multi_process: bool
+    skip_existed: bool
 
 
 class OnchainTxType(str, Enum):
@@ -178,27 +177,13 @@ class MinuteData(object):
         """
         if prev_data is None:
             prev_data = MinuteData()
-        self.closeTick = (
-            self.closeTick if self.closeTick is not None else prev_data.closeTick
-        )
-        self.openTick = (
-            self.openTick if self.openTick is not None else prev_data.closeTick
-        )
-        self.lowestTick = (
-            self.lowestTick if self.lowestTick is not None else prev_data.closeTick
-        )
-        self.highestTick = (
-            self.highestTick if self.highestTick is not None else prev_data.closeTick
-        )
-        self.currentLiquidity = (
-            self.currentLiquidity
-            if self.currentLiquidity is not None
-            else prev_data.currentLiquidity
-        )
+        self.closeTick = self.closeTick if self.closeTick is not None else prev_data.closeTick
+        self.openTick = self.openTick if self.openTick is not None else prev_data.closeTick
+        self.lowestTick = self.lowestTick if self.lowestTick is not None else prev_data.closeTick
+        self.highestTick = self.highestTick if self.highestTick is not None else prev_data.closeTick
+        self.currentLiquidity = self.currentLiquidity if self.currentLiquidity is not None else prev_data.currentLiquidity
 
-        return (
-            False if (self.closeTick is None or self.currentLiquidity is None) else True
-        )
+        return False if (self.closeTick is None or self.currentLiquidity is None) else True
 
 
 MinuteDataNames = [

@@ -10,14 +10,12 @@ from demeter_fetch.utils import TextUtil, TimeUtil, DataUtil
 
 
 class ModuleUtils(object):
-
     @staticmethod
     def get_datetime(date_str: str) -> datetime:
         if type(date_str) == Timestamp:
             return date_str.to_pydatetime()
         else:
-            return datetime.datetime.strptime(TextUtil.cut_after(str(date_str), "+").replace("T", " "),
-                                              "%Y-%m-%d %H:%M:%S")
+            return datetime.datetime.strptime(TextUtil.cut_after(str(date_str), "+").replace("T", " "), "%Y-%m-%d %H:%M:%S")
 
 
 def preprocess_one(raw_data: pd.DataFrame) -> pd.DataFrame:
@@ -50,9 +48,19 @@ def sample_data_to_one_minute(current_time, minute_rows) -> MinuteData:
 
     i = 1
     for r in minute_rows:
-        sender, receipt, amount0, amount1, sqrtPriceX96, \
-            current_liquidity, current_tick, tick_lower, \
-            tick_upper, liquidity, delta_liquidity = uniswap_utils.handle_event(r.tx_type, r.pool_topics, r.pool_data)
+        (
+            sender,
+            receipt,
+            amount0,
+            amount1,
+            sqrtPriceX96,
+            current_liquidity,
+            current_tick,
+            tick_lower,
+            tick_upper,
+            liquidity,
+            delta_liquidity,
+        ) = uniswap_utils.handle_event(r.tx_type, r.pool_topics, r.pool_data)
         # print(tx_type, sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, current_tick, tick_lower,
         #       tick_upper, delta_liquidity)
         match r.tx_type:

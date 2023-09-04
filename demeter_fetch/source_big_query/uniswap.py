@@ -28,15 +28,9 @@ def download_event(
     with tqdm(total=len(date_generated), ncols=120) as pbar:
         for one_day in date_generated:
             df = download_event_one_day(bq_chain_name, contract_address, one_day)
-            df["pool_topics"] = df["pool_topics"].apply(
-                lambda x: str(x).replace("\n", ",")
-            )
-            df["proxy_topics"] = df["proxy_topics"].apply(
-                lambda x: str(x).replace("\n", ",")
-            )
-            file_name = os.path.join(
-                data_save_path, utils.get_file_name(chain, contract_address, one_day)
-            )
+            df["pool_topics"] = df["pool_topics"].apply(lambda x: str(x).replace("\n", ","))
+            df["proxy_topics"] = df["proxy_topics"].apply(lambda x: str(x).replace("\n", ","))
+            file_name = os.path.join(data_save_path, utils.get_file_name(chain, contract_address, one_day))
             df.to_csv(file_name, header=True, index=False)
             file_names.append(file_name)
             pbar.update()
@@ -44,9 +38,7 @@ def download_event(
     return file_names
 
 
-def download_event_one_day(
-    chain: BigQueryChain, contract_address, one_date
-) -> pd.DataFrame:
+def download_event_one_day(chain: BigQueryChain, contract_address, one_date) -> pd.DataFrame:
     client = bigquery.Client()
     query = f"""
 SELECT block_number,block_timestamp, transaction_hash , transaction_index  as pool_tx_index, log_index pool_log_index, topics as pool_topics, DATA as pool_data, [] as proxy_topics, '' as proxy_data,null as proxy_log_index
@@ -92,7 +84,5 @@ on pool.transaction_hash=proxy.transaction_hash
 """
     query_job = client.query(query)  # Make an API request.
     result = query_job.to_dataframe(create_bqstorage_client=False)
-    result = result.sort_values(
-        ["block_number", "pool_log_index"], ascending=[True, True]
-    )
+    result = result.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
     return result

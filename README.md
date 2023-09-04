@@ -32,5 +32,13 @@ python main.py config.toml
 
 * rpc download support timeout parameter, and will retry if network is unstable.
 
+# release note
+
+v0.1.4 (2023-9-?)
+
+* support aave
+* add config: skip_existed in "to" config. 
+* [breaking change] address of uniswap pool is listed in from.uniswap
+
 
 

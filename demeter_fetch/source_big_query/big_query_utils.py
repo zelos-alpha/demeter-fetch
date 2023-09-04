@@ -17,7 +17,4 @@ def set_environment(auth_file: str, http_proxy: str = None):
 
 
 def get_date_array(date_begin, date_end) -> List[date]:
-    return [
-        date_begin + timedelta(days=x)
-        for x in range(0, 1 + (date_end - date_begin).days)
-    ]
+    return [date_begin + timedelta(days=x) for x in range(0, 1 + (date_end - date_begin).days)]

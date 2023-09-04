@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.minute as processor_minute
@@ -12,6 +14,11 @@ from .utils import print_log, convert_raw_file_name
 
 def generate_one(param):
     file, to_config = param
+
+    target_file_name = convert_raw_file_name(file, to_config)
+    if to_config.skip_existed and os.path.exists(target_file_name):
+        return
+
     df = pd.read_csv(file)
     # df = df.rename(columns={
     #     "log_index": "pool_log_index",
@@ -19,9 +26,7 @@ def generate_one(param):
     #     "DATA": "pool_data",
     #     "topics": "pool_topics",
     # })
-    df = df.sort_values(
-        ["block_number", "pool_log_index"], ascending=[True, True], ignore_index=True
-    )
+    df = df.sort_values(["block_number", "pool_log_index"], ascending=[True, True], ignore_index=True)
 
     match to_config.type:
         case ToType.minute:
@@ -30,10 +35,7 @@ def generate_one(param):
             result_df = processor_tick.preprocess_one(df)
         case _:
             raise NotImplementedError(f"Convert to {to_config.type} not implied")
-    result_df.to_csv(
-        convert_raw_file_name(file, to_config),
-        index=False,
-    )
+    result_df.to_csv(target_file_name, index=False)
 
 
 class Downloader(GeneralDownloader):

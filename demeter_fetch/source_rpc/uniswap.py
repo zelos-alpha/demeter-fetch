@@ -24,7 +24,14 @@ from demeter_fetch.utils import print_log
 
 
 def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy=""):
-    proxies = {"http": proxy, "https": proxy, } if proxy else {}
+    proxies = (
+        {
+            "http": proxy,
+            "https": proxy,
+        }
+        if proxy
+        else {}
+    )
     before_or_after = "before" if is_before else "after"
     url = utils.ChainTypeConfig[chain]["query_height_api"]
     blk_time = blk_time.replace(tzinfo=timezone.utc)
@@ -38,18 +45,20 @@ def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: boo
         raise RuntimeError("request block number failed, message: " + str(result_json))
 
 
-def query_uniswap_pool_logs(chain: ChainType,
-                            pool_addr: str,
-                            end_point: str,
-                            save_path: str,
-                            start: date = None,
-                            end: date = None,
-                            start_height: int = None,
-                            end_height: int = None,
-                            batch_size: int = 500,
-                            auth_string: str | None = None,
-                            http_proxy: str | None = None,
-                            keep_tmp_files: bool = False):
+def query_uniswap_pool_logs(
+    chain: ChainType,
+    pool_addr: str,
+    end_point: str,
+    save_path: str,
+    start: date = None,
+    end: date = None,
+    start_height: int = None,
+    end_height: int = None,
+    batch_size: int = 500,
+    auth_string: str | None = None,
+    http_proxy: str | None = None,
+    keep_tmp_files: bool = False,
+):
     # 从start and end 时间获取高度
     if start_height is None and end_height is None:
         if start is None and end is None:
@@ -63,21 +72,20 @@ def query_uniswap_pool_logs(chain: ChainType,
     client = EthRpcClient(end_point, http_proxy, auth_string)
     utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
-        tmp_files_paths: List[str] = query_event_by_height(chain,
-                                                           client,
-                                                           ContractConfig(pool_addr,
-                                                                          [constants.SWAP_KECCAK,
-                                                                           constants.BURN_KECCAK,
-                                                                           constants.COLLECT_KECCAK,
-                                                                           constants.MINT_KECCAK]),
-                                                           start_height,
-                                                           end_height,
-                                                           save_path=save_path,
-                                                           batch_size=batch_size,
-                                                           one_by_one=False)
+        tmp_files_paths: List[str] = query_event_by_height(
+            chain,
+            client,
+            ContractConfig(pool_addr, [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
+            start_height,
+            end_height,
+            save_path=save_path,
+            batch_size=batch_size,
+            one_by_one=False,
+        )
     except Exception as e:
         print(e)
         import traceback
+
         print(traceback.format_exc())
         exit(1)
 
@@ -126,30 +134,31 @@ def append_empty_proxy_log(raw_file_list: List[str]):
         daily_pool_logs.to_csv(raw_file_path, index=False)
 
 
-def append_proxy_log(raw_file_list: List[str],
-                     start_height: int,
-                     end_height: int,
-                     chain: ChainType,
-                     end_point: str,
-                     save_path: str,
-                     batch_size: int = 500,
-                     auth_string: str | None = None,
-                     http_proxy: str | None = None,
-                     keep_tmp_files: bool = False):
+def append_proxy_log(
+    raw_file_list: List[str],
+    start_height: int,
+    end_height: int,
+    chain: ChainType,
+    end_point: str,
+    save_path: str,
+    batch_size: int = 500,
+    auth_string: str | None = None,
+    http_proxy: str | None = None,
+    keep_tmp_files: bool = False,
+):
     # download logs first
     client = EthRpcClient(end_point, http_proxy, auth_string)
-    tmp_files_paths: List[str] = query_event_by_height(chain,
-                                                       client,
-                                                       ContractConfig(ChainTypeConfig[chain]["uniswap_proxy_addr"],
-                                                                      [constants.INCREASE_LIQUIDITY,
-                                                                       constants.DECREASE_LIQUIDITY,
-                                                                       constants.COLLECT]),
-                                                       start_height,
-                                                       end_height,
-                                                       save_path=save_path,
-                                                       batch_size=batch_size,
-                                                       one_by_one=True,
-                                                       skip_timestamp=True)
+    tmp_files_paths: List[str] = query_event_by_height(
+        chain,
+        client,
+        ContractConfig(ChainTypeConfig[chain]["uniswap_proxy_addr"], [constants.INCREASE_LIQUIDITY, constants.DECREASE_LIQUIDITY, constants.COLLECT]),
+        start_height,
+        end_height,
+        save_path=save_path,
+        batch_size=batch_size,
+        one_by_one=True,
+        skip_timestamp=True,
+    )
     print_log("start merge pool and proxy files")
     with tqdm(total=len(raw_file_list), ncols=120) as pbar:
         # merge logs to file
@@ -174,8 +183,18 @@ def append_proxy_log(raw_file_list: List[str],
             # save new raw files
             daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
 
-            order = ["block_number", "transaction_hash", "block_timestamp", "pool_tx_index", "pool_log_index",
-                     "pool_topics", "pool_data", "proxy_topics", "proxy_data", "proxy_log_index"]
+            order = [
+                "block_number",
+                "transaction_hash",
+                "block_timestamp",
+                "pool_tx_index",
+                "pool_log_index",
+                "pool_topics",
+                "pool_data",
+                "proxy_topics",
+                "proxy_data",
+                "proxy_log_index",
+            ]
             daily_pool_logs = daily_pool_logs[order]
             # print(daily_pool_logs)
             daily_pool_logs.to_csv(raw_file_path, index=False)
@@ -240,18 +259,20 @@ def _find_matched_tmp_file(start, end, tmp_files):
 
     begin_index = s_list.index(start + max(filter(lambda y: y <= 0, map(lambda x: x - start, s_list))))
     end_index = e_list.index(end + min(filter(lambda y: y >= 0, map(lambda x: x - end, e_list))))
-    return tmp_files[begin_index:end_index + 1]
+    return tmp_files[begin_index : end_index + 1]
 
 
 def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data: List[Dict], chain: ChainType):
     full_path = os.path.join(save_path, utils.get_file_name(chain, contract_address, day, True))
-    with open(full_path, 'w') as csvfile:
-        writer = csv.DictWriter(csvfile,
-                                fieldnames=['block_number', 'block_timestamp', 'transaction_hash', 'pool_tx_index', 'pool_log_index', 'pool_topics', 'pool_data'])
+    with open(full_path, "w") as csvfile:
+        writer = csv.DictWriter(
+            csvfile, fieldnames=["block_number", "block_timestamp", "transaction_hash", "pool_tx_index", "pool_log_index", "pool_topics", "pool_data"]
+        )
         writer.writeheader()
         for item in one_day_data:
             writer.writerow(item)
     return full_path
+
 
 # def dict_factory(cursor, row):
 #     d = {}

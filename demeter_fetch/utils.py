@@ -27,7 +27,10 @@ def convert_to_config(conf_file: dict) -> Config:
     multi_process = False
     if "multi_process" in conf_file["to"]:
         multi_process = conf_file["to"]["multi_process"]
-    to_config = ToConfig(to_type, save_path, multi_process)
+    skip_existed = False
+    if "skip_existed" in conf_file["to"]:
+        skip_existed = conf_file["to"]["skip_existed"]
+    to_config = ToConfig(to_type, save_path, multi_process, skip_existed)
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
@@ -44,9 +47,7 @@ def convert_to_config(conf_file: dict) -> Config:
         from_config.aave_config = AaveConfig(token_addresses)
 
     if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
-        raise RuntimeError(
-            f"{data_source.name} is not allowed to download from {from_config.chain.name}"
-        )
+        raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")
     match data_source:
         case DataSource.file:
             if "file" not in conf_file["from"]:
@@ -78,12 +79,8 @@ def convert_to_config(conf_file: dict) -> Config:
             if "ignore_position_id" in conf_file["from"]["rpc"]:
                 ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
             end_point = conf_file["from"]["rpc"]["end_point"]
-            start_time = datetime.strptime(
-                conf_file["from"]["rpc"]["start"], "%Y-%m-%d"
-            ).date()
-            end_time = datetime.strptime(
-                conf_file["from"]["rpc"]["end"], "%Y-%m-%d"
-            ).date()
+            start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
+            end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
             batch_size = int(conf_file["from"]["rpc"]["batch_size"])
 
             from_config.rpc = RpcConfig(
@@ -99,12 +96,8 @@ def convert_to_config(conf_file: dict) -> Config:
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")
-            start_time = datetime.strptime(
-                conf_file["from"]["big_query"]["start"], "%Y-%m-%d"
-            ).date()
-            end_time = datetime.strptime(
-                conf_file["from"]["big_query"]["end"], "%Y-%m-%d"
-            ).date()
+            start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
+            end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
             http_proxy = None
             if "http_proxy" in conf_file["from"]["big_query"]:
@@ -158,9 +151,7 @@ class DataUtil(object):
 
         start_day = data_list[0].timestamp.day
         while index_minute.day == start_day:
-            if (data_list_index < len(data_list)) and (
-                index_minute == data_list[data_list_index].timestamp
-            ):
+            if (data_list_index < len(data_list)) and (index_minute == data_list[data_list_index].timestamp):
                 item = data_list[data_list_index]
                 data_list_index += 1
             else:
@@ -198,19 +189,11 @@ def hex_to_length(hex_str: str, new_length: int):
     hex_without_0x = hex_str if not has_0x else hex_str[2:]
 
     if len(hex_without_0x) <= new_length:
-        return (
-            hex_without_0x.zfill(new_length)
-            if not has_0x
-            else "0x" + hex_without_0x.zfill(new_length)
-        )
+        return hex_without_0x.zfill(new_length) if not has_0x else "0x" + hex_without_0x.zfill(new_length)
     else:
         if hex_without_0x[-new_length - 1] != "0":
             raise RuntimeError("Not enough leading zeros to remove")
-        return (
-            hex_without_0x[-new_length:]
-            if not has_0x
-            else "0x" + hex_without_0x[-new_length:]
-        )
+        return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
 
 
 def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
