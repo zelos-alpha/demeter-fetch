@@ -217,7 +217,7 @@ def preprocess_one(df):
     df = df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
         ["sqrtPriceX96", "total_liquidity", "current_tick"]
-    ].fillna(method="ffill")
+    ].ffill()
 
     df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
     # convert type to keep decimal
