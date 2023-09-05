@@ -77,6 +77,6 @@ class GeneralDownloader(object):
             if not os.path.exists(v):
                 should_download[k] = v
         config.to_config.to_file_list = should_download
-        print_log(f"Skip existed files, not will generate {len(should_download)} files")
+        print_log(f"Skip existed files, {total_file_count-len(should_download)} files is exist, now will generate {len(should_download)} files")
 
         return config
