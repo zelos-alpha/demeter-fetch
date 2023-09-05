@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
-from typing import List
+from typing import List, Dict, NamedTuple
 
 
 class DataSource(str, Enum):
@@ -97,6 +97,9 @@ class FileConfig:
 class UniswapConfig:
     pool_address: str
 
+class AaveKey(NamedTuple):
+    day:date
+    address:str
 
 @dataclass
 class AaveConfig:
@@ -121,6 +124,7 @@ class ToConfig:
     save_path: str
     multi_process: bool
     skip_existed: bool
+    to_file_list: Dict = field(default_factory=dict)
 
 
 class OnchainTxType(str, Enum):

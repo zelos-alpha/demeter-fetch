@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta, date
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
 from google.cloud import bigquery
@@ -15,18 +15,16 @@ from .big_query_utils import BigQueryChain, set_environment, get_date_array
 def download_event(
     chain: _typing.ChainType,
     contract_address: str,
-    date_begin: date,
-    date_end: date,
+    to_file_list:Dict[date,str],
     data_save_path: os.path,
     auth_file: str,
     http_proxy: str | None = None,
 ) -> List[str]:
     set_environment(auth_file, http_proxy)
     bq_chain_name = BigQueryChain[chain.name]
-    date_generated = get_date_array(date_begin, date_end)
     file_names = []
-    with tqdm(total=len(date_generated), ncols=120) as pbar:
-        for one_day in date_generated:
+    with tqdm(total=len(to_file_list), ncols=120) as pbar:
+        for one_day in to_file_list.keys():
             df = download_event_one_day(bq_chain_name, contract_address, one_day)
             df["pool_topics"] = df["pool_topics"].apply(lambda x: str(x).replace("\n", ","))
             df["proxy_topics"] = df["proxy_topics"].apply(lambda x: str(x).replace("\n", ","))

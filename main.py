@@ -13,9 +13,7 @@ from demeter_fetch import general_downloader
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        utils.print_log(
-            "please set a config file. in toml format. eg: 'python main.py config.toml'."
-        )
+        utils.print_log("please set a config file. in toml format. eg: 'python main.py config.toml'.")
         exit(1)
     if not os.path.exists(sys.argv[1]):
         utils.print_log("config file not found,")
@@ -36,5 +34,7 @@ if __name__ == "__main__":
             downloader = uniswap_downloader.Downloader()
         case df.DappType.aave:
             downloader = aave_downloader.Downloader()
+
+    config = downloader.set_file_list(config)
 
     downloader.download(config)

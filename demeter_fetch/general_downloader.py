@@ -3,6 +3,7 @@ from multiprocessing import Pool
 
 from tqdm import tqdm
 
+from . import source_file
 from ._typing import *
 from .utils import print_log
 
@@ -16,9 +17,6 @@ class GeneralDownloader(object):
         return []
 
     def _download_big_query(self, config: Config):
-        return []
-
-    def _download_file(self, config: Config):
         return []
 
     def _get_process_func(self):
@@ -36,7 +34,7 @@ class GeneralDownloader(object):
             case DataSource.big_query:
                 raw_file_list = self._download_big_query(config)
             case DataSource.file:
-                raw_file_list = self._download_file(config)
+                raw_file_list = config.to_config.to_file_list.keys()
 
         print("\n")
         print_log(f"Download finish")
@@ -62,3 +60,23 @@ class GeneralDownloader(object):
                 for file in raw_files:
                     func_generate_one((file, to_config))
                     pbar.update()
+
+    def _get_to_files(self, config: Config) -> Dict:
+        return {}
+
+    def set_file_list(self, config: Config) -> Config:
+        all_files = self._get_to_files(config)
+        total_file_count = len(all_files)
+        print_log(f"Will generate {total_file_count} files")
+
+        if not config.to_config.skip_existed:
+            config.to_config.to_file_list = all_files
+            return config
+        should_download = {}
+        for k, v in all_files.items():
+            if not os.path.exists(v):
+                should_download[k] = v
+        config.to_config.to_file_list = should_download
+        print_log(f"Skip existed files, not will generate {len(should_download)} files")
+
+        return config

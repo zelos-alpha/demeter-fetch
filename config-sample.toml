@@ -20,7 +20,7 @@ auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json" # google bigquery auth 
 
 [from.rpc] # keep this section according to from.datasource
 end_point = "https://localhost:8545"
-#auth_string = "Basic Y3J0Yzo3NKY3TjY"
+#auth_string = "Basic Y3J0Yzo3NKY3TjY" # auth string for rpc end point
 #http_proxy = "http://localhost:8080" # if network is bad, try use proxy
 start = "2022-3-16"
 end = "2022-3-17"

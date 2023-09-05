@@ -5,18 +5,26 @@ from datetime import datetime, timedelta
 from ._typing import *
 
 
-def get_file_name(chain: ChainType, pool_address, day: date, is_raw=True):
-    return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.{'raw' if is_raw else 'processed'}.csv"
+def get_file_name(chain: ChainType, pool_address, day: date):
+    return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
 
+def get_aave_file_name(chain: ChainType, token_address, day: date):
+    return f"{chain.name}-aave_v3-{token_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
 
-def get_aave_file_name(chain: ChainType, token_address, day: date, is_raw=True):
-    return f"{chain.name}-aave_v3-{token_address}-{day.strftime('%Y-%m-%d')}.{'raw' if is_raw else 'processed'}.csv"
+def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
+    file_name = os.path.basename(file)
+    file_name_and_ext = os.path.splitext(file_name)
 
+    return os.path.join(
+        to_config.save_path,
+        f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
+    )
 
 def print_log(*args):
     new_tuple = (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
     new_tuple = new_tuple + args
     print(*new_tuple)
+
 
 
 def convert_to_config(conf_file: dict) -> Config:
@@ -111,6 +119,16 @@ def convert_to_config(conf_file: dict) -> Config:
 
     return Config(from_config, to_config)
 
+def fill_file_names(config:Config)->Config:
+    raw_file_list=[]
+    if config.from_config.data_source in [DataSource.big_query, DataSource.rpc]:
+        if config.from_config.data_source==DataSource.big_query:
+            days= TimeUtil.get_date_array( config.from_config.big_query.start,config.from_config.big_query.end)
+        elif config.from_config.data_source==DataSource.rpc:
+            days= TimeUtil.get_date_array( config.from_config.rpc.start,config.from_config.rpc.end)
+        if config.from_config.dapp_type==DappType.uniswap:
+            raw_file_list=[get_file_name(config.from_config.chain,config)  for d in days]
+
 
 class TextUtil(object):
     @staticmethod
@@ -124,6 +142,9 @@ class TimeUtil(object):
     def get_minute(time: datetime) -> datetime:
         return datetime(time.year, time.month, time.day, time.hour, time.minute, 0)
 
+    @staticmethod
+    def get_date_array(date_begin, date_end) -> List[date]:
+        return [date_begin + timedelta(days=x) for x in range(0, 1 + (date_end - date_begin).days)]
 
 class HexUtil(object):
     @staticmethod
@@ -196,11 +217,4 @@ def hex_to_length(hex_str: str, new_length: int):
         return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
 
 
-def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
-    file_name = os.path.basename(file)
-    file_name_and_ext = os.path.splitext(file_name)
 
-    return os.path.join(
-        to_config.save_path,
-        f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
-    )

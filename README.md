@@ -37,7 +37,9 @@ python main.py config.toml
 v0.1.4 (2023-9-?)
 
 * support aave
-* add config: skip_existed in "to" config. 
+* add config: 
+  * skip_existed in "to" section.
+  * dapp_type in "From" section.
 * [breaking change] address of uniswap pool is listed in from.uniswap
 
 

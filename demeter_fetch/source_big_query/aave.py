@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta, date
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
 from google.cloud import bigquery
@@ -14,22 +14,24 @@ from .big_query_utils import BigQueryChain, set_environment, get_date_array
 
 def download_event(
     chain: _typing.ChainType,
-    tokens: List[str],
-    date_begin: date,
-    date_end: date,
+    to_file_list: Dict[_typing.AaveKey, str],
     data_save_path: os.path,
     auth_file: str,
     http_proxy: str | None = None,
 ) -> List[str]:
     set_environment(auth_file, http_proxy)
-    date_array = get_date_array(date_begin, date_end)
-    file_names = []
 
-    with tqdm(total=len(date_array), ncols=120) as pbar:
-        for one_day in date_array:
-            df = download_event_one_day(chain, one_day, tokens)
+    day_token = {}
+    for key in to_file_list.keys():
+        if key.day not in day_token:
+            day_token[key.day] = set()
+        day_token[key.day].add(key.address)
+    file_names=[]
+    with tqdm(total=len(day_token), ncols=120) as pbar:
+        for one_day in day_token.keys():
+            df = download_event_one_day(chain, one_day, list(day_token[one_day]))
             df["token"] = df["topics"].apply(lambda x: utils.hex_to_length(x[1], 40))
-            for token in tokens:
+            for token in day_token[one_day]:
                 token_df = df[df["token"] == token]
                 file_name = os.path.join(data_save_path, utils.get_aave_file_name(chain, token, one_day))
 
