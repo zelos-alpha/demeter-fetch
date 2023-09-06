@@ -43,6 +43,8 @@ class Downloader(GeneralDownloader):
         return generate_one
 
     def _download_rpc(self, config: Config):
+        if len(config.to_config.to_file_list) == 0:
+            return []
         continuous_day: List[Tuple[date, date]] = []
         # find continuous days
         tmp_start_day = tmp_yesterday = None
@@ -69,6 +71,7 @@ class Downloader(GeneralDownloader):
                 auth_string=config.from_config.rpc.auth_string,
                 http_proxy=config.from_config.rpc.http_proxy,
                 keep_tmp_files=config.from_config.rpc.keep_tmp_files,
+                etherscan_api_key=config.from_config.rpc.etherscan_api_key,
             )
             if config.from_config.rpc.ignore_position_id:
                 source_rpc.append_empty_proxy_log(raw_file_list)

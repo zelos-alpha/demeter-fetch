@@ -85,6 +85,7 @@ class RpcConfig:
     http_proxy: str | None = None
     keep_tmp_files: bool = False
     ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
+    etherscan_api_key: str = None
 
 
 @dataclass
@@ -97,9 +98,11 @@ class FileConfig:
 class UniswapConfig:
     pool_address: str
 
+
 class AaveKey(NamedTuple):
-    day:date
-    address:str
+    day: date
+    address: str
+
 
 @dataclass
 class AaveConfig:

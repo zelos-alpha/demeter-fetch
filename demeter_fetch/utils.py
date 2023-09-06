@@ -8,8 +8,10 @@ from ._typing import *
 def get_file_name(chain: ChainType, pool_address, day: date):
     return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
 
+
 def get_aave_file_name(chain: ChainType, token_address, day: date):
     return f"{chain.name}-aave_v3-{token_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
+
 
 def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
     file_name = os.path.basename(file)
@@ -20,11 +22,11 @@ def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
         f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
     )
 
+
 def print_log(*args):
     new_tuple = (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
     new_tuple = new_tuple + args
     print(*new_tuple)
-
 
 
 def convert_to_config(conf_file: dict) -> Config:
@@ -86,6 +88,9 @@ def convert_to_config(conf_file: dict) -> Config:
             ignore_position_id = False
             if "ignore_position_id" in conf_file["from"]["rpc"]:
                 ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
+            etherscan_api_key = False
+            if "etherscan_api_key" in conf_file["from"]["rpc"]:
+                etherscan_api_key = conf_file["from"]["rpc"]["etherscan_api_key"]
             end_point = conf_file["from"]["rpc"]["end_point"]
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
@@ -100,6 +105,7 @@ def convert_to_config(conf_file: dict) -> Config:
                 http_proxy=http_proxy,
                 keep_tmp_files=keep_tmp_files,
                 ignore_position_id=ignore_position_id,
+                etherscan_api_key=etherscan_api_key,
             )
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
@@ -119,6 +125,7 @@ def convert_to_config(conf_file: dict) -> Config:
 
     return Config(from_config, to_config)
 
+
 class TextUtil(object):
     @staticmethod
     def cut_after(text: str, symbol: str) -> str:
@@ -134,6 +141,7 @@ class TimeUtil(object):
     @staticmethod
     def get_date_array(date_begin, date_end) -> List[date]:
         return [date_begin + timedelta(days=x) for x in range(0, 1 + (date_end - date_begin).days)]
+
 
 class HexUtil(object):
     @staticmethod
@@ -204,6 +212,3 @@ def hex_to_length(hex_str: str, new_length: int):
         if hex_without_0x[-new_length - 1] != "0":
             raise RuntimeError("Not enough leading zeros to remove")
         return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
-
-
-
