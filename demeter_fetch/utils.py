@@ -88,7 +88,7 @@ def convert_to_config(conf_file: dict) -> Config:
             ignore_position_id = False
             if "ignore_position_id" in conf_file["from"]["rpc"]:
                 ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
-            etherscan_api_key = False
+            etherscan_api_key = None
             if "etherscan_api_key" in conf_file["from"]["rpc"]:
                 etherscan_api_key = conf_file["from"]["rpc"]["etherscan_api_key"]
             end_point = conf_file["from"]["rpc"]["end_point"]
