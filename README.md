@@ -34,7 +34,7 @@ python main.py config.toml
 
 # release note
 
-v0.1.5 (2023-9-6)
+v0.1.6 (2023-9-6)
 
 * support aave
 * add config: 
