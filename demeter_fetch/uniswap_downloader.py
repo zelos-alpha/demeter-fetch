@@ -57,6 +57,7 @@ class Downloader(GeneralDownloader):
 
         all_raw_files = []
         for day_range in continuous_day:
+            print(f"Download from {day_range[0]} to {day_range[1]}")
             raw_file_list, start_height, end_height = source_rpc.query_uniswap_pool_logs(
                 chain=config.from_config.chain,
                 pool_addr=config.from_config.uniswap_config.pool_address,
@@ -85,7 +86,7 @@ class Downloader(GeneralDownloader):
                     http_proxy=config.from_config.rpc.http_proxy,
                     keep_tmp_files=config.from_config.rpc.keep_tmp_files,
                 )
-            all_raw_files.append(raw_file_list)
+            all_raw_files.extend(raw_file_list)
 
         return all_raw_files
 

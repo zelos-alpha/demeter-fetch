@@ -263,7 +263,7 @@ def _find_matched_tmp_file(start, end, tmp_files):
 
 
 def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data: List[Dict], chain: ChainType):
-    full_path = os.path.join(save_path, utils.get_file_name(chain, contract_address, day, True))
+    full_path = os.path.join(save_path, utils.get_file_name(chain, contract_address, day))
     with open(full_path, "w") as csvfile:
         writer = csv.DictWriter(
             csvfile, fieldnames=["block_number", "block_timestamp", "transaction_hash", "pool_tx_index", "pool_log_index", "pool_topics", "pool_data"]

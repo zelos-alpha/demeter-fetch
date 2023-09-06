@@ -119,17 +119,6 @@ def convert_to_config(conf_file: dict) -> Config:
 
     return Config(from_config, to_config)
 
-def fill_file_names(config:Config)->Config:
-    raw_file_list=[]
-    if config.from_config.data_source in [DataSource.big_query, DataSource.rpc]:
-        if config.from_config.data_source==DataSource.big_query:
-            days= TimeUtil.get_date_array( config.from_config.big_query.start,config.from_config.big_query.end)
-        elif config.from_config.data_source==DataSource.rpc:
-            days= TimeUtil.get_date_array( config.from_config.rpc.start,config.from_config.rpc.end)
-        if config.from_config.dapp_type==DappType.uniswap:
-            raw_file_list=[get_file_name(config.from_config.chain,config)  for d in days]
-
-
 class TextUtil(object):
     @staticmethod
     def cut_after(text: str, symbol: str) -> str:
