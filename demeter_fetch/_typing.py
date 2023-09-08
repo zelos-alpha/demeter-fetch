@@ -17,6 +17,7 @@ class ChainType(str, Enum):
     arbitrum = "arbitrum"
     celo = "celo"
     bsc = "bsc"
+    base = "base"
 
 
 # closest: 'before' or 'after'
@@ -53,6 +54,11 @@ ChainTypeConfig = {
         "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
     },
+    ChainType.base: {
+        "allow": [DataSource.rpc, DataSource.file],
+        "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
+    }
 }
 
 
