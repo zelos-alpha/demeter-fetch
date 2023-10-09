@@ -18,6 +18,7 @@ def process_aave_raw_file(param):
     target_file_name = convert_raw_file_name(file, to_config)
 
     raw_df = pd.read_csv(file)
+    raw_df["block_timestamp"] = raw_df["block_timestamp"].apply(lambda x: x.split("+")[0])
     raw_df["block_timestamp"] = pd.to_datetime(raw_df["block_timestamp"])
 
     raw_df = raw_df.sort_values(["block_number", "log_index"], ascending=[True, True], ignore_index=True)
