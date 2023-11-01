@@ -41,13 +41,18 @@ select * from bigquery-public-data.crypto_ethereum.blocks where timestamp="2015-
 
 To use node, you can get sign up a data provider account like infura, quicknode, alchemy. or setup your node to short the request delay. If you have trouble on connection, demeter also provide proxy configuration.
 
-### 2.3 Download
+### 2.3 Install
+
+demeter-fetch is not avaliable on Pypi, you need to clone this repo, and run locally.
+
+### 2.4 Download
 
 Prepare a config.toml file according to [config-sample.toml](config-sample.toml)
 
 then execute:
 
 ```shell
+cd demeter-fetch
 python main.py config.toml
 
 ```
