@@ -1,6 +1,6 @@
 # README
 
-## What's this:
+## 1 What's this:
 
 Download uniswap pool event log, and convert it to different format for demeter.
 
@@ -19,9 +19,9 @@ Demeter-fetch support export data in following type:
 * tick: process uniswap data, each log will be decoded and
   listed. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.tick.csv)
 
-## how to use
+## 2 How to use
 
-### prepare big query
+### 2.1 Prepare big query
 
 To use bigquery, you should prepare account and environment.
 
@@ -37,11 +37,11 @@ select * from bigquery-public-data.crypto_ethereum.blocks where timestamp="2015-
 
 > note: If you have network issues on google, set proper proxy before download data.
 
-### prepare rpc
+### 2.2 Prepare rpc
 
 To use node, you can get sign up a data provider account like infura, quicknode, alchemy. or setup your node to short the request delay. If you have trouble on connection, demeter also provide proxy configuration.
 
-### download
+### 2.3 Download
 
 Prepare a config.toml file according to [config-sample.toml](config-sample.toml)
 
@@ -52,7 +52,7 @@ python main.py config.toml
 
 ```
 
-## release note
+## 3 Release note
 
 [release_note.md](release_note.md)
 
