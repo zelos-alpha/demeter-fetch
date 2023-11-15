@@ -141,6 +141,11 @@ class OnchainTxType(str, Enum):
     SWAP = "SWAP"
     BURN = "BURN"
     COLLECT = "COLLECT"
+    SUPPLY = "SUPPLY"
+    WITHDRAW = "WITHDRAW"
+    BORROW = "BORROW"
+    REPAY = "REPAY"
+    LIQUIDATION = "LIQUIDATION"
 
 
 @dataclass

@@ -47,6 +47,7 @@ class Downloader(GeneralDownloader):
             config.to_config.save_path,
             config.from_config.big_query.auth_file,
             config.from_config.big_query.http_proxy,
+            config.to_config.type
         )
 
     def _get_to_files(self, config) -> Dict:
