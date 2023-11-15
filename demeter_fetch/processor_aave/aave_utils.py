@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import List
 from _decimal import Decimal
 import demeter_fetch.constants as constants
@@ -18,6 +19,8 @@ def decode_event_ReserveDataUpdated(row):
 
 
 def get_tx_type(topics_str):
+    if pd.isna(topics_str):
+        return topics_str
     topic_list = split_topic(topics_str)
     type_topic = topic_list[0]
     tx_type = constants.type_dict[type_topic]
