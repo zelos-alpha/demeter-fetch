@@ -31,7 +31,11 @@ def preprocess_one(raw_df: pd.DataFrame):
         return raw_df
     # add start and end of the day, so after resample, there will always be 1440 row
     # please add tail first, because new line will always be added to tail.
-    raw_df.loc[datetime.combine(raw_df.index[0].date(), datetime.max.time(), raw_df.index[0].tzinfo)] = raw_df.tail(1).iloc[0]
-    raw_df.loc[datetime.combine(raw_df.index[0].date(), datetime.min.time(), raw_df.index[0].tzinfo)] = raw_df.head(1).iloc[0]
+    day_end = datetime.combine(raw_df.index[0].date(), datetime.max.time(), raw_df.index[0].tzinfo)
+    raw_df.loc[day_end] = raw_df.tail(1).iloc[0]
+
+    day_start = datetime.combine(raw_df.index[0].date(), datetime.min.time(), raw_df.index[0].tzinfo)
+    if day_start not in raw_df.index:
+        raw_df.loc[day_start] = raw_df.head(1).iloc[0]
     raw_df = raw_df.resample("1T").last().ffill()
     return raw_df
