@@ -1,4 +1,13 @@
-# v0.1.6 (2023-9-6)
+# v0.1.8
+
+* fix bug for aave
+* add tick output for aave
+
+# v0.1.7
+
+* add config for base chain
+
+# v0.1.6
 
 * support aave
 * add config: 
