@@ -50,11 +50,10 @@ def handle_event(tx_type, topics_str, data_hex):
     owner = None
     amount = None
     debt_asset = None
-    collateral_asset = None
-    interest_rate_mode = None
+    debt_amount = Decimal(np.nan)
     liquidator = None
-    liquidated_collateral_amount = Decimal(np.nan)
-    borrow_rate = Decimal(np.nan)
+    atoken = None
+
     topic_list = split_topic(topics_str)
     no_0x_data = data_hex[2:]
     chunk_size = 64
@@ -102,6 +101,7 @@ def handle_event(tx_type, topics_str, data_hex):
             interest_rate_mode = signed_int(split_data[2])
             borrow_rate = signed_int(split_data[3])
         case _typing.OnchainTxType.REPAY:
+            # repayer 还款人, user 债务人
             # reserve,user,repayer,amount,useATokens
             # reserve: trading pool
             # repayer: some body pay directly for repayment
@@ -113,8 +113,9 @@ def handle_event(tx_type, topics_str, data_hex):
             repayer = hex_to_address(topic_list[3])
             split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
             amount = signed_int(split_data[0])
-            useATokens = signed_int(split_data[1])
+            atoken = signed_int(split_data[1])
         case _typing.OnchainTxType.LIQUIDATION:
+            # liquidator repay debt_asset debt_amount and get collateral_asset liquidated_collateral_amount
             # 清算者购买被清算者一定数量的抵押资产（collateral asset）来偿还被清算者特定资产债务（debt asset）
             # 清算者将用于购买的债务资产转移到atoken，atoken将抵押物或者抵押物对应的atoken转移到清算者，销毁被清算者的一部分债务代币。
             # collateralAsset,debtAsset,user,debtToCover,liquidatedCollateralAmount,liquidator,receiveAToken
@@ -125,24 +126,22 @@ def handle_event(tx_type, topics_str, data_hex):
             # liquidatedCollateralAmount: The amount of collateral received by the liquidator
             # liquidator: The address of the liquidator
             # receiveAToken: True if the liquidators wants to receive the collateral aTokens, `false` if he wants to receive the underlying collateral asset directly
-            collateral_asset = hex_to_address(topic_list[1])  # 清算者想要购买的抵押资产。
-            debt_asset = hex_to_address(topic_list[2])  # 被清算的债务资产，同时也是清算者要支付的资产。
-            owner = user = hex_to_address(topic_list[3])  # 被清算者
             split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
-            amount = debtToCover = signed_int(split_data[0])  # 替被清算者偿还的贷款额
-            liquidated_collateral_amount = signed_int(split_data[1])  # 清算者购买的抵押资产数量
+            reserve = collateral_asset = hex_to_address(topic_list[1])  # 清算者想要购买的抵押资产。
+            owner = user = hex_to_address(topic_list[3])  # 被清算者
+            amount = liquidated_collateral_amount = signed_int(split_data[1])  # 清算者购买的抵押资产数量
             liquidator = hex_to_address(split_data[2])  # 清算者
-            receiveAToken = hex_to_address(split_data[3])  # 清算者是否以atoken的形式接收清算得到的抵押资产。
+            debt_asset = hex_to_address(topic_list[2])  # 被清算的债务资产，同时也是清算者要支付的资产。
+            debt_amount = debtToCover = signed_int(split_data[0])  # 替被清算者偿还的贷款额
+            atoken = signed_int(split_data[3])  # 清算者是否以atoken的形式接收清算得到的抵押资产。
         case _:
             raise ValueError("not support tx type")
     return (
         reserve,
         owner,
         Decimal(amount),
-        interest_rate_mode,
-        Decimal(borrow_rate),
-        collateral_asset,
+        liquidator,
         debt_asset,
-        liquidated_collateral_amount,
-        liquidator
+        Decimal(debt_amount),
+        atoken
     )
