@@ -6,6 +6,7 @@ from tqdm import tqdm
 from . import source_file
 from ._typing import *
 from .utils import print_log
+import demeter_fetch.source_chifra.chifra_utils as chifra_utils
 
 
 def _generate_one(param):
@@ -18,6 +19,22 @@ class GeneralDownloader(object):
 
     def _download_big_query(self, config: Config):
         return []
+
+    def _download_chifra(self, config: Config):
+        chifra_config = config.from_config.chifra_config
+        if chifra_config.file_path is None:
+            export_commend = chifra_utils.get_export_commend(config.from_config)
+            print("Please export event logs via: ")
+            print(export_commend)
+            print("If the file has exported, input file path. ")
+            answer_path = input(
+                "Or press enter to exit and download later. Before next start, you can fill the path in config file to get start immediately"
+            )
+            if answer_path != "":
+                chifra_config.file_path = answer_path
+            else:
+                return []
+        print_log(f"Will convert file {chifra_config.file_path}")
 
     def _get_process_func(self):
         def func(param):
@@ -35,6 +52,8 @@ class GeneralDownloader(object):
                 raw_file_list = self._download_big_query(config)
             case DataSource.file:
                 raw_file_list = config.to_config.to_file_list.keys()
+            case DataSource.chifra:
+                raw_file_list = self._download_chifra(config)
 
         print("\n")
         print_log(f"Download finish")

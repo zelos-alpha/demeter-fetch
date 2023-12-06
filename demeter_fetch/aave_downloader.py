@@ -46,9 +46,12 @@ class Downloader(GeneralDownloader):
             config.to_config.to_file_list,
             config.to_config.save_path,
             config.from_config.big_query.auth_file,
-            config.from_config.big_query.http_proxy,
-            config.to_config.type
+            config.from_config.http_proxy,
+            config.to_config.type,
         )
+
+    def _download_chifra(self, config: Config):
+        raise NotImplementedError("Downloading aave data form chifra is not supported yet.")
 
     def _get_to_files(self, config) -> Dict:
         if config.from_config.data_source == DataSource.file:

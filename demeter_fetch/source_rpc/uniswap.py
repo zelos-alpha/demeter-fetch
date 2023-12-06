@@ -3,49 +3,22 @@ import json
 import os.path
 import time
 from datetime import date, datetime
-from datetime import timezone
 from typing import List, Dict
 
 import pandas as pd
-import requests
+from tqdm import tqdm  # process bar
 
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
 from demeter_fetch._typing import ChainType, ChainTypeConfig, OnchainTxType
-from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
 from demeter_fetch.processor_uniswap.uniswap_utils import compare_burn_data
-from tqdm import tqdm  # process bar
+from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
 from demeter_fetch.utils import print_log
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.
 
 """
-
-
-def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
-    proxies = (
-        {
-            "http": proxy,
-            "https": proxy,
-        }
-        if proxy
-        else {}
-    )
-    before_or_after = "before" if is_before else "after"
-    url = utils.ChainTypeConfig[chain]["query_height_api"]
-    blk_time = blk_time.replace(tzinfo=timezone.utc)
-    url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
-    if etherscan_api_key is not None:
-        url += "&apikey=" + etherscan_api_key
-    result = requests.get(url, proxies=proxies)
-    if result.status_code != 200:
-        raise RuntimeError("request block number failed, code: " + str(result.status_code))
-    result_json = result.json()
-    if int(result_json["status"]) == 1:
-        return int(result_json["result"])
-    else:
-        raise RuntimeError("request block number failed, message: " + str(result_json))
 
 
 def query_uniswap_pool_logs(
@@ -70,10 +43,12 @@ def query_uniswap_pool_logs(
         sleep_time = 8
         if etherscan_api_key is not None:
             sleep_time = 1
-        start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy, etherscan_api_key)
+        start_height = utils.ApiUtil.query_blockno_from_time(
+            chain, datetime.combine(start, datetime.min.time()), False, http_proxy, etherscan_api_key
+        )
         utils.print_log(f"Querying end timestamp, wait for {sleep_time} seconds to prevent max rate limit")
         time.sleep(sleep_time)  # to prevent request limit
-        end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key)
+        end_height = utils.ApiUtil.query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key)
 
     # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
     client = EthRpcClient(end_point, http_proxy, auth_string)

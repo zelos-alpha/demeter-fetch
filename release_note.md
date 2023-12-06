@@ -1,3 +1,10 @@
+# v0.1.9
+
+* import uniswap data from chifra
+* breaking change:
+  * proxy config has moved to from section
+
+
 # v0.1.8
 
 * fix bug for aave

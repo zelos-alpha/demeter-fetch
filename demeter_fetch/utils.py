@@ -1,6 +1,7 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import requests
 
 from ._typing import *
 
@@ -47,7 +48,10 @@ def convert_to_config(conf_file: dict) -> Config:
 
     dapp_type = DappType[conf_file["from"]["dapp_type"]]
 
-    from_config = FromConfig(chain, data_source, dapp_type)
+    http_proxy = None
+    if "http_proxy" in conf_file["from"]:
+        http_proxy = conf_file["from"]["http_proxy"]
+    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy)
 
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
@@ -79,9 +83,7 @@ def convert_to_config(conf_file: dict) -> Config:
             auth_string = None
             if "auth_string" in conf_file["from"]["rpc"]:
                 auth_string = conf_file["from"]["rpc"]["auth_string"]
-            http_proxy = None
-            if "http_proxy" in conf_file["from"]["rpc"]:
-                http_proxy = conf_file["from"]["rpc"]["http_proxy"]
+
             keep_tmp_files = None
             if "keep_tmp_files" in conf_file["from"]["rpc"]:
                 keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
@@ -102,7 +104,6 @@ def convert_to_config(conf_file: dict) -> Config:
                 end=end_time,
                 batch_size=batch_size,
                 auth_string=auth_string,
-                http_proxy=http_proxy,
                 keep_tmp_files=keep_tmp_files,
                 ignore_position_id=ignore_position_id,
                 etherscan_api_key=etherscan_api_key,
@@ -113,16 +114,27 @@ def convert_to_config(conf_file: dict) -> Config:
             start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
-            http_proxy = None
-            if "http_proxy" in conf_file["from"]["big_query"]:
-                http_proxy = conf_file["from"]["big_query"]["http_proxy"]
             from_config.big_query = BigQueryConfig(
                 start=start_time,
                 end=end_time,
                 auth_file=auth_file,
-                http_proxy=http_proxy,
             )
-
+        case DataSource.chifra:
+            if "chifra" not in conf_file["from"]:
+                raise RuntimeError("should have [from.chifra]")
+            start_time = None
+            if "start" in conf_file["from"]["chifra"]:
+                start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
+            end_time = None
+            if "end" in conf_file["from"]["chifra"]:
+                end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
+            etherscan_api_key = None
+            if "etherscan_api_key" in conf_file["from"]["chifra"]:
+                etherscan_api_key = conf_file["from"]["chifra"]["etherscan_api_key"]
+            file_path = None
+            if "file_path" in conf_file["from"]["chifra"]:
+                file_path = conf_file["from"]["chifra"]["file_path"]
+            from_config.chifra_config = ChifraConfig(start_time, end_time, file_path, etherscan_api_key)
     return Config(from_config, to_config)
 
 
@@ -212,3 +224,29 @@ def hex_to_length(hex_str: str, new_length: int):
         if hex_without_0x[-new_length - 1] != "0":
             raise RuntimeError("Not enough leading zeros to remove")
         return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
+
+
+class ApiUtil:
+    def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
+        proxies = (
+            {
+                "http": proxy,
+                "https": proxy,
+            }
+            if proxy
+            else {}
+        )
+        before_or_after = "before" if is_before else "after"
+        url = ChainTypeConfig[chain]["query_height_api"]
+        blk_time = blk_time.replace(tzinfo=timezone.utc)
+        url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
+        if etherscan_api_key is not None:
+            url += "&apikey=" + etherscan_api_key
+        result = requests.get(url, proxies=proxies)
+        if result.status_code != 200:
+            raise RuntimeError("request block number failed, code: " + str(result.status_code))
+        result_json = result.json()
+        if int(result_json["status"]) == 1:
+            return int(result_json["result"])
+        else:
+            raise RuntimeError("request block number failed, message: " + str(result_json))

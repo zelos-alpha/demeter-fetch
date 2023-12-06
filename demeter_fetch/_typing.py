@@ -8,6 +8,7 @@ class DataSource(str, Enum):
     big_query = "big_query"
     rpc = "rpc"
     file = "file"
+    chifra = "chifra"
 
 
 class ChainType(str, Enum):
@@ -58,7 +59,7 @@ ChainTypeConfig = {
         "allow": [DataSource.rpc, DataSource.file],
         "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
-    }
+    },
 }
 
 
@@ -78,7 +79,6 @@ class BigQueryConfig:
     start: date
     end: date
     auth_file: str
-    http_proxy: str | None = None
 
 
 @dataclass
@@ -88,9 +88,16 @@ class RpcConfig:
     end: date
     batch_size: int = 500
     auth_string: str | None = None
-    http_proxy: str | None = None
     keep_tmp_files: bool = False
     ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
+    etherscan_api_key: str = None
+
+
+@dataclass
+class ChifraConfig:
+    start: date = None
+    end: date = None
+    file_path: str = None
     etherscan_api_key: str = None
 
 
@@ -123,8 +130,10 @@ class FromConfig:
     uniswap_config: UniswapConfig | None = None
     aave_config: AaveConfig | None = None
     big_query: BigQueryConfig | None = None
+    chifra_config: ChifraConfig | None = None
     rpc: RpcConfig | None = None
     file: FileConfig | None = None
+    http_proxy: str | None = None
 
 
 @dataclass
