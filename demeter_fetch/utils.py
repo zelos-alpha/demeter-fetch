@@ -6,8 +6,11 @@ import requests
 from ._typing import *
 
 
-def get_file_name(chain: ChainType, pool_address, day: date):
-    return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
+def get_file_name(chain: ChainType, pool_address, day: date | str):
+    if isinstance(day, date):
+        return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
+    else:
+        return f"{chain.name}-{pool_address}-{day}.raw.csv"
 
 
 def get_aave_file_name(chain: ChainType, token_address, day: date):

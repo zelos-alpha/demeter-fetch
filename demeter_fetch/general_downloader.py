@@ -22,7 +22,7 @@ class GeneralDownloader(object):
 
     def _download_chifra(self, config: Config):
         chifra_config = config.from_config.chifra_config
-        if chifra_config.file_path is None:
+        if chifra_config.file_path is None or chifra_config.file_path == "":
             export_commend = chifra_utils.get_export_commend(config.from_config)
             print("Please export event logs via: ")
             print(export_commend)
@@ -34,6 +34,8 @@ class GeneralDownloader(object):
                 chifra_config.file_path = answer_path
             else:
                 return []
+        else:
+            print("Parameter file_path is filled, start/end parameter will be omitted")
         print_log(f"Will convert file {chifra_config.file_path}")
 
     def _get_process_func(self):
