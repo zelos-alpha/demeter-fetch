@@ -95,10 +95,9 @@ class RpcConfig:
 
 @dataclass
 class ChifraConfig:
-    start: date = None
-    end: date = None
-    file_path: str = None
-    etherscan_api_key: str = None
+    file_path: str
+    ignore_position_id: bool = False  # just for uniswap, if set to true, will not download proxy logs and leave a empty column
+    proxy_file_path: str = None # just for uniswap
 
 
 @dataclass

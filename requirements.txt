@@ -5,3 +5,4 @@ toml>=0.10.2
 tqdm>=4.65.0
 google-cloud-bigquery>=3.11
 db-dtypes>=1.1.1
+argparse>=1.4.0

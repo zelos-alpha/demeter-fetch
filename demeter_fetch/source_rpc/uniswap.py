@@ -10,8 +10,7 @@ from tqdm import tqdm  # process bar
 
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
-from demeter_fetch._typing import ChainType, ChainTypeConfig, OnchainTxType
-from demeter_fetch.processor_uniswap.uniswap_utils import compare_burn_data
+from demeter_fetch._typing import ChainType, ChainTypeConfig
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
 from demeter_fetch.utils import print_log
 
@@ -160,7 +159,7 @@ def append_proxy_log(
             proxy_log_df = _process_topic(proxy_log_df, True)
             daily_pool_logs = _process_topic(daily_pool_logs)
             daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
-            _match_proxy_log(daily_pool_logs, proxy_log_df)
+            utils.UniswapUtil.match_proxy_log(daily_pool_logs, proxy_log_df)
 
             # save new raw files
             daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
@@ -193,41 +192,6 @@ def _process_topic(df, is_proxy=False):
         df["topic_array"] = df.apply(lambda x: json.loads(x.pool_topics), axis=1)
     df["topic_name"] = df.apply(lambda x: x.topic_array[0], axis=1)
     return df
-
-
-def _add_proxy_log(df, index, proxy_row):
-    df.loc[index, "proxy_data"] = proxy_row.data
-    df.loc[index, "proxy_topics"] = proxy_row.topics
-    df.loc[index, "proxy_log_index"] = proxy_row.log_index
-
-
-def _match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
-    for index, row in pool_logs.iterrows():
-        if row.tx_type == OnchainTxType.SWAP:
-            continue
-        if row.transaction_hash not in proxy_logs.index:
-            continue
-        proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
-        proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
-
-        for pindex, possible_match in proxy_tx_matched.iterrows():
-            if row.tx_type == OnchainTxType.MINT:
-                if row.pool_data[66:] == possible_match.data[2:]:
-                    _add_proxy_log(pool_logs, index, possible_match)
-                    break
-            elif row.tx_type == OnchainTxType.COLLECT or row.tx_type == OnchainTxType.BURN:
-                if compare_burn_data(row.pool_data, possible_match.data):
-                    _add_proxy_log(pool_logs, index, possible_match)
-                    break
-            else:
-                raise ValueError("not support tx type")
-    # if no column is generated
-    if "proxy_topics" not in pool_logs.columns:
-        pool_logs["proxy_data"] = None
-        pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
-        pool_logs["proxy_log_index"] = None
-    else:
-        pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
 
 
 def _find_matched_tmp_file(start, end, tmp_files):

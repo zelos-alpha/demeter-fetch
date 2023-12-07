@@ -1,10 +1,10 @@
-import math
+from decimal import Decimal
 from typing import List
+
+import numpy as np
 
 import demeter_fetch._typing as _typing
 import demeter_fetch.constants as constants
-import numpy as np
-from decimal import Decimal
 
 
 def signed_int(h):
@@ -43,28 +43,6 @@ def get_tx_type(topics_str):
     type_topic = topic_list[0]
     tx_type = constants.type_dict[type_topic]
     return tx_type
-
-
-def compare_int_with_error(a: int, b: int, error=1) -> bool:
-    return abs(a - b) <= error
-
-
-def compare_burn_data(a: str, b: str) -> bool:
-    """
-    0x0000000000000000000000000000000000000000000000000014aca30ddf7569
-      000000000000000000000000000000000000000000000000000041b051acc70d
-      0000000000000000000000000000000000000000000000000000000000000000
-
-    """
-    if len(a) != 194 or len(b) != 194:
-        return False
-    if a[0:66] != b[0:66]:
-        return False
-    if not compare_int_with_error(int("0x" + a[66 : 66 + 64], 16), int("0x" + b[66 : 66 + 64], 16)):
-        return False
-    if not compare_int_with_error(int("0x" + a[66 + 64 : 66 + 2 * 64], 16), int("0x" + b[66 + 64 : 66 + 2 * 64], 16)):
-        return False
-    return True
 
 
 def handle_event(tx_type, topics_str, data_hex):

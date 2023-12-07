@@ -3,10 +3,8 @@ from multiprocessing import Pool
 
 from tqdm import tqdm
 
-from . import source_file
 from ._typing import *
 from .utils import print_log
-import demeter_fetch.source_chifra.chifra_utils as chifra_utils
 
 
 def _generate_one(param):
@@ -21,22 +19,9 @@ class GeneralDownloader(object):
         return []
 
     def _download_chifra(self, config: Config):
-        chifra_config = config.from_config.chifra_config
-        if chifra_config.file_path is None or chifra_config.file_path == "":
-            export_commend = chifra_utils.get_export_commend(config.from_config)
-            print("Please export event logs via: ")
-            print(export_commend)
-            print("If the file has exported, input file path. ")
-            answer_path = input(
-                "Or press enter to exit and download later. Before next start, you can fill the path in config file to get start immediately"
-            )
-            if answer_path != "":
-                chifra_config.file_path = answer_path
-            else:
-                return []
-        else:
-            print("Parameter file_path is filled, start/end parameter will be omitted")
-        print_log(f"Will convert file {chifra_config.file_path}")
+        if not os.path.exists(config.to_config.save_path):
+            os.mkdir(config.to_config.save_path)
+
 
     def _get_process_func(self):
         def func(param):
@@ -46,6 +31,8 @@ class GeneralDownloader(object):
 
     def download(self, config: Config):
         raw_file_list = []
+        if not os.path.exists(config.to_config.save_path):
+            os.mkdir(config.to_config.save_path)
         match config.from_config.data_source:
             case DataSource.rpc:
                 raw_file_list = self._download_rpc(config)

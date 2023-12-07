@@ -1,8 +1,12 @@
 import json
 import os
 from datetime import datetime, timedelta, timezone
+
+import numpy as np
+import pandas as pd
 import requests
 
+from . import constants
 from ._typing import *
 
 
@@ -125,19 +129,17 @@ def convert_to_config(conf_file: dict) -> Config:
         case DataSource.chifra:
             if "chifra" not in conf_file["from"]:
                 raise RuntimeError("should have [from.chifra]")
-            start_time = None
-            if "start" in conf_file["from"]["chifra"]:
-                start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
-            end_time = None
-            if "end" in conf_file["from"]["chifra"]:
-                end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
-            etherscan_api_key = None
-            if "etherscan_api_key" in conf_file["from"]["chifra"]:
-                etherscan_api_key = conf_file["from"]["chifra"]["etherscan_api_key"]
-            file_path = None
-            if "file_path" in conf_file["from"]["chifra"]:
-                file_path = conf_file["from"]["chifra"]["file_path"]
-            from_config.chifra_config = ChifraConfig(start_time, end_time, file_path, etherscan_api_key)
+            file_path = conf_file["from"]["chifra"]["file_path"]
+            ignore_position_id = False
+            if "ignore_position_id" in conf_file["from"]["chifra"]:
+                ignore_position_id = conf_file["from"]["chifra"]["ignore_position_id"]
+            proxy_file_path = None
+            if "proxy_file_path" in conf_file["from"]["chifra"]:
+                proxy_file_path = conf_file["from"]["chifra"]["proxy_file_path"]
+            if not ignore_position_id and proxy_file_path is None:
+                raise RuntimeError("If you want to append uniswap proxy logs, you should export proxy pool, too")
+            from_config.chifra_config = ChifraConfig(file_path, ignore_position_id, proxy_file_path)
+
     return Config(from_config, to_config)
 
 
@@ -253,3 +255,65 @@ class ApiUtil:
             return int(result_json["result"])
         else:
             raise RuntimeError("request block number failed, message: " + str(result_json))
+
+
+class UniswapUtil:
+    @staticmethod
+    def add_proxy_log(df, index, proxy_row):
+        df.loc[index, "proxy_data"] = proxy_row.data
+        df.at[index, "proxy_topics"] = proxy_row.topics
+        df.loc[index, "proxy_log_index"] = proxy_row.log_index
+
+    @staticmethod
+    def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
+        pool_logs["proxy_topics"] =  [[]] * pool_logs.shape[0]
+
+        for index, row in pool_logs.iterrows():
+            if row.tx_type == OnchainTxType.SWAP:
+                continue
+            if row.transaction_hash not in proxy_logs.index:
+                continue
+            proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
+            proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
+
+            for pindex, possible_match in proxy_tx_matched.iterrows():
+                if row.tx_type == OnchainTxType.MINT:
+                    if row.pool_data[66:] == possible_match.data[2:]:
+                        UniswapUtil.add_proxy_log(pool_logs, index, possible_match)
+                        break
+                elif row.tx_type == OnchainTxType.COLLECT or row.tx_type == OnchainTxType.BURN:
+                    if UniswapUtil.compare_burn_data(row.pool_data, possible_match.data):
+                        UniswapUtil.add_proxy_log(pool_logs, index, possible_match)
+                        break
+                else:
+                    raise ValueError("not support tx type")
+        # if no column is generated
+
+        if "proxy_data" not in pool_logs.columns:
+            pool_logs["proxy_data"] = None
+            pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
+            pool_logs["proxy_log_index"] = None
+        else:
+            pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
+
+    @staticmethod
+    def compare_int_with_error(a: int, b: int, error=1) -> bool:
+        return abs(a - b) <= error
+
+    @staticmethod
+    def compare_burn_data(a: str, b: str) -> bool:
+        """
+        0x0000000000000000000000000000000000000000000000000014aca30ddf7569
+          000000000000000000000000000000000000000000000000000041b051acc70d
+          0000000000000000000000000000000000000000000000000000000000000000
+
+        """
+        if len(a) != 194 or len(b) != 194:
+            return False
+        if a[0:66] != b[0:66]:
+            return False
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 : 66 + 64], 16), int("0x" + b[66 : 66 + 64], 16)):
+            return False
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 + 64 : 66 + 2 * 64], 16), int("0x" + b[66 + 64 : 66 + 2 * 64], 16)):
+            return False
+        return True

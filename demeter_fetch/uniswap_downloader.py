@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 from typing import Tuple
 
@@ -7,9 +6,9 @@ import pandas as pd
 import demeter_fetch.processor_uniswap.minute as processor_minute
 import demeter_fetch.processor_uniswap.tick as processor_tick
 import demeter_fetch.source_big_query.uniswap as source_big_query
+import demeter_fetch.source_chifra.uniswap as source_chifra
 import demeter_fetch.source_file.common as source_file
 import demeter_fetch.source_rpc.uniswap as source_rpc
-import demeter_fetch.source_chifra.uniswap as source_chifra
 from ._typing import *
 from .general_downloader import GeneralDownloader
 from .utils import print_log, convert_raw_file_name, TimeUtil, get_file_name
@@ -106,12 +105,7 @@ class Downloader(GeneralDownloader):
 
     def _download_chifra(self, config: Config):
         super()._download_chifra(config)
-        return source_chifra.convert_chifra_csv_to_raw_file(
-            config.from_config.chifra_config.file_path,
-            config.from_config.uniswap_config.pool_address,
-            config.to_config.save_path,
-            get_file_name(config.from_config.chain, config.from_config.uniswap_config.pool_address, "DAY"),
-        )
+        return source_chifra.convert_chifra_csv_to_raw_file(config)
 
     def _get_to_files(self, config: Config) -> Dict:
         if config.from_config.data_source == DataSource.file:
