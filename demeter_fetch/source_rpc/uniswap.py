@@ -3,49 +3,21 @@ import json
 import os.path
 import time
 from datetime import date, datetime
-from datetime import timezone
 from typing import List, Dict
 
 import pandas as pd
-import requests
+from tqdm import tqdm  # process bar
 
 import demeter_fetch.constants as constants
 import demeter_fetch.utils as utils
-from demeter_fetch._typing import ChainType, ChainTypeConfig, OnchainTxType
+from demeter_fetch._typing import ChainType, ChainTypeConfig
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
-from demeter_fetch.processor_uniswap.uniswap_utils import compare_burn_data
-from tqdm import tqdm  # process bar
 from demeter_fetch.utils import print_log
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.
 
 """
-
-
-def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
-    proxies = (
-        {
-            "http": proxy,
-            "https": proxy,
-        }
-        if proxy
-        else {}
-    )
-    before_or_after = "before" if is_before else "after"
-    url = utils.ChainTypeConfig[chain]["query_height_api"]
-    blk_time = blk_time.replace(tzinfo=timezone.utc)
-    url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
-    if etherscan_api_key is not None:
-        url += "&apikey=" + etherscan_api_key
-    result = requests.get(url, proxies=proxies)
-    if result.status_code != 200:
-        raise RuntimeError("request block number failed, code: " + str(result.status_code))
-    result_json = result.json()
-    if int(result_json["status"]) == 1:
-        return int(result_json["result"])
-    else:
-        raise RuntimeError("request block number failed, message: " + str(result_json))
 
 
 def query_uniswap_pool_logs(
@@ -70,10 +42,12 @@ def query_uniswap_pool_logs(
         sleep_time = 8
         if etherscan_api_key is not None:
             sleep_time = 1
-        start_height = query_blockno_from_time(chain, datetime.combine(start, datetime.min.time()), False, http_proxy, etherscan_api_key)
+        start_height = utils.ApiUtil.query_blockno_from_time(
+            chain, datetime.combine(start, datetime.min.time()), False, http_proxy, etherscan_api_key
+        )
         utils.print_log(f"Querying end timestamp, wait for {sleep_time} seconds to prevent max rate limit")
         time.sleep(sleep_time)  # to prevent request limit
-        end_height = query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key)
+        end_height = utils.ApiUtil.query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key)
 
     # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
     client = EthRpcClient(end_point, http_proxy, auth_string)
@@ -185,7 +159,7 @@ def append_proxy_log(
             proxy_log_df = _process_topic(proxy_log_df, True)
             daily_pool_logs = _process_topic(daily_pool_logs)
             daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
-            _match_proxy_log(daily_pool_logs, proxy_log_df)
+            utils.UniswapUtil.match_proxy_log(daily_pool_logs, proxy_log_df)
 
             # save new raw files
             daily_pool_logs = daily_pool_logs.drop(["tx_type", "topic_array", "topic_name"], axis=1)
@@ -218,41 +192,6 @@ def _process_topic(df, is_proxy=False):
         df["topic_array"] = df.apply(lambda x: json.loads(x.pool_topics), axis=1)
     df["topic_name"] = df.apply(lambda x: x.topic_array[0], axis=1)
     return df
-
-
-def _add_proxy_log(df, index, proxy_row):
-    df.loc[index, "proxy_data"] = proxy_row.data
-    df.loc[index, "proxy_topics"] = proxy_row.topics
-    df.loc[index, "proxy_log_index"] = proxy_row.log_index
-
-
-def _match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
-    for index, row in pool_logs.iterrows():
-        if row.tx_type == OnchainTxType.SWAP:
-            continue
-        if row.transaction_hash not in proxy_logs.index:
-            continue
-        proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
-        proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
-
-        for pindex, possible_match in proxy_tx_matched.iterrows():
-            if row.tx_type == OnchainTxType.MINT:
-                if row.pool_data[66:] == possible_match.data[2:]:
-                    _add_proxy_log(pool_logs, index, possible_match)
-                    break
-            elif row.tx_type == OnchainTxType.COLLECT or row.tx_type == OnchainTxType.BURN:
-                if compare_burn_data(row.pool_data, possible_match.data):
-                    _add_proxy_log(pool_logs, index, possible_match)
-                    break
-            else:
-                raise ValueError("not support tx type")
-    # if no column is generated
-    if "proxy_topics" not in pool_logs.columns:
-        pool_logs["proxy_data"] = None
-        pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
-        pool_logs["proxy_log_index"] = None
-    else:
-        pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
 
 
 def _find_matched_tmp_file(start, end, tmp_files):

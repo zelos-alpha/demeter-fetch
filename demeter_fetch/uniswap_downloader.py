@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 from typing import Tuple
 
@@ -7,6 +6,7 @@ import pandas as pd
 import demeter_fetch.processor_uniswap.minute as processor_minute
 import demeter_fetch.processor_uniswap.tick as processor_tick
 import demeter_fetch.source_big_query.uniswap as source_big_query
+import demeter_fetch.source_chifra.uniswap as source_chifra
 import demeter_fetch.source_file.common as source_file
 import demeter_fetch.source_rpc.uniswap as source_rpc
 from ._typing import *
@@ -69,7 +69,7 @@ class Downloader(GeneralDownloader):
                 save_path=config.to_config.save_path,
                 batch_size=config.from_config.rpc.batch_size,
                 auth_string=config.from_config.rpc.auth_string,
-                http_proxy=config.from_config.rpc.http_proxy,
+                http_proxy=config.from_config.http_proxy,
                 keep_tmp_files=config.from_config.rpc.keep_tmp_files,
                 etherscan_api_key=config.from_config.rpc.etherscan_api_key,
             )
@@ -86,7 +86,7 @@ class Downloader(GeneralDownloader):
                     save_path=config.to_config.save_path,
                     batch_size=config.from_config.rpc.batch_size,
                     auth_string=config.from_config.rpc.auth_string,
-                    http_proxy=config.from_config.rpc.http_proxy,
+                    http_proxy=config.from_config.http_proxy,
                     keep_tmp_files=config.from_config.rpc.keep_tmp_files,
                 )
             all_raw_files.extend(raw_file_list)
@@ -100,8 +100,12 @@ class Downloader(GeneralDownloader):
             config.to_config.to_file_list,
             config.to_config.save_path,
             config.from_config.big_query.auth_file,
-            config.from_config.big_query.http_proxy,
+            config.from_config.http_proxy,
         )
+
+    def _download_chifra(self, config: Config):
+        super()._download_chifra(config)
+        return source_chifra.convert_chifra_csv_to_raw_file(config)
 
     def _get_to_files(self, config: Config) -> Dict:
         if config.from_config.data_source == DataSource.file:

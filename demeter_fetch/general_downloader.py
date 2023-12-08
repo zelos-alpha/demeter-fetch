@@ -3,7 +3,6 @@ from multiprocessing import Pool
 
 from tqdm import tqdm
 
-from . import source_file
 from ._typing import *
 from .utils import print_log
 
@@ -19,6 +18,11 @@ class GeneralDownloader(object):
     def _download_big_query(self, config: Config):
         return []
 
+    def _download_chifra(self, config: Config):
+        if not os.path.exists(config.to_config.save_path):
+            os.mkdir(config.to_config.save_path)
+
+
     def _get_process_func(self):
         def func(param):
             pass
@@ -27,6 +31,8 @@ class GeneralDownloader(object):
 
     def download(self, config: Config):
         raw_file_list = []
+        if not os.path.exists(config.to_config.save_path):
+            os.mkdir(config.to_config.save_path)
         match config.from_config.data_source:
             case DataSource.rpc:
                 raw_file_list = self._download_rpc(config)
@@ -35,6 +41,8 @@ class GeneralDownloader(object):
                 raw_file_list = self._download_big_query(config)
             case DataSource.file:
                 raw_file_list = config.to_config.to_file_list.keys()
+            case DataSource.chifra:
+                raw_file_list = self._download_chifra(config)
 
         print("\n")
         print_log(f"Download finish")

@@ -1,3 +1,12 @@
+# v0.2.0
+
+* import uniswap data from chifra
+* fix bug:
+  * if batch_size in rpc section is omitted, an error will raise
+  * if tmp file has existed in rpc, the last file may be empty
+* breaking change:
+  * proxy config has moved to from section
+
 # v0.1.8
 
 * fix bug for aave

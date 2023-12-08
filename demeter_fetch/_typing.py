@@ -8,6 +8,7 @@ class DataSource(str, Enum):
     big_query = "big_query"
     rpc = "rpc"
     file = "file"
+    chifra = "chifra"
 
 
 class ChainType(str, Enum):
@@ -23,42 +24,42 @@ class ChainType(str, Enum):
 # closest: 'before' or 'after'
 ChainTypeConfig = {
     ChainType.ethereum: {
-        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
     },
     ChainType.polygon: {
-        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file],
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
     },
     ChainType.optimism: {
-        "allow": [DataSource.rpc, DataSource.file],
+        "allow": [DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.arbitrum: {
-        "allow": [DataSource.rpc, DataSource.file],
+        "allow": [DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.celo: {
-        "allow": [DataSource.rpc, DataSource.file],
+        "allow": [DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
     },
     ChainType.bsc: {
-        "allow": [DataSource.rpc, DataSource.file],
+        "allow": [DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
     },
     ChainType.base: {
-        "allow": [DataSource.rpc, DataSource.file],
+        "allow": [DataSource.rpc, DataSource.file, DataSource.chifra],
         "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
-    }
+    },
 }
 
 
@@ -78,7 +79,6 @@ class BigQueryConfig:
     start: date
     end: date
     auth_file: str
-    http_proxy: str | None = None
 
 
 @dataclass
@@ -88,10 +88,16 @@ class RpcConfig:
     end: date
     batch_size: int = 500
     auth_string: str | None = None
-    http_proxy: str | None = None
     keep_tmp_files: bool = False
     ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
     etherscan_api_key: str = None
+
+
+@dataclass
+class ChifraConfig:
+    file_path: str
+    ignore_position_id: bool = False  # just for uniswap, if set to true, will not download proxy logs and leave a empty column
+    proxy_file_path: str = None # just for uniswap
 
 
 @dataclass
@@ -123,8 +129,10 @@ class FromConfig:
     uniswap_config: UniswapConfig | None = None
     aave_config: AaveConfig | None = None
     big_query: BigQueryConfig | None = None
+    chifra_config: ChifraConfig | None = None
     rpc: RpcConfig | None = None
     file: FileConfig | None = None
+    http_proxy: str | None = None
 
 
 @dataclass

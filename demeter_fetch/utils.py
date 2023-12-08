@@ -1,12 +1,20 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
+import numpy as np
+import pandas as pd
+import requests
+
+from . import constants
 from ._typing import *
 
 
-def get_file_name(chain: ChainType, pool_address, day: date):
-    return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
+def get_file_name(chain: ChainType, pool_address, day: date | str):
+    if isinstance(day, date):
+        return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
+    else:
+        return f"{chain.name}-{pool_address}-{day}.raw.csv"
 
 
 def get_aave_file_name(chain: ChainType, token_address, day: date):
@@ -47,7 +55,10 @@ def convert_to_config(conf_file: dict) -> Config:
 
     dapp_type = DappType[conf_file["from"]["dapp_type"]]
 
-    from_config = FromConfig(chain, data_source, dapp_type)
+    http_proxy = None
+    if "http_proxy" in conf_file["from"]:
+        http_proxy = conf_file["from"]["http_proxy"]
+    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy)
 
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
@@ -79,9 +90,7 @@ def convert_to_config(conf_file: dict) -> Config:
             auth_string = None
             if "auth_string" in conf_file["from"]["rpc"]:
                 auth_string = conf_file["from"]["rpc"]["auth_string"]
-            http_proxy = None
-            if "http_proxy" in conf_file["from"]["rpc"]:
-                http_proxy = conf_file["from"]["rpc"]["http_proxy"]
+
             keep_tmp_files = None
             if "keep_tmp_files" in conf_file["from"]["rpc"]:
                 keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
@@ -94,7 +103,10 @@ def convert_to_config(conf_file: dict) -> Config:
             end_point = conf_file["from"]["rpc"]["end_point"]
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
-            batch_size = int(conf_file["from"]["rpc"]["batch_size"])
+            batch_size = 500
+            if "batch_size" in conf_file["from"]["rpc"]:
+                batch_size = int(conf_file["from"]["rpc"]["batch_size"])
+
 
             from_config.rpc = RpcConfig(
                 end_point=end_point,
@@ -102,7 +114,6 @@ def convert_to_config(conf_file: dict) -> Config:
                 end=end_time,
                 batch_size=batch_size,
                 auth_string=auth_string,
-                http_proxy=http_proxy,
                 keep_tmp_files=keep_tmp_files,
                 ignore_position_id=ignore_position_id,
                 etherscan_api_key=etherscan_api_key,
@@ -113,15 +124,24 @@ def convert_to_config(conf_file: dict) -> Config:
             start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
-            http_proxy = None
-            if "http_proxy" in conf_file["from"]["big_query"]:
-                http_proxy = conf_file["from"]["big_query"]["http_proxy"]
             from_config.big_query = BigQueryConfig(
                 start=start_time,
                 end=end_time,
                 auth_file=auth_file,
-                http_proxy=http_proxy,
             )
+        case DataSource.chifra:
+            if "chifra" not in conf_file["from"]:
+                raise RuntimeError("should have [from.chifra]")
+            file_path = conf_file["from"]["chifra"]["file_path"]
+            ignore_position_id = False
+            if "ignore_position_id" in conf_file["from"]["chifra"]:
+                ignore_position_id = conf_file["from"]["chifra"]["ignore_position_id"]
+            proxy_file_path = None
+            if "proxy_file_path" in conf_file["from"]["chifra"]:
+                proxy_file_path = conf_file["from"]["chifra"]["proxy_file_path"]
+            if not ignore_position_id and proxy_file_path is None:
+                raise RuntimeError("If you want to append uniswap proxy logs, you should export proxy pool, too")
+            from_config.chifra_config = ChifraConfig(file_path, ignore_position_id, proxy_file_path)
 
     return Config(from_config, to_config)
 
@@ -212,3 +232,92 @@ def hex_to_length(hex_str: str, new_length: int):
         if hex_without_0x[-new_length - 1] != "0":
             raise RuntimeError("Not enough leading zeros to remove")
         return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
+
+
+class ApiUtil:
+    @staticmethod
+    def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
+        proxies = (
+            {
+                "http": proxy,
+                "https": proxy,
+            }
+            if proxy
+            else {}
+        )
+        before_or_after = "before" if is_before else "after"
+        url = ChainTypeConfig[chain]["query_height_api"]
+        blk_time = blk_time.replace(tzinfo=timezone.utc)
+        url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
+        if etherscan_api_key is not None:
+            url += "&apikey=" + etherscan_api_key
+        result = requests.get(url, proxies=proxies)
+        if result.status_code != 200:
+            raise RuntimeError("request block number failed, code: " + str(result.status_code))
+        result_json = result.json()
+        if int(result_json["status"]) == 1:
+            return int(result_json["result"])
+        else:
+            raise RuntimeError("request block number failed, message: " + str(result_json))
+
+
+class UniswapUtil:
+    @staticmethod
+    def add_proxy_log(df, index, proxy_row):
+        df.loc[index, "proxy_data"] = proxy_row.data
+        df.at[index, "proxy_topics"] = proxy_row.topics
+        df.loc[index, "proxy_log_index"] = proxy_row.log_index
+
+    @staticmethod
+    def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
+        pool_logs["proxy_topics"] =  [[]] * pool_logs.shape[0]
+
+        for index, row in pool_logs.iterrows():
+            if row.tx_type == OnchainTxType.SWAP:
+                continue
+            if row.transaction_hash not in proxy_logs.index:
+                continue
+            proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
+            proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
+
+            for pindex, possible_match in proxy_tx_matched.iterrows():
+                if row.tx_type == OnchainTxType.MINT:
+                    if row.pool_data[66:] == possible_match.data[2:]:
+                        UniswapUtil.add_proxy_log(pool_logs, index, possible_match)
+                        break
+                elif row.tx_type == OnchainTxType.COLLECT or row.tx_type == OnchainTxType.BURN:
+                    if UniswapUtil.compare_burn_data(row.pool_data, possible_match.data):
+                        UniswapUtil.add_proxy_log(pool_logs, index, possible_match)
+                        break
+                else:
+                    raise ValueError("not support tx type")
+        # if no column is generated
+
+        if "proxy_data" not in pool_logs.columns:
+            pool_logs["proxy_data"] = None
+            pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
+            pool_logs["proxy_log_index"] = None
+        else:
+            pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
+
+    @staticmethod
+    def compare_int_with_error(a: int, b: int, error=1) -> bool:
+        return abs(a - b) <= error
+
+    @staticmethod
+    def compare_burn_data(a: str, b: str) -> bool:
+        """
+        0x0000000000000000000000000000000000000000000000000014aca30ddf7569
+          000000000000000000000000000000000000000000000000000041b051acc70d
+          0000000000000000000000000000000000000000000000000000000000000000
+
+        """
+        if len(a) != 194 or len(b) != 194:
+            return False
+        if a[0:66] != b[0:66]:
+            return False
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 : 66 + 64], 16), int("0x" + b[66 : 66 + 64], 16)):
+            return False
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 + 64 : 66 + 2 * 64], 16), int("0x" + b[66 + 64 : 66 + 2 * 64], 16)):
+            return False
+        return True
