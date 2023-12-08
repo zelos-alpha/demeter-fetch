@@ -1,6 +1,8 @@
 # v0.1.9
 
 * import uniswap data from chifra
+* fix bug:
+  * if batch_size in rpc section is omitted, an error will raise
 * breaking change:
   * proxy config has moved to from section
 

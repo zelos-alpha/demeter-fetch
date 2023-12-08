@@ -103,7 +103,10 @@ def convert_to_config(conf_file: dict) -> Config:
             end_point = conf_file["from"]["rpc"]["end_point"]
             start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
             end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
-            batch_size = int(conf_file["from"]["rpc"]["batch_size"])
+            batch_size = 500
+            if "batch_size" in conf_file["from"]["rpc"]:
+                batch_size = int(conf_file["from"]["rpc"]["batch_size"])
+
 
             from_config.rpc = RpcConfig(
                 end_point=end_point,

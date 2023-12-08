@@ -61,7 +61,7 @@ def convert_chifra_csv_to_raw_file(
         pool_df["topic_name"] = pool_df["pool_topics"].apply(lambda x: x[0])
         pool_df["tx_type"] = pool_df["topic_name"].apply(lambda x: constants.type_dict[x])
         proxy_df.set_index("transaction_hash", inplace=True)
-        print_log("matching proxy log to pool logs")
+        print_log("Matching proxy log to pool logs, this may take a while")
         UniswapUtil.match_proxy_log(pool_df, proxy_df)
         pool_df = pool_df.drop(["tx_type", "topic_name"], axis=1)
 
