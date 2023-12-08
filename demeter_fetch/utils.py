@@ -235,6 +235,7 @@ def hex_to_length(hex_str: str, new_length: int):
 
 
 class ApiUtil:
+    @staticmethod
     def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
         proxies = (
             {
