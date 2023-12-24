@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+from tqdm import tqdm
 
 from demeter_fetch import Config, ChainTypeConfig, constants
 from demeter_fetch.constants import MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK
@@ -61,8 +62,21 @@ def convert_chifra_csv_to_raw_file(
         pool_df["topic_name"] = pool_df["pool_topics"].apply(lambda x: x[0])
         pool_df["tx_type"] = pool_df["topic_name"].apply(lambda x: constants.type_dict[x])
         proxy_df.set_index("transaction_hash", inplace=True)
-        print_log("Matching proxy log to pool logs, this may take a while")
-        UniswapUtil.match_proxy_log(pool_df, proxy_df)
-        pool_df = pool_df.drop(["tx_type", "topic_name"], axis=1)
 
+        print_log("Matching proxy log to pool logs, this may take a while")
+
+        pool_df["day"] = pool_df["block_timestamp"].apply(lambda x: x[0:10])
+        pool_df_grouped = pool_df.groupby(["day"])
+        proxy_df["day"] = proxy_df["block_timestamp"].apply(lambda x: x[0:10])
+        proxy_df_grouped = proxy_df.groupby(["day"])
+        processed = []
+        with tqdm(total=pool_df_grouped.ngroups, ncols=150) as pbar1:
+            for day_str, pool_day_df in pool_df_grouped:
+                proxy_day_df = proxy_df_grouped.get_group(day_str[0])
+                UniswapUtil.match_proxy_log(pool_day_df, proxy_day_df)
+                processed.append(pool_day_df)
+                pbar1.update()
+        pool_df = pd.concat(processed)
+        pool_df = pool_df.drop(["tx_type", "topic_name", "day"], axis=1)
+    print_log("Start to save files")
     return save_by_day(pool_df, to_path, name_prefix)
