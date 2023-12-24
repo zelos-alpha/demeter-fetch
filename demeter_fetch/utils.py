@@ -107,7 +107,6 @@ def convert_to_config(conf_file: dict) -> Config:
             if "batch_size" in conf_file["from"]["rpc"]:
                 batch_size = int(conf_file["from"]["rpc"]["batch_size"])
 
-
             from_config.rpc = RpcConfig(
                 end_point=end_point,
                 start=start_time,
@@ -270,7 +269,7 @@ class UniswapUtil:
 
     @staticmethod
     def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
-        pool_logs["proxy_topics"] =  [[]] * pool_logs.shape[0]
+        pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
 
         for index, row in pool_logs.iterrows():
             if row.tx_type == OnchainTxType.SWAP:
@@ -301,7 +300,16 @@ class UniswapUtil:
             pool_logs["proxy_topics"] = pool_logs["proxy_topics"].fillna("[]")
 
     @staticmethod
-    def compare_int_with_error(a: int, b: int, error=1) -> bool:
+    def compare_int_with_error(a: int, b: int, error: int = None) -> bool:
+        if error is None:
+            if a > 10**10:
+                error = 25
+            elif a > 10**6:
+                error = 10
+            elif a > 10**2:
+                error = 3
+            else:
+                error = 1
         return abs(a - b) <= error
 
     @staticmethod
