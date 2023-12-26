@@ -25,10 +25,10 @@ def convert_chifra_csv_to_raw_file(
     name_prefix: str = get_file_name(config.from_config.chain, config.from_config.uniswap_config.pool_address, "DAY")
     ignore_position_id: bool = config.from_config.chifra_config.ignore_position_id
     proxy_file_path: str = config.from_config.chifra_config.proxy_file_path
-    if not os.listdir(pool_csv_path) or not os.listdir(pool_csv_path):
-        return []
     print_log("Loading csv file")
     if config.from_config.chifra_config.start and config.from_config.chifra_config.end:
+        if not os.listdir(pool_csv_path) or not os.listdir(pool_csv_path):
+            return []
         days = TimeUtil.get_date_array(config.from_config.chifra_config.start, config.from_config.chifra_config.end)
         dt_strs = [day.strftime("%Y-%m-%d") for day in days]
         pool_df = pd.DataFrame()
@@ -36,7 +36,9 @@ def convert_chifra_csv_to_raw_file(
             df_pool = pd.read_csv(f'{pool_csv_path}/{pool_addr}_{dt_str}.raw.csv', sep='\t')
             pool_df = pd.concat([pool_df, df_pool])
     else:
-        pool_df = pd.read_csv(pool_csv_path)
+        if pool_csv_path is None or pool_csv_path == "":
+            return []
+        pool_df = pd.read_csv(pool_csv_path, sep='\t')
     print_log("Process files")
     pool_df = pool_df[pool_df["address"] == pool_addr.lower()]
     pool_df = pool_df[pool_df["topic0"].isin([MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK])]
@@ -69,7 +71,7 @@ def convert_chifra_csv_to_raw_file(
                 df = pd.read_csv(f'{proxy_file_path}/{proxy_addr}_{dt_str}.raw.csv', sep='\t')
                 proxy_df = pd.concat([proxy_df, df])
         else:
-            proxy_df = pd.read_csv(proxy_file_path)
+            proxy_df = pd.read_csv(proxy_file_path, sep='\t')
         proxy_df = proxy_df[proxy_df["address"] == ChainTypeConfig[config.from_config.chain]["uniswap_proxy_addr"]]
         proxy_df["topics"] = proxy_df.apply(join_topic, axis=1)
         proxy_df = proxy_df.rename(
@@ -135,6 +137,7 @@ def download_event_one_day(chain, contract, one_day, key, http_proxy, data_save_
         http_proxy,
         key,
     )
+    print_log(f'fetch start_height: {start_height}, end_height: {end_height}')
     cmd = f'chifra export --logs --first_block {start_height} --last_block {end_height} {contract} > {data_save_path}/{contract}_{one_day}.raw.csv'
     subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).communicate()
     return pd.DataFrame()
