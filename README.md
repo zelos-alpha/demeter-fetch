@@ -186,7 +186,7 @@ python main.py config_chifra_export.toml
             "proxy_file_path": "/sample",
             "start": "2023-11-15",
             "end": "2023-11-15",
-            "etherscan_api_key": "QBH1TQWP2DGKBJIWCR14M9PRP4Z3BKZ5D7"
+            "etherscan_api_key": "your_api_key"
         },
         "rpc": null,
         "file": null,
