@@ -10,7 +10,7 @@ from tqdm import tqdm
 import demeter_fetch._typing as _typing
 
 from demeter_fetch import Config, ChainTypeConfig, constants
-from demeter_fetch.constants import MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK
+from demeter_fetch.constants import MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK, PROXY_CONTRACT_ADDRESS
 from demeter_fetch.utils import print_log, get_file_name, UniswapUtil, ApiUtil, TimeUtil
 from .chifra_utils import join_topic, save_by_day
 
@@ -20,7 +20,7 @@ def convert_chifra_csv_to_raw_file(
 ):
     pool_csv_path: str = config.from_config.chifra_config.file_path
     pool_addr: str = config.from_config.uniswap_config.pool_address
-    proxy_addr: str = config.from_config.chifra_config.proxy_address
+    proxy_addr: str = PROXY_CONTRACT_ADDRESS
     to_path: str = config.to_config.save_path
     name_prefix: str = get_file_name(config.from_config.chain, config.from_config.uniswap_config.pool_address, "DAY")
     ignore_position_id: bool = config.from_config.chifra_config.ignore_position_id
@@ -28,12 +28,15 @@ def convert_chifra_csv_to_raw_file(
     if not os.listdir(pool_csv_path) or not os.listdir(pool_csv_path):
         return []
     print_log("Loading csv file")
-    days = TimeUtil.get_date_array(config.from_config.chifra_config.start, config.from_config.chifra_config.end)
-    dt_strs = [day.strftime("%Y-%m-%d") for day in days]
-    pool_df = pd.DataFrame()
-    for dt_str in dt_strs:
-        df_pool = pd.read_csv(f'{pool_csv_path}/{pool_addr}_{dt_str}.raw.csv', sep='\t')
-        pool_df = pd.concat([pool_df, df_pool])
+    if config.from_config.chifra_config.start and config.from_config.chifra_config.end:
+        days = TimeUtil.get_date_array(config.from_config.chifra_config.start, config.from_config.chifra_config.end)
+        dt_strs = [day.strftime("%Y-%m-%d") for day in days]
+        pool_df = pd.DataFrame()
+        for dt_str in dt_strs:
+            df_pool = pd.read_csv(f'{pool_csv_path}/{pool_addr}_{dt_str}.raw.csv', sep='\t')
+            pool_df = pd.concat([pool_df, df_pool])
+    else:
+        pool_df = pd.read_csv(pool_csv_path)
     print_log("Process files")
     pool_df = pool_df[pool_df["address"] == pool_addr.lower()]
     pool_df = pool_df[pool_df["topic0"].isin([MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK])]
@@ -58,10 +61,15 @@ def convert_chifra_csv_to_raw_file(
     else:
         print_log("Pool logs has downloaded, now will convert proxy logs")
         print_log("loading proxy file")
-        proxy_df = pd.DataFrame()
-        for dt_str in dt_strs:
-            df = pd.read_csv(f'{proxy_file_path}/{proxy_addr}_{dt_str}.raw.csv', sep='\t')
-            proxy_df = pd.concat([proxy_df, df])
+        if config.from_config.chifra_config.start and config.from_config.chifra_config.end:
+            days = TimeUtil.get_date_array(config.from_config.chifra_config.start, config.from_config.chifra_config.end)
+            dt_strs = [day.strftime("%Y-%m-%d") for day in days]
+            proxy_df = pd.DataFrame()
+            for dt_str in dt_strs:
+                df = pd.read_csv(f'{proxy_file_path}/{proxy_addr}_{dt_str}.raw.csv', sep='\t')
+                proxy_df = pd.concat([proxy_df, df])
+        else:
+            proxy_df = pd.read_csv(proxy_file_path)
         proxy_df = proxy_df[proxy_df["address"] == ChainTypeConfig[config.from_config.chain]["uniswap_proxy_addr"]]
         proxy_df["topics"] = proxy_df.apply(join_topic, axis=1)
         proxy_df = proxy_df.rename(

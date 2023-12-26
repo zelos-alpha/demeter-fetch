@@ -37,15 +37,14 @@ files = [# Path of files which you need to convert
 folder = "" # Will convert all raw files in this folder.
 
 [from.chifra]
-start = "2023-11-1"
-end = "2023-11-5"
-proxy_address = '0xc36442b4a4522e871399cd717abdd847ab11fe88'
 # csv exported by chifra, eg. "chifra export --logs --fmt csv --first_block {start_height} --last_block {end_height} {contract_addr} > {output_file_name}.csv"
 # please ensure start_height is the beginning of the day and end_height is the end of the day, you can query height from day range by "python main.py date_to_height"
 file_path = "" # chifra pool file export path
 ignore_position_id = false # Just for uniswap, if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
 proxy_file_path = "" # chifra proxy file export path, Just for uniswap, only required when ignore_position_id=False
-etherscan_api_key = "" # must fill if query etherscan for block, proxy must set.
+#start = "2023-11-1"
+#end = "2023-11-5"
+#etherscan_api_key = "" # must fill if query etherscan for block, proxy must set.
 
 [to] # decide output
 type = "tick" # minute or tick or raw

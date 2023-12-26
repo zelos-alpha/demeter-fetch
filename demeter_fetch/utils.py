@@ -129,12 +129,15 @@ def convert_to_config(conf_file: dict) -> Config:
                 auth_file=auth_file,
             )
         case DataSource.chifra:
-            start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
+            start_time = None
+            if 'start' in conf_file["from"]["chifra"]:
+                start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
+            end_time = None
+            if 'end' in conf_file["from"]["chifra"]:
+                end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
             if "chifra" not in conf_file["from"]:
                 raise RuntimeError("should have [from.chifra]")
             file_path = conf_file["from"]["chifra"]["file_path"]
-            proxy_address = conf_file["from"]["chifra"]["proxy_address"]
             ignore_position_id = False
             if "ignore_position_id" in conf_file["from"]["chifra"]:
                 ignore_position_id = conf_file["from"]["chifra"]["ignore_position_id"]
@@ -147,13 +150,12 @@ def convert_to_config(conf_file: dict) -> Config:
             if "etherscan_api_key" in conf_file["from"]["chifra"]:
                 etherscan_api_key = conf_file["from"]["chifra"]["etherscan_api_key"]
             from_config.chifra_config = ChifraConfig(
-                start=start_time,
-                end=end_time,
-                proxy_address=proxy_address,
                 file_path=file_path,
                 ignore_position_id=ignore_position_id,
                 proxy_file_path=proxy_file_path,
-                etherscan_api_key=etherscan_api_key
+                etherscan_api_key=etherscan_api_key,
+                start=start_time,
+                end=end_time,
             )
 
     return Config(from_config, to_config)
