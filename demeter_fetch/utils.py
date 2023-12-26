@@ -129,9 +129,12 @@ def convert_to_config(conf_file: dict) -> Config:
                 auth_file=auth_file,
             )
         case DataSource.chifra:
+            start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
+            end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
             if "chifra" not in conf_file["from"]:
                 raise RuntimeError("should have [from.chifra]")
             file_path = conf_file["from"]["chifra"]["file_path"]
+            proxy_address = conf_file["from"]["chifra"]["proxy_address"]
             ignore_position_id = False
             if "ignore_position_id" in conf_file["from"]["chifra"]:
                 ignore_position_id = conf_file["from"]["chifra"]["ignore_position_id"]
@@ -140,7 +143,18 @@ def convert_to_config(conf_file: dict) -> Config:
                 proxy_file_path = conf_file["from"]["chifra"]["proxy_file_path"]
             if not ignore_position_id and proxy_file_path is None:
                 raise RuntimeError("If you want to append uniswap proxy logs, you should export proxy pool, too")
-            from_config.chifra_config = ChifraConfig(file_path, ignore_position_id, proxy_file_path)
+            etherscan_api_key = None
+            if "etherscan_api_key" in conf_file["from"]["chifra"]:
+                etherscan_api_key = conf_file["from"]["chifra"]["etherscan_api_key"]
+            from_config.chifra_config = ChifraConfig(
+                start=start_time,
+                end=end_time,
+                proxy_address=proxy_address,
+                file_path=file_path,
+                ignore_position_id=ignore_position_id,
+                proxy_file_path=proxy_file_path,
+                etherscan_api_key=etherscan_api_key
+            )
 
     return Config(from_config, to_config)
 
@@ -235,7 +249,8 @@ def hex_to_length(hex_str: str, new_length: int):
 
 class ApiUtil:
     @staticmethod
-    def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None):
+    def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="",
+                                etherscan_api_key=None):
         proxies = (
             {
                 "http": proxy,
@@ -250,7 +265,16 @@ class ApiUtil:
         url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
         if etherscan_api_key is not None:
             url += "&apikey=" + etherscan_api_key
-        result = requests.get(url, proxies=proxies)
+        retry = 3
+        result = None
+        while retry:
+            try:
+                result = requests.get(url, proxies=proxies)
+                retry = 0
+            except Exception as ex:
+                retry -= 1
+        if not result:
+            raise RuntimeError("request error with retry 3 times.")
         if result.status_code != 200:
             raise RuntimeError("request block number failed, code: " + str(result.status_code))
         result_json = result.json()
@@ -302,11 +326,11 @@ class UniswapUtil:
     @staticmethod
     def compare_int_with_error(a: int, b: int, error: int = None) -> bool:
         if error is None:
-            if a > 10**10:
+            if a > 10 ** 10:
                 error = 25
-            elif a > 10**6:
+            elif a > 10 ** 6:
                 error = 10
-            elif a > 10**2:
+            elif a > 10 ** 2:
                 error = 3
             else:
                 error = 1
@@ -324,8 +348,9 @@ class UniswapUtil:
             return False
         if a[0:66] != b[0:66]:
             return False
-        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 : 66 + 64], 16), int("0x" + b[66 : 66 + 64], 16)):
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66: 66 + 64], 16), int("0x" + b[66: 66 + 64], 16)):
             return False
-        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 + 64 : 66 + 2 * 64], 16), int("0x" + b[66 + 64 : 66 + 2 * 64], 16)):
+        if not UniswapUtil.compare_int_with_error(int("0x" + a[66 + 64: 66 + 2 * 64], 16),
+                                                  int("0x" + b[66 + 64: 66 + 2 * 64], 16)):
             return False
         return True

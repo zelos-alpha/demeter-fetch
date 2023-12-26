@@ -95,9 +95,13 @@ class RpcConfig:
 
 @dataclass
 class ChifraConfig:
+    start: date
+    end: date
+    proxy_address: str
     file_path: str
     ignore_position_id: bool = False  # just for uniswap, if set to true, will not download proxy logs and leave a empty column
     proxy_file_path: str = None # just for uniswap
+    etherscan_api_key: str = None # query block number
 
 
 @dataclass

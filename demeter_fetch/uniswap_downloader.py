@@ -105,6 +105,19 @@ class Downloader(GeneralDownloader):
 
     def _download_chifra(self, config: Config):
         super()._download_chifra(config)
+        contract_info = {
+            config.from_config.uniswap_config.pool_address: config.from_config.chifra_config.file_path,
+            config.from_config.chifra_config.proxy_address: config.from_config.chifra_config.proxy_file_path
+        }
+        for contract, save_path in contract_info.items():
+            source_chifra.download_event(
+                config.from_config.chain,
+                contract,
+                config.to_config.to_file_list,
+                save_path,
+                config.from_config.chifra_config.etherscan_api_key,
+                config.from_config.http_proxy,
+            )
         return source_chifra.convert_chifra_csv_to_raw_file(config)
 
     def _get_to_files(self, config: Config) -> Dict:
@@ -117,6 +130,8 @@ class Downloader(GeneralDownloader):
             days = TimeUtil.get_date_array(config.from_config.big_query.start, config.from_config.big_query.end)
         elif config.from_config.data_source == DataSource.rpc:
             days = TimeUtil.get_date_array(config.from_config.rpc.start, config.from_config.rpc.end)
+        elif config.from_config.data_source == DataSource.chifra:
+            days = TimeUtil.get_date_array(config.from_config.chifra_config.start, config.from_config.chifra_config.end)
 
         to_file_list: Dict[date, str] = {}
         for day in days:
