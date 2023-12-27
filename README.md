@@ -18,6 +18,10 @@ Demeter-fetch support export data in following type:
 * minute: process uniswap data and resample it to minute, [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.minute.csv). Demeter use data in this type. 
 * tick: process uniswap data, each log will be decoded and listed. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.tick.csv)
 
+### 1.1 Workflow
+![workflow.png](workflow.png)
+Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on LP about position, user investment behavior etc.
+
 ## 2 How to use
 
 ### 2.1 Prepare big query
@@ -53,6 +57,61 @@ demeter-fetch is not available on Pypi, you need to clone this repo, and run loc
 ### 2.4 Download
 
 Create a target folder to store downloaded files, then prepare a config.toml file according to [config-sample.toml](config-sample.toml)
+```toml
+[from]
+chain = "polygon"
+datasource = "rpc" # big_query or rpc or file or chifra
+dapp_type = "uniswap" # uniswap or aave
+#http_proxy = "http://localhost:8080" # if network is bad, try use proxy
+
+[from.uniswap]
+pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
+
+[from.aave]
+tokens = [# address of erc20 token which avialable on aave
+    "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+    "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
+]
+
+[from.big_query] # if you want to download from big query, use this section, from.rpc/from.file will be ignored
+start = "2022-3-16"
+end = "2022-3-17"
+auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json" # google bigquery auth file
+
+[from.rpc] # If you want to download from rpc interface, use this section, from.big_query/from.file will be ignored
+end_point = "https://localhost:8545"
+#auth_string = "Basic Y3J0Yzo3NKY3TjY" # auth string for rpc end point
+start = "2022-3-16"
+end = "2022-3-17"
+#batch_size = 500 # default is 500
+#keep_tmp_files = false
+ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+etherscan_api_key = "some_api_key" #
+
+[from.file] # If you already have .raw.csv files, just want to convert them to tick/minute file, then use this section.
+#  either file_path or folder
+files = [# Path of files which you need to convert
+    "",
+    ""
+]
+folder = "" # Will convert all raw files in this folder.
+
+[from.chifra]
+# csv exported by chifra, eg. "chifra export --logs --fmt csv --first_block {start_height} --last_block {end_height} {contract_addr} > {output_file_name}.csv"
+# please ensure start_height is the beginning of the day and end_height is the end of the day, you can query height from day range by "python main.py date_to_height"
+file_path = "" # chifra pool file export path
+ignore_position_id = false # Just for uniswap, if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+proxy_file_path = "" # chifra proxy file export path, Just for uniswap, only required when ignore_position_id=False
+#start = "2023-11-1"
+#end = "2023-11-5"
+#etherscan_api_key = "" # must fill if query etherscan for block, proxy must set.
+
+[to] # decide output
+type = "tick" # minute or tick or raw
+save_path = "./sample-data"
+multi_process = false # process in multi_process, defaut: False
+
+```
 
 then execute:
 
@@ -425,7 +484,18 @@ python main.py config_convert.toml
 Process finished with exit code 0
 ```
 
-## 3 File format
+## 3 Benchmark
+
+|               | one day data cost(seconds) | recommended | reason                                          |
+|---------------|----------------------------|-------------|-------------------------------------------------|
+| rpc           | 575s                       | ☆☆          | cost too much time to get data from rpc service |
+| bigquery      | 9s                         | ☆☆☆☆☆       | very fast and only cost about 0.05 usd/day data |
+| file          | 1s                         | ☆☆☆         | just convert downloaded raw data                |
+| chifra local  | 6s                         | ☆☆          | just merge local downloaded eth data            |
+| chifra export | 61s                        | ☆☆☆         | export chifra data and only support ethereum    |
+
+
+## 4 File format
 
 The downloaded data is grouped by date, that is, one file per day. 
 
@@ -438,20 +508,9 @@ To prevent download failure, demeter-fetch will download all files first, then c
 * Minute file is used in demeter. In this file, event logs are abstracted to market data, such as price, total liquidity, apy etc. For the convenience of backtesting, data is resampled minutely. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.minute.csv). 
 * Like minute file, in tick file, event logs are also abstracted to market data, but data will not be resampled. so one row for an event log. Some transaction information such as block number and transaction hash is also kept. It is often used for market analysis. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.tick.csv)
 
+### 4.1 Raw Data
+#### Raw Data definition
 
-## 4 Release note
-
-You can find it [here](release_note.md)
-
-## 5 Demeter-fetch workflow
-
-![workflow.png](workflow.png)
-
-Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on LP about position, user investment behavior etc.
-
-## 6 Raw Data
-
-### Raw Data definition
 | field                | definition                                                                         |
 |----------------------|------------------------------------------------------------------------------------|
 | **block_number**     | log in the block, and data will be sorted by block number ascending                |
@@ -468,16 +527,16 @@ Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra accordin
 * transaction_hash and log_index to remove duplicated log data.
 * topics and data provide core data to analysis.
 
-### Raw sample csv data
+#### Raw sample csv data
 | block_number | block_timestamp | transaction_hash | pool_tx_index | pool_log_index | pool_topics                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | pool_data | proxy_topics | proxy_data | proxy_log_index |
 |---|---|---|---|---|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|---|---|---|
 | 23353830 | 2022-01-05 00:00:02+00:00 | 0xa47dbaeb8275a6a6e6f5cda339c3b982e71415a2947d1cbe4b4d0723c02137f6 | 0 | 3 | "['0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67', '0x000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564', '0x0000000000000000000000008b26320912935111300ddaeec15ea9a182ff6f1a']"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff4de3bba60000000000000000000000000000000000000000000000000af2c6b8a5ec76800000000000000000000000000000000000003f74862e71484308ef7bb48a1738000000000000000000000000000000000000000000000000180180212f8e71b6000000000000000000000000000000000000000000000000000000000002f57f | [] |  | |
 | 23353834 | 2022-01-05 00:00:18+00:00 | 0x7566ec0d48f21e53c84fd267bf87443e094f5cacfe240690cae1a3bf0aaf2529 | 1 | 5 | "['0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67', '0x000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564', '0x000000000000000000000000693fb96fdda3c382fde7f43a622209c3dd028b98']"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffe82d041e0000000000000000000000000000000000000000000000000176f04cdd60157000000000000000000000000000000000000003f75b6ca5fbbd6df2cce1d68e000000000000000000000000000000000000000000000000000136df9c71fb56a29000000000000000000000000000000000000000000000000000000000002f581 | [] |  | |
 | 51214980 | 2023-12-17 00:05:11+00:00 | 0x9199209a3aa7c33e74595b381d2c3a46820368d3336731e9160583eede5b1397 | 2 | 9 | "['0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0', '0x000000000000000000000000c36442b4a4522e871399cd717abdd847ab11fe88', '0x0000000000000000000000000000000000000000000000000000000000030a3e', '0x0000000000000000000000000000000000000000000000000000000000030a48']" | 0x00000000000000000000000087d1ed6f4d3865079851d6a02fe5d59f7d4d4ce7000000000000000000000000000000000000000000000000000000012f5ca585000000000000000000000000000000000000000000000000000587ef1f740eaa | "['0x40d0efd1a53d60ecbf40971b9daf7dc90178c3aadc7aab1765632738fa8b8f01', '0x000000000000000000000000000000000000000000000000000000000012abfb']" | 0x00000000000000000000000087d1ed6f4d3865079851d6a02fe5d59f7d4d4ce7000000000000000000000000000000000000000000000000000000012f5ca585000000000000000000000000000000000000000000000000000587ef1f740eaa | 10 |
 
-## 7 Tick Data
+### 4.2 Tick Data
 
-### Tick Data definition
+#### Tick Data definition
 | field               | definition                           |
 |---------------------|--------------------------------------|
 | **block_number** | same as raw data                     |
@@ -503,7 +562,7 @@ Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra accordin
 * total_liquidity: swap liquidity data.
 * total_liquidity_delta: mint/burn liquidity exchange abs value.
 
-### Raw sample csv data
+#### Raw sample csv data
 | block_number | block_timestamp | tx_type | transaction_hash | pool_tx_index | pool_log_index | proxy_log_index | sender | receipt | amount0 | amount1 | total_liquidity | total_liquidity_delta | sqrtPriceX96 | current_tick | position_id | tick_lower | tick_upper | liquidity |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 23353830 | 2022-01-05 00:00:02 | SWAP | 0xa47dbaeb8275a6a6e6f5cda339c3b982e71415a2947d1cbe4b4d0723c02137f6 | 0 | 3 |  | 0xe592427a0aece92de3edee1f18e0157c05861564 | 0x8b26320912935111300ddaeec15ea9a182ff6f1a | -2988196954 | 788911381103277696 | 1729804611907121590 | 0 | 1287023799018574070893171027089208 | 193919.0 |  |  |  |  |
@@ -511,9 +570,9 @@ Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra accordin
 | 23353928 | 2022-01-05 00:06:24 | COLLECT | 0xe6f83a25910ec9945e829e24158e795977f4af6b70abae5a05932e9d7e450734 | 56 | 245 | 246.0 | 0xc36442b4a4522e871399cd717abdd847ab11fe88 | 0xb020852796bb04e431e6a2f018805c142fbd4a03 | 869413 | 8031239514820639447 | 1370269449887500119 | 0 | 1289037848681739736056052571218067 | 193951.0 | 13283.0 | 193890.0 | 193920.0 |  |
 | 23354033 | 2022-01-05 00:09:59 | MINT | 0x19c7d8a662009b5a14b7a0630f07b86ec8bdd663d34a4f674e3ebe5b33ba244b | 31 | 144 | 146.0 | 0xc36442b4a4522e871399cd717abdd847ab11fe88 |  | 16738133293 | 2892535954003525198 | 1455262468155384164 | 60134336564964532 | 1288911018771896468642711393513864 | 193949.0 | 13285.0 | 193890.0 | 194040.0 | 60134336564964532 |
 
-## 8 1Min Resample Data
+### 4.3 1Min Resample Data
 
-### 1Min Resample Data definition
+#### 1Min Resample Data definition
 | field               | definition                            |
 |---------------------|---------------------------------------|
 | **timestamp** | timestamp use to sort data            |
@@ -534,7 +593,8 @@ Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra accordin
 | 2022-01-05 00:01:00 | -35317761550 | 9329849855269298153 | 193929 | 193921 | 193921 | 193929 | 704261153 | 9515626276489030515 | 1400049692807883305 |
 | 2022-01-05 00:02:00 | -55692411213 | 14727627582768166668 | 193942 | 193937 | 193937 | 193942 | 499743350 | 14859678472128538245 | 1395128131590419632 |
 
-## 9 project structure
+
+## 5 project structure
 
 ```text
 .
@@ -585,3 +645,7 @@ Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra accordin
 ├── tests                          testcase 
 └── workflow.png
 ```
+
+## 6 Release note
+
+You can find it [here](release_note.md)
