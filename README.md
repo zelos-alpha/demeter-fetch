@@ -649,3 +649,10 @@ To prevent download failure, demeter-fetch will download all files first, then c
 ## 6 Release note
 
 You can find it [here](release_note.md)
+
+## 7 Roadmap
+
+* Support more chain data download.
+* Improve download speed and reduce download cost.
+* Add more data output, LP position data etc.
+* Support pypi install and Sphinx doc on readthedoc.io.
