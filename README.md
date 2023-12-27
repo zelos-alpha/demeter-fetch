@@ -60,6 +60,8 @@ demeter-fetch is not available on Pypi, you need to clone this repo, and run loc
 ### 2.4 Download
 
 Create a target folder to store downloaded files, then prepare a config.toml file according to [config-sample.toml](config-sample.toml)
+* from.uniswap/from.aave from which dapp get event log
+* from.big_query/from.rpc/from.file/from.chifra data source configure
 
 then execute:
 
