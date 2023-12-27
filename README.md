@@ -2,15 +2,19 @@
 
 ## 1 What's this:
 
-Download uniswap pool event log, and convert it to different format for several purpose.
+Demeter-fetch system can fetch uniswap pool/proxy event log data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on LP about position, user investment behavior etc.
+
+Also can convert local raw file to tick/minute data for Demeter or other data analyze work.
 
 Demeter-fetch support download from the following source:
 
 * RPC: query data from rpc interface of any Ethereum like chain node.
-* Google BigQuery: just support Ethereum and Polygon, and cost a little dollar, but will fetch faster than rpc
-* TureBlocks Chifra: just support Ethereum data index
+* Google BigQuery: just support Ethereum and Polygon, and cost a little dollar, but will fetch faster than rpc.
+* TureBlocks Chifra: just support Ethereum data index.
 
-Usually, query a pool logs of a day form bigquery will cost 10 seconds. while query from node will cause several minutes.
+Usually, query a pool logs of a day form BigQuery will cost 10 seconds. while query from node will cause several minutes.
+
+One day time cost can get from benchmark section, and **BigQuery** is most recommend.
 
 Demeter-fetch support export data in following type:
 
@@ -18,9 +22,10 @@ Demeter-fetch support export data in following type:
 * minute: process uniswap data and resample it to minute, [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.minute.csv). Demeter use data in this type. 
 * tick: process uniswap data, each log will be decoded and listed. [sample](sample%2Fpolygon-0x45dda9cb7c25131df268515131f647d726f50608-2022-01-05.tick.csv)
 
+The detail of field for the file can be found in section 4.
+
 ### 1.1 Workflow
 ![workflow.png](workflow.png)
-Demeter-fetch system can fetch data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on LP about position, user investment behavior etc.
 
 ## 2 How to use
 
@@ -57,61 +62,6 @@ demeter-fetch is not available on Pypi, you need to clone this repo, and run loc
 ### 2.4 Download
 
 Create a target folder to store downloaded files, then prepare a config.toml file according to [config-sample.toml](config-sample.toml)
-```toml
-[from]
-chain = "polygon"
-datasource = "rpc" # big_query or rpc or file or chifra
-dapp_type = "uniswap" # uniswap or aave
-#http_proxy = "http://localhost:8080" # if network is bad, try use proxy
-
-[from.uniswap]
-pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
-
-[from.aave]
-tokens = [# address of erc20 token which avialable on aave
-    "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
-    "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
-]
-
-[from.big_query] # if you want to download from big query, use this section, from.rpc/from.file will be ignored
-start = "2022-3-16"
-end = "2022-3-17"
-auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json" # google bigquery auth file
-
-[from.rpc] # If you want to download from rpc interface, use this section, from.big_query/from.file will be ignored
-end_point = "https://localhost:8545"
-#auth_string = "Basic Y3J0Yzo3NKY3TjY" # auth string for rpc end point
-start = "2022-3-16"
-end = "2022-3-17"
-#batch_size = 500 # default is 500
-#keep_tmp_files = false
-ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
-etherscan_api_key = "some_api_key" #
-
-[from.file] # If you already have .raw.csv files, just want to convert them to tick/minute file, then use this section.
-#  either file_path or folder
-files = [# Path of files which you need to convert
-    "",
-    ""
-]
-folder = "" # Will convert all raw files in this folder.
-
-[from.chifra]
-# csv exported by chifra, eg. "chifra export --logs --fmt csv --first_block {start_height} --last_block {end_height} {contract_addr} > {output_file_name}.csv"
-# please ensure start_height is the beginning of the day and end_height is the end of the day, you can query height from day range by "python main.py date_to_height"
-file_path = "" # chifra pool file export path
-ignore_position_id = false # Just for uniswap, if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
-proxy_file_path = "" # chifra proxy file export path, Just for uniswap, only required when ignore_position_id=False
-#start = "2023-11-1"
-#end = "2023-11-5"
-#etherscan_api_key = "" # must fill if query etherscan for block, proxy must set.
-
-[to] # decide output
-type = "tick" # minute or tick or raw
-save_path = "./sample-data"
-multi_process = false # process in multi_process, defaut: False
-
-```
 
 then execute:
 
