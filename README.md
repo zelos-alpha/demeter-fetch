@@ -2,19 +2,17 @@
 
 ## 1 What's this:
 
-Demeter-fetch system can fetch uniswap pool/proxy event log data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on LP about position, user investment behavior etc.
+Demeter-fetch system can fetch uniswap pool/proxy event log data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on **LP about position**, user investment behavior etc.
 
-Also can convert local raw file to tick/minute data for Demeter or other data analyze work.
+Also can convert local raw file to tick/minute/position data for Demeter or other data analyze work.
 
 Demeter-fetch support download from the following source:
 
-* RPC: query data from rpc interface of any Ethereum like chain node.
-* Google BigQuery: just support Ethereum and Polygon, and cost a little dollar, but will fetch faster than rpc.
-* TureBlocks Chifra: just support Ethereum data index.
+* RPC: query data from rpc interface of any Ethereum like chain node, but it may be slow.
+* Google BigQuery: just support Ethereum and Polygon, and will cost a little dollar according to the query, but will fetch faster than rpc.
+* TureBlocks Chifra: just support Ethereum data index, some contract with big index will cost some time to make the index file.
 
-Usually, query a pool logs of a day form BigQuery will cost 10 seconds. while query from node will cause several minutes.
-
-One day time cost can get from benchmark section, and **BigQuery** is most recommend.
+Usually, query a pool logs of a day form BigQuery will cost 10 seconds, while query from node will cause several minutes. One day time cost can get from benchmark section, and **BigQuery** is most recommend. Your should make a choice on download speed and download cost.
 
 Demeter-fetch support export data in following type:
 
