@@ -5,6 +5,7 @@ import pandas as pd
 
 import demeter_fetch.processor_uniswap.minute as processor_minute
 import demeter_fetch.processor_uniswap.tick as processor_tick
+import demeter_fetch.processor_uniswap.position as processor_position
 import demeter_fetch.source_big_query.uniswap as source_big_query
 import demeter_fetch.source_chifra.uniswap as source_chifra
 import demeter_fetch.source_file.common as source_file
@@ -34,14 +35,23 @@ def generate_one(param):
             result_df = processor_minute.preprocess_one(df)
         case ToType.tick:
             result_df = processor_tick.preprocess_one(df)
+        case ToType.position:
+            result_df = processor_tick.preprocess_one(df)
         case _:
             raise NotImplementedError(f"Convert to {to_config.type} not implied")
     result_df.to_csv(target_file_name, index=False)
 
 
+def generate_position(config):
+    processor_position.generate_user_position(config)
+
+
 class Downloader(GeneralDownloader):
     def _get_process_func(self):
         return generate_one
+
+    def generate_position(self, config):
+        generate_position(config)
 
     def _download_rpc(self, config: Config):
         if len(config.to_config.to_file_list) == 0:
@@ -95,9 +105,20 @@ class Downloader(GeneralDownloader):
         return all_raw_files
 
     def _download_big_query(self, config: Config):
+        if config.to_config.type == ToType.position:
+            source_big_query.download_event(
+                config.from_config.chain,
+                ChainTypeConfig[config.from_config.chain]["uniswap_proxy_addr"],
+                source_big_query.download_proxy_event_one_day,
+                config.to_config.to_file_list,
+                config.to_config.save_path,
+                config.from_config.big_query.auth_file,
+                config.from_config.http_proxy,
+            )
         return source_big_query.download_event(
             config.from_config.chain,
             config.from_config.uniswap_config.pool_address,
+            source_big_query.download_pool_event_one_day,
             config.to_config.to_file_list,
             config.to_config.save_path,
             config.from_config.big_query.auth_file,

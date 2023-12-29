@@ -67,6 +67,7 @@ class ToType(str, Enum):
     minute = "minute"
     tick = "tick"
     raw = "raw"
+    position = "position"
 
 
 class DappType(str, Enum):
@@ -157,6 +158,7 @@ class OnchainTxType(str, Enum):
     BORROW = "BORROW"
     REPAY = "REPAY"
     LIQUIDATION = "LIQUIDATION"
+    TRANSFER = "TRANSFER"
 
 
 @dataclass

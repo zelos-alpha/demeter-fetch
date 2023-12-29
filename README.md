@@ -73,7 +73,7 @@ python main.py config.toml
 
 ### 2.5 Examples
 
-#### ethereum chifra(local) download
+#### 2.5.1 ethereum chifra(local) download
 config_chifra_local.toml with local pool csv file and proxy csv file
 ```toml
 [from]
@@ -149,7 +149,7 @@ result:
 100%|█████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:08<00:00,  8.17s/it]
 ```
 
-#### ethereum chifra(export) download
+#### 2.5.2 ethereum chifra(export) download
 config_chifra_export.toml with local pool csv file and proxy csv file
 ```toml
 [from]
@@ -233,7 +233,7 @@ PROG[26-12|14:31:26.838] [..................................................]  0
 100%|█████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:01<00:00,  1.84s/it]
 ```
 
-#### polygon rpc download
+#### 2.5.3 polygon rpc download
 config_rpc.toml
 ```toml
 [from]
@@ -312,7 +312,7 @@ Download from 2023-11-20 to 2023-11-20
 100%|█████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.54s/it]
 ```
 
-#### polygon bigquery download
+#### 2.5.4 polygon bigquery download
 config_bigquery.toml
 ```toml
 [from]
@@ -373,7 +373,7 @@ python main.py config_bigquery.toml
 100%|█████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:02<00:00,  2.18s/it]
 ```
 
-#### convert raw file to tick/minute resample file
+#### 2.5.5 convert raw file to tick/minute resample file
 config_convert.toml
 ```toml
 [from]
@@ -432,6 +432,68 @@ python main.py config_convert.toml
 2023-11-30 23:13:53 Start generate 1 files
 100%|█████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  1.00it/s]
 Process finished with exit code 0
+```
+
+#### 2.5.6 polygon bigquery position
+config_polygon_position.toml
+```toml
+[from]
+chain = "polygon"
+datasource = "big_query" # big_query or rpc or file
+dapp_type = "uniswap" # uniswap or aave
+http_proxy = "http://127.0.0.1:7890"
+
+[from.uniswap]
+pool_address = "0x45dda9cb7c25131df268515131f647d726f50608"
+
+[from.big_query] # keep this section according to from.datasource
+start = "2023-11-15"
+end = "2023-11-16"
+auth_file = "./auth/celtic-sunlight-390615-2b544ab70df4.json" # google bigquery auth file
+
+[to]
+type = "position" # minute or tick or raw or position
+save_path = "./sample-data"
+multi_process = false # process in multi_process, defaut: False
+skip_existed = true
+```
+run script and get result:
+```text
+python main.py config_polygon_position.toml 
+2023-12-29 13:35:25 Download config: {
+    "from_config": {
+        "chain": "polygon",
+        "data_source": "big_query",
+        "dapp_type": "uniswap",
+        "uniswap_config": {
+            "pool_address": "0x45dda9cb7c25131df268515131f647d726f50608"
+        },
+        "aave_config": null,
+        "big_query": {
+            "start": "2023-11-15",
+            "end": "2023-11-16",
+            "auth_file": "./auth/celtic-sunlight-390615-2b544ab70df4.json"
+        },
+        "chifra_config": null,
+        "rpc": null,
+        "file": null,
+        "http_proxy": "http://127.0.0.1:7890"
+    },
+    "to_config": {
+        "type": "position",
+        "save_path": "./sample-data",
+        "multi_process": false,
+        "skip_existed": true,
+        "to_file_list": {}
+    }
+}
+2023-12-29 13:35:25 Will generate 2 files
+2023-12-29 13:35:25 Skip existed files, 2 files is exist, now will generate 0 files
+2023-12-29 13:35:25 Start generate position address record.
+Loading proxy logs.: 100%|██████████| 2/2 [00:00<00:00, 15.35it/s]
+Loading position data.: 100%|██████████| 2/2 [00:01<00:00,  1.23it/s]
+Generate position address rel.: 100%|██████████| 235/235 [00:00<00:00, 943216.69it/s]
+Generate liquidity record.: 100%|██████████| 364/364 [00:00<00:00, 571.98it/s]
 ```
 
 ## 3 Benchmark

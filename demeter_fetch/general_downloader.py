@@ -29,6 +29,9 @@ class GeneralDownloader(object):
 
         return func
 
+    def generate_position(self, config):
+        pass
+
     def download(self, config: Config):
         raw_file_list = []
         if not os.path.exists(config.to_config.save_path):
@@ -49,6 +52,9 @@ class GeneralDownloader(object):
         if config.to_config.type != ToType.raw:
             print_log(f"Start generate {len(raw_file_list)} files")
             GeneralDownloader._generate_to_files(config.to_config, raw_file_list, self._get_process_func())
+        if config.to_config.type in [ToType.position]:
+            print_log("Start generate position address record.")
+            self.generate_position(config)
 
     @staticmethod
     def _generate_to_files(to_config: ToConfig, raw_files: List[str], func_generate_one):
