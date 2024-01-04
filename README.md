@@ -1,6 +1,63 @@
 # README
 
-## 1 What's this:
+## 1. Introduction
+
+dDemeter-fetch is a member of the demeter family, which is responsible for fetching and processing on-chain data. It provides standardized data for backtesting and defi studies.
+```mermaid
+graph TD;
+   demeter-fetch --> demeter;
+   demeter-fetch --> DeFi-research;
+```
+
+
+Demeter-fetch can fetch chain event logs of DEFI projects from various sources and convert them into a unified format. In the project dimension, it supports Uniswap and AAVE. In the data source dimension, the supported data sources include:
+
+* rpc: Standard RPC interface of evm chains.
+* Google BigQuery: BigQuery is a fully managed enterprise data warehouse that helps you manage and analyze your data with built-in features like machine learning, crypto coin analysis, and business intelligence. BigQuery's serverless architecture lets you use SQL queries to answer your organization's biggest questions with zero infrastructure management. 
+* chifra: This is an on-chain data indexing tool from Trueblocks. It can scrape and reorganize on-chain data, and export them in various formats. 
+
+Demeter-fetch supports export formats such as
+
+* Uniswap:
+	* minutely OHLC: Open, high, low, close of data (price, liquidity etc.) in a minute interval.
+	* tick: formatted transaction of uniswap
+	* positions(TODO): transaction data for position dimension
+	* LP of address(TODO): transactions of liquidity providers 
+	* fee on tick(TODO): How many fees can be collected per minute for each tick. 
+	* return rate(TODO): Return rate of positions
+* AAVE:
+	* minutely OHLC
+	* tick 
+
+The minutely OHLC is mainly used in Demeter, while tick data can be transformed into many forms of data.
+
+The system uses streaming processing, first summarizing all the channels into raw files, and then processing them into various data. The processing flow is shown in the figure
+
+```mermaid
+flowchart TB;
+   RPC[fa:fa-check RPC] --> raw;
+   BigQuery --> raw;
+   Chifra --> raw;
+   raw --> minute;
+   raw --> tick;
+   tick --> Uniswap;
+   tick --> AAVE;
+   tick --> other_defi;
+   subgraph Uniswap;
+      direction TB;
+      position;
+      address_LP;
+      fee_on_tick;
+      return_rate;
+   end
+   subgraph AAVE;
+      aave_tick[tick];
+   end
+   subgraph other_defi;
+      other_tick[tick];
+   end
+```
+	
 
 Demeter-fetch system can fetch uniswap pool/proxy event log data from RPC/BigQuery/TrueBlocks Chifra according to user needs, and it save downloaded data to **Raw Data**, then user can generate **Tick Data** or **1Min Resample Data**, They can be used in **Demeter** back trade system and data analyze on **LP about position**, user investment behavior etc.
 
