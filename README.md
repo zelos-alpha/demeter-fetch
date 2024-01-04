@@ -23,8 +23,7 @@ Demeter-fetch support export data in following type:
 The detail of field for the file can be found in section 4.
 
 ### 1.1 Workflow
-![workflow.png](workflow.png)
-
+![workflow.png](docs/workflow.png)
 ## 2 How to use
 
 ### 2.1 Prepare big query
@@ -660,7 +659,7 @@ To prevent download failure, demeter-fetch will download all files first, then c
 
 ## 6 Release note
 
-You can find it [here](release_note.md)
+You can find it [here](docs/release_note.md)
 
 ## 7 Roadmap
 
