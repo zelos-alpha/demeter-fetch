@@ -35,7 +35,7 @@ The system uses streaming processing, first summarizing all the channels into ra
 
 ```mermaid
 flowchart TB;
-   RPC[√ RPC] --> raw;
+   RPC[fa:fa-check RPC] --> raw;
    BigQuery --> raw;
    Chifra --> raw;
    raw --> minute;
