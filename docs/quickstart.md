@@ -1,47 +1,60 @@
-## 2 How to use
+# Quick start
 
-### 2.1 Prepare big query
+## 1. Prepare data source
 
-To use bigquery, you should prepare account and environment.
+### 1.1 big query
 
-1. Sign up a google account. and then access [google cloud](https://console.cloud.google.com) to register google cloud platform.
-2. Apply an api key, and install library. follow the tutorial on [official document site](https://cloud.google.com/bigquery/docs/reference/libraries)
-3. Try query here: https://console.cloud.google.com/bigquery. Chain data is public, no extra authority is needed.
+If you want to download via BigQuery, you should prepare an account and environment.
 
-In BigQuery, you can query chain data with correct id and table name. the query interface is compatible sql. You can try with this sql
+1. Sign up a Google account. and then access [Google cloud](https://console.cloud.google.com) to register Google cloud
+   platform.
+2. Apply an api key, which will be used in config file of demeter-fetch
+3. If you want to try out your own query, try a query here: https://console.cloud.google.com/bigquery. If you want to
+   query by api, you can install BigQuery API Client Libraries library. follow the tutorial
+   on [official document site](https://cloud.google.com/bigquery/docs/reference/libraries)
+
+Here is an example of query from blocks.
 
 ```sql
 select * from bigquery-public-data.crypto_ethereum.blocks where timestamp="2015-07-30 15:26:28"
 ```
 
-> note: If you have network issues on Google, set proper proxy before download data.
+### 1.2 Prepare RPC
 
-### 2.2 Prepare RPC
+If you want to query from RPC interface of evm chains, you should find a node. Or query from an RPC provider like
+infura, quicknode, alchemy.
+Set up your own node will reduce network transmission delays, thus reducing download times.
+If you have trouble on connection, demeter-fetch also provides a configuration on proxy.
 
-To use node, you can get sign up a data provider account like infura, quicknode, alchemy. or setup your node to short the request delay. If you have trouble on connection, demeter also provide proxy configuration.
+### 1.3 Prepare Chifra
 
-### 2.3 Prepare Chifra
+If you have your own node, you can try Chifra from trueblocks.
+After [installing](https://trueblocks.io/docs/install/install-core/).
+You can start indexing chain data with ```chifra scrape```. After sync finished, you can export chain data like blocks,
+transactions, logs, balances.
 
-You should install as doc [TrueBlock install](https://trueblocks.io/docs/install/install-core/)  
-Remember it only support Linux and Mac system.  
-And if you have trouble, you can find result at [install troubleshooting](https://trueblocks.io/docs/install/install-troubleshooting/)
+## 2 Install and run
 
-### 2.3 Install
-
-demeter-fetch is not available on Pypi, you need to clone this repo, and run locally. then install dependency.
-
-### 2.4 Download
-
-Create a target folder to store downloaded files, then prepare a config.toml file according to [config-sample.toml](config-sample.toml)
-* from.uniswap/from.aave from which dapp get event log
-* from.big_query/from.rpc/from.file/from.chifra data source configure
-
-then execute:
+demeter-fetch is available on Pypi, you can install by
 
 ```shell
-cd demeter-fetch
-python main.py config.toml
-
+pip install demeter-fetch
 ```
 
-More samples are here: [samples](docs/samples.md)
+Then prepare a configration file according to [config-sample.toml](config-sample.toml)
+
+At last, execute:
+
+```shell
+demeter-fetch -c config.toml
+```
+
+If you want to run the latest version, you can clone this repo, and run locally.
+
+```shell
+git clone https://github.com/zelos-alpha/demeter-fetch.git
+cd demeter-fetch
+python main.py -c config.toml
+```
+
+More samples are here: [samples](samples.md)
