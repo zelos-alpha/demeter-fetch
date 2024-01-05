@@ -31,31 +31,33 @@ Demeter-fetch supports export formats such as
 
 The minutely OHLC is mainly used in Demeter, while tick data can be transformed into many forms of data.
 
-The system uses streaming processing, first summarizing all the channels into raw files, and then processing them into various data. The processing flow is shown in the figure
+The system uses streaming processing, first summarizing all the channels into raw files, and then processing them into various data. The processing flow is shown in the figure. Green is finished, while yellow is to do.
 
 ```mermaid
 flowchart TB;
-   RPC[√ RPC] --> raw;
-   BigQuery --> raw;
-   Chifra --> raw;
-   raw --> minute;
-   raw --> tick;
+   RPC:::done --> raw:::done;
+   BigQuery:::done --> raw;
+   Chifra:::done --> raw;
+   raw --> minute:::done;
+   raw --> tick:::done;
    tick --> Uniswap;
    tick --> AAVE;
    tick --> other_defi;
    subgraph Uniswap;
       direction TB;
-      position;
-      address_LP;
-      fee_on_tick;
-      return_rate;
+      position:::to_do;
+      address_LP:::to_do;
+      fee_on_tick:::to_do;
+      return_rate:::to_do;
    end
    subgraph AAVE;
-      aave_tick[tick];
+      aave_tick[tick]:::done;
    end
    subgraph other_defi;
-      other_tick[tick];
+      other_tick[tick]:::to_do;
    end
+   classDef done fill:#00ff00
+   classDef to_do fill:#ffff00
 ```
 	
 
