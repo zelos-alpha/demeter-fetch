@@ -41,7 +41,7 @@ demeter-fetch is available on Pypi, you can install by
 pip install demeter-fetch
 ```
 
-Then prepare a configration file according to [config-sample.toml](config-sample.toml)
+Then prepare a configration file according to [config-sample.toml](../config-sample.toml)
 
 At last, execute:
 

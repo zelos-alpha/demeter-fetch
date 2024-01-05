@@ -149,7 +149,7 @@ dapp_type = "uniswap"
 pool_address = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"
 
 [from.file]# add this secion
-folder = "./sameple"
+folder = "./sample"
 
 [to]
 type = "true"
@@ -159,7 +159,7 @@ multi_process = false
 
 ## 2. For defi-research
 
-If you want to do some research on uniswap, you need tick files. Just set "type" in "to" section to "tick"
+If you want to do some research on uniswap, you need tick files. Set "type" in "to" section to "tick"
 
 ```toml
 [from]
