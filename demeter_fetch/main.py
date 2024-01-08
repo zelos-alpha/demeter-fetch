@@ -4,16 +4,15 @@ import os
 import sys
 import argparse
 import time
-from datetime import date, datetime
+from datetime import datetime
 
 import toml
 
 import demeter_fetch as df
 import demeter_fetch.uniswap_downloader as uniswap_downloader
 import demeter_fetch.aave_downloader as aave_downloader
-import demeter_fetch.utils as utils
-from demeter_fetch import general_downloader, FromConfig, ChainType, DappType, ChifraConfig, UniswapConfig, AaveConfig
-from demeter_fetch.source_chifra import chifra_utils
+import demeter_fetch.common.utils as utils
+from demeter_fetch import general_downloader, ChainType
 
 
 def download(cfg_path):

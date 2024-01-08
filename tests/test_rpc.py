@@ -4,8 +4,9 @@ from datetime import datetime
 
 import toml
 
-import demeter_fetch._typing as typing
-from demeter_fetch import constants, utils
+import demeter_fetch.common._typing as typing
+from demeter_fetch import constants
+from demeter_fetch.common import utils
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, HeightCacheManager, ContractConfig, query_event_by_height
 from demeter_fetch.source_rpc.uniswap import query_uniswap_pool_logs, append_proxy_log
 

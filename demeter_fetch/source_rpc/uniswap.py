@@ -9,10 +9,10 @@ import pandas as pd
 from tqdm import tqdm  # process bar
 
 import demeter_fetch.constants as constants
-import demeter_fetch.utils as utils
-from demeter_fetch._typing import ChainType, ChainTypeConfig
+import demeter_fetch.common.utils as utils
+from demeter_fetch.common._typing import ChainType, ChainTypeConfig
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
-from demeter_fetch.utils import print_log
+from demeter_fetch.common.utils import print_log
 
 """
 通过rpc下载, event log, 并管理时间-高度的缓存.

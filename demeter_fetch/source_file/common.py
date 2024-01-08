@@ -1,8 +1,8 @@
 import os
 from typing import List
 
-import demeter_fetch._typing as _typing
-from demeter_fetch.utils import print_log
+import demeter_fetch.common._typing as _typing
+from demeter_fetch.common.utils import print_log
 
 
 def load_raw_file_names(file_config: _typing.FileConfig) -> List[str]:

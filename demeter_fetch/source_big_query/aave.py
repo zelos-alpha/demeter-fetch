@@ -1,15 +1,15 @@
 import os
-from datetime import timedelta, date
+from datetime import date
 from typing import List, Dict
 
 import pandas as pd
 from google.cloud import bigquery
 from tqdm import tqdm
 
-import demeter_fetch._typing as _typing
+import demeter_fetch.common._typing as _typing
 import demeter_fetch.constants as constants
-import demeter_fetch.utils as utils
-from .big_query_utils import BigQueryChain, set_environment, get_date_array
+import demeter_fetch.common.utils as utils
+from .big_query_utils import BigQueryChain, set_environment
 
 
 def download_event(
@@ -71,7 +71,7 @@ def download_tick_event_one_day(chain: _typing.ChainType, one_date: date, tokens
     bq_chain_name = BigQueryChain[chain.name]
     token_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tokens])
     keccak_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in [constants.SUPPLY_KECCAK, constants.WITHDRAW_KECCAK, constants.BORROW_KECCAK,
-                           constants.REPAY_KECCAK, constants.LIQUIDATION_KECCAK]])
+                                                                            constants.REPAY_KECCAK, constants.LIQUIDATION_KECCAK]])
     query = f"""
             SELECT block_number,transaction_hash,block_timestamp,transaction_index,log_index,topics,DATA
             FROM {bq_chain_name.value["table_name"]}

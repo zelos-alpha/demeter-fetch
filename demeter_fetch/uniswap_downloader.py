@@ -11,9 +11,9 @@ import demeter_fetch.source_chifra.uniswap as source_chifra
 import demeter_fetch.source_file.common as source_file
 import demeter_fetch.source_rpc.uniswap as source_rpc
 from demeter_fetch.constants import PROXY_CONTRACT_ADDRESS
-from ._typing import *
+from demeter_fetch.common._typing import *
 from .general_downloader import GeneralDownloader
-from .utils import print_log, convert_raw_file_name, TimeUtil, get_file_name
+from demeter_fetch.common.utils import print_log, convert_raw_file_name, TimeUtil, get_file_name
 
 
 def generate_one(param):

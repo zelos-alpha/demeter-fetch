@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Tuple
 import pandas as pd
 from tqdm import tqdm
-from demeter_fetch._typing import ChainType, ChainTypeConfig
+from demeter_fetch.common._typing import ChainTypeConfig
 
 
 def to_decimal(value) -> Decimal:

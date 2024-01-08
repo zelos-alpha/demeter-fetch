@@ -1,15 +1,15 @@
 import os
-from datetime import timedelta, date
+from datetime import date
 from typing import List, Dict, Callable
 
 import pandas as pd
 from google.cloud import bigquery
 from tqdm import tqdm
 
-import demeter_fetch._typing as _typing
+import demeter_fetch.common._typing as _typing
 import demeter_fetch.constants as constants
-import demeter_fetch.utils as utils
-from .big_query_utils import BigQueryChain, set_environment, get_date_array
+import demeter_fetch.common.utils as utils
+from .big_query_utils import BigQueryChain, set_environment
 
 
 def download_event(

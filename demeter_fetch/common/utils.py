@@ -2,12 +2,11 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-import numpy as np
 import pandas as pd
 import requests
 
-from . import constants
-from ._typing import *
+from demeter_fetch import constants
+from demeter_fetch.common._typing import *
 
 
 def get_file_name(chain: ChainType, pool_address, day: date | str):
@@ -37,128 +36,6 @@ def print_log(*args):
     print(*new_tuple)
 
 
-def convert_to_config(conf_file: dict) -> Config:
-    to_type = ToType[conf_file["to"]["type"]]
-    save_path = "../"
-    if "save_path" in conf_file["to"]:
-        save_path = conf_file["to"]["save_path"]
-    multi_process = False
-    if "multi_process" in conf_file["to"]:
-        multi_process = conf_file["to"]["multi_process"]
-    skip_existed = False
-    if "skip_existed" in conf_file["to"]:
-        skip_existed = conf_file["to"]["skip_existed"]
-    to_config = ToConfig(to_type, save_path, multi_process, skip_existed)
-
-    chain = ChainType[conf_file["from"]["chain"]]
-    data_source = DataSource[conf_file["from"]["datasource"]]
-
-    dapp_type = DappType[conf_file["from"]["dapp_type"]]
-
-    http_proxy = None
-    if "http_proxy" in conf_file["from"]:
-        http_proxy = conf_file["from"]["http_proxy"]
-    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy)
-
-    if dapp_type == DappType.uniswap:
-        pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
-        from_config.uniswap_config = UniswapConfig(pool_address)
-    elif dapp_type == DappType.aave:
-        token_addresses = [x.lower() for x in conf_file["from"]["aave"]["tokens"]]
-        from_config.aave_config = AaveConfig(token_addresses)
-
-    if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
-        raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")
-    match data_source:
-        case DataSource.file:
-            if "file" not in conf_file["from"]:
-                raise RuntimeError("should have [from.file]")
-            files = None
-            if "files" in conf_file["from"]["file"]:
-                files = conf_file["from"]["file"]["files"]
-            folder = None
-            if "folder" in conf_file["from"]["file"]:
-                folder = conf_file["from"]["file"]["folder"]
-            if files is None and folder is None:
-                raise RuntimeError("file_path and folder can not both null")
-
-            from_config.file = FileConfig(files, folder)
-
-        case DataSource.rpc:
-            if "rpc" not in conf_file["from"]:
-                raise RuntimeError("should have [from.rpc]")
-            auth_string = None
-            if "auth_string" in conf_file["from"]["rpc"]:
-                auth_string = conf_file["from"]["rpc"]["auth_string"]
-
-            keep_tmp_files = None
-            if "keep_tmp_files" in conf_file["from"]["rpc"]:
-                keep_tmp_files = conf_file["from"]["rpc"]["keep_tmp_files"]
-            ignore_position_id = False
-            if "ignore_position_id" in conf_file["from"]["rpc"]:
-                ignore_position_id = conf_file["from"]["rpc"]["ignore_position_id"]
-            etherscan_api_key = None
-            if "etherscan_api_key" in conf_file["from"]["rpc"]:
-                etherscan_api_key = conf_file["from"]["rpc"]["etherscan_api_key"]
-            end_point = conf_file["from"]["rpc"]["end_point"]
-            start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
-            batch_size = 500
-            if "batch_size" in conf_file["from"]["rpc"]:
-                batch_size = int(conf_file["from"]["rpc"]["batch_size"])
-
-            from_config.rpc = RpcConfig(
-                end_point=end_point,
-                start=start_time,
-                end=end_time,
-                batch_size=batch_size,
-                auth_string=auth_string,
-                keep_tmp_files=keep_tmp_files,
-                ignore_position_id=ignore_position_id,
-                etherscan_api_key=etherscan_api_key,
-            )
-        case DataSource.big_query:
-            if "big_query" not in conf_file["from"]:
-                raise RuntimeError("should have [from.big_query]")
-            start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
-            auth_file = conf_file["from"]["big_query"]["auth_file"]
-            from_config.big_query = BigQueryConfig(
-                start=start_time,
-                end=end_time,
-                auth_file=auth_file,
-            )
-        case DataSource.chifra:
-            start_time = None
-            if 'start' in conf_file["from"]["chifra"]:
-                start_time = datetime.strptime(conf_file["from"]["chifra"]["start"], "%Y-%m-%d").date()
-            end_time = None
-            if 'end' in conf_file["from"]["chifra"]:
-                end_time = datetime.strptime(conf_file["from"]["chifra"]["end"], "%Y-%m-%d").date()
-            if "chifra" not in conf_file["from"]:
-                raise RuntimeError("should have [from.chifra]")
-            file_path = conf_file["from"]["chifra"]["file_path"]
-            ignore_position_id = False
-            if "ignore_position_id" in conf_file["from"]["chifra"]:
-                ignore_position_id = conf_file["from"]["chifra"]["ignore_position_id"]
-            proxy_file_path = None
-            if "proxy_file_path" in conf_file["from"]["chifra"]:
-                proxy_file_path = conf_file["from"]["chifra"]["proxy_file_path"]
-            if not ignore_position_id and proxy_file_path is None:
-                raise RuntimeError("If you want to append uniswap proxy logs, you should export proxy pool, too")
-            etherscan_api_key = None
-            if "etherscan_api_key" in conf_file["from"]["chifra"]:
-                etherscan_api_key = conf_file["from"]["chifra"]["etherscan_api_key"]
-            from_config.chifra_config = ChifraConfig(
-                file_path=file_path,
-                ignore_position_id=ignore_position_id,
-                proxy_file_path=proxy_file_path,
-                etherscan_api_key=etherscan_api_key,
-                start=start_time,
-                end=end_time,
-            )
-
-    return Config(from_config, to_config)
 
 
 class TextUtil(object):

@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-import demeter_fetch._typing as _typing
+import demeter_fetch.common._typing as _typing
 import demeter_fetch.constants as constants
 
 

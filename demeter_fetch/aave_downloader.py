@@ -1,4 +1,3 @@
-import os.path
 from typing import Dict
 
 import pandas as pd
@@ -7,10 +6,9 @@ import demeter_fetch.processor_aave.minute as processor_minute
 import demeter_fetch.processor_aave.tick as processor_tick
 import demeter_fetch.source_big_query.aave as source_big_query
 import demeter_fetch.source_file.common as source_file
-import demeter_fetch.source_rpc.aave as source_rpc
-from ._typing import Config, ToType, DataSource, AaveKey
+from demeter_fetch.common._typing import Config, ToType, DataSource, AaveKey
 from .general_downloader import GeneralDownloader
-from .utils import print_log, convert_raw_file_name, TimeUtil, get_aave_file_name
+from demeter_fetch.common.utils import convert_raw_file_name, TimeUtil, get_aave_file_name
 
 
 def process_aave_raw_file(param):

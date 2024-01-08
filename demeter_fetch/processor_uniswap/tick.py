@@ -7,7 +7,7 @@ from typing import Dict, Set, Tuple
 
 import pandas as pd
 
-import demeter_fetch._typing as _typing
+import demeter_fetch.common._typing as _typing
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
 
 

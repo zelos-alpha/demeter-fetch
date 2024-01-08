@@ -11,9 +11,9 @@ from typing import List, Dict
 import requests
 from tqdm import tqdm  # process bar
 
-import demeter_fetch.utils as utils
-from demeter_fetch._typing import ChainType
-from demeter_fetch._typing import EthError
+import demeter_fetch.common.utils as utils
+from demeter_fetch.common._typing import ChainType
+from demeter_fetch.common._typing import EthError
 
 
 @dataclass

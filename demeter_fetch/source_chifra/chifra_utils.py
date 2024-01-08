@@ -1,12 +1,13 @@
 import os.path
-from datetime import date, datetime
+from datetime import datetime
 from typing import Tuple
 
 import pandas as pd
 from tqdm import tqdm
 
-from demeter_fetch import FromConfig, DappType, utils, ChainType, ChainTypeConfig
-from demeter_fetch.utils import print_log
+from demeter_fetch import FromConfig, DappType, ChainType, ChainTypeConfig
+from demeter_fetch.common import utils
+from demeter_fetch.common.utils import print_log
 
 
 def get_export_commend(from_config: FromConfig) -> Tuple[str, int, int]:

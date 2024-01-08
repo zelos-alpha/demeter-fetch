@@ -3,8 +3,8 @@ from multiprocessing import Pool
 
 from tqdm import tqdm
 
-from ._typing import *
-from .utils import print_log
+from demeter_fetch.common._typing import *
+from demeter_fetch.common.utils import print_log
 
 
 def _generate_one(param):
