@@ -4,7 +4,7 @@
 # @Author  : 32ethers
 # @Description:
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import List, Callable, Dict
 
 import pandas as pd
 import numpy as np
@@ -25,7 +25,8 @@ class DescDataFrame:
 class Node:
     name: str
     depend: List  # list of node
-    processor: Callable[[Config, List[DescDataFrame]], DescDataFrame]
+    processor: Callable[[Config, Dict[str, DescDataFrame]], DescDataFrame]
+    is_download: bool = False
 
     def __str__(self):
         return self.name

@@ -68,6 +68,7 @@ class ToType(str, Enum):
     tick = "tick"
     raw = "raw"
     position = "position"
+    address = "address"
 
 
 class DappType(str, Enum):
@@ -77,16 +78,12 @@ class DappType(str, Enum):
 
 @dataclass
 class BigQueryConfig:
-    start: date
-    end: date
     auth_file: str
 
 
 @dataclass
 class RpcConfig:
     end_point: str
-    start: date
-    end: date
     batch_size: int = 500
     auth_string: str | None = None
     keep_tmp_files: bool = False
@@ -99,8 +96,6 @@ class ChifraConfig:
     file_path: str
     ignore_position_id: bool = False  # just for uniswap, if set to true, will not download proxy logs and leave a empty column
     proxy_file_path: str = None # just for uniswap
-    start: date = None
-    end: date = None
     etherscan_api_key: str = None # query block number
 
 
@@ -130,6 +125,8 @@ class FromConfig:
     chain: ChainType
     data_source: DataSource
     dapp_type: DappType
+    start: date
+    end: date
     uniswap_config: UniswapConfig | None = None
     aave_config: AaveConfig | None = None
     big_query: BigQueryConfig | None = None

@@ -7,18 +7,21 @@
 from demeter_fetch.common import *
 
 
-def get_item_with_default_2(cfg: Dict, key1: str, key2: str, default_val):
+def get_item_with_default_2(cfg: Dict, key1: str, key2: str, default_val, converter=None):
     val = default_val
     if key2 in cfg[key1]:
         val = cfg[key1][key2]
-    return val
+    if converter is None or val is None:
+        return val
+    else:
+        return converter(val)
 
 
 def get_item_with_default_3(cfg: Dict, key1: str, key2: str, key3: str, default_val, converter=None):
     val = default_val
     if key3 in cfg[key1][key2]:
         val = cfg[key1][key2][key3]
-    if converter is None:
+    if converter is None or val is None:
         return val
     else:
         return converter(val)
@@ -33,11 +36,11 @@ def convert_to_config(conf_file: dict) -> Config:
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
-
     dapp_type = DappType[conf_file["from"]["dapp_type"]]
-
     http_proxy = get_item_with_default_2(conf_file, "from", "http_proxy", None)
-    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy)
+    start_time = get_item_with_default_2(conf_file, "from", "start", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
+    end_time = get_item_with_default_2(conf_file, "from", "end", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
+    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy, start=start_time, end=end_time)
 
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
@@ -68,14 +71,10 @@ def convert_to_config(conf_file: dict) -> Config:
             ignore_position_id = get_item_with_default_3(conf_file, "from", "rpc", "ignore_position_id", False)
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "rpc", "etherscan_api_key", None)
             end_point = conf_file["from"]["rpc"]["end_point"]
-            start_time = datetime.strptime(conf_file["from"]["rpc"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["rpc"]["end"], "%Y-%m-%d").date()
             batch_size = get_item_with_default_3(conf_file, "from", "rpc", "batch_size", 500)
 
             from_config.rpc = RpcConfig(
                 end_point=end_point,
-                start=start_time,
-                end=end_time,
                 batch_size=batch_size,
                 auth_string=auth_string,
                 keep_tmp_files=keep_tmp_files,
@@ -85,20 +84,13 @@ def convert_to_config(conf_file: dict) -> Config:
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
                 raise RuntimeError("should have [from.big_query]")
-            start_time = datetime.strptime(conf_file["from"]["big_query"]["start"], "%Y-%m-%d").date()
-            end_time = datetime.strptime(conf_file["from"]["big_query"]["end"], "%Y-%m-%d").date()
             auth_file = conf_file["from"]["big_query"]["auth_file"]
             from_config.big_query = BigQueryConfig(
-                start=start_time,
-                end=end_time,
                 auth_file=auth_file,
             )
         case DataSource.chifra:
             if "chifra" not in conf_file["from"]:
                 raise RuntimeError("should have [from.chifra]")
-
-            start_time = get_item_with_default_3(conf_file, "from", "chifra", "start", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
-            end_time = get_item_with_default_3(conf_file, "from", "chifra", "end_time", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
 
             file_path = conf_file["from"]["chifra"]["file_path"]
             ignore_position_id = get_item_with_default_3(conf_file, "from", "chifra", "ignore_position_id", False)
@@ -114,8 +106,6 @@ def convert_to_config(conf_file: dict) -> Config:
                 ignore_position_id=ignore_position_id,
                 proxy_file_path=proxy_file_path,
                 etherscan_api_key=etherscan_api_key,
-                start=start_time,
-                end=end_time,
             )
 
     return Config(from_config, to_config)
