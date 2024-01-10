@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import List
 from _decimal import Decimal
-import demeter_fetch.constants as constants
+import demeter_fetch.common.constants as constants
 import demeter_fetch.common._typing as _typing
 
 RAY = 10**27

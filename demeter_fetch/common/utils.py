@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import requests
 
-from demeter_fetch import constants
+from demeter_fetch.common import constants
 from demeter_fetch.common._typing import *
 
 

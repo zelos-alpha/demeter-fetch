@@ -8,7 +8,7 @@ from typing import List, Dict
 import pandas as pd
 from tqdm import tqdm  # process bar
 
-import demeter_fetch.constants as constants
+import demeter_fetch.common.constants as constants
 import demeter_fetch.common.utils as utils
 from demeter_fetch.common._typing import ChainType, ChainTypeConfig
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file

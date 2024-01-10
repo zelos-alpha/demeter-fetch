@@ -7,7 +7,7 @@ from google.cloud import bigquery
 from tqdm import tqdm
 
 import demeter_fetch.common._typing as _typing
-import demeter_fetch.constants as constants
+import demeter_fetch.common.constants as constants
 import demeter_fetch.common.utils as utils
 from .big_query_utils import BigQueryChain, set_environment
 

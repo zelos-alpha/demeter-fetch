@@ -8,8 +8,9 @@ import pandas as pd
 from tqdm import tqdm
 import demeter_fetch.common._typing as _typing
 
-from demeter_fetch import Config, ChainTypeConfig, constants
-from demeter_fetch.constants import MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK, PROXY_CONTRACT_ADDRESS
+from demeter_fetch import Config, ChainTypeConfig
+from ..common import constants
+from demeter_fetch.common.constants import MINT_KECCAK, SWAP_KECCAK, BURN_KECCAK, COLLECT_KECCAK, PROXY_CONTRACT_ADDRESS
 from demeter_fetch.common.utils import print_log, get_file_name, UniswapUtil, ApiUtil, TimeUtil
 from .chifra_utils import join_topic, save_by_day
 

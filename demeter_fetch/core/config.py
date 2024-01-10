@@ -32,7 +32,8 @@ def convert_to_config(conf_file: dict) -> Config:
     save_path = get_item_with_default_2(conf_file, "to", "save_path", "../")
     multi_process = get_item_with_default_2(conf_file, "to", "multi_process", False)
     skip_existed = get_item_with_default_2(conf_file, "to", "skip_existed", False)
-    to_config = ToConfig(to_type, save_path, multi_process, skip_existed)
+    keep_raw = get_item_with_default_2(conf_file, "from", "keep_raw", False)
+    to_config = ToConfig(to_type, save_path, multi_process, skip_existed, keep_raw)
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]
@@ -52,17 +53,6 @@ def convert_to_config(conf_file: dict) -> Config:
     if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
         raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")
     match data_source:
-        case DataSource.file:
-            if "file" not in conf_file["from"]:
-                raise RuntimeError("should have [from.file]")
-            files = get_item_with_default_3(conf_file, "from", "file", "files", None)
-            folder = get_item_with_default_3(conf_file, "from", "file", "folder", None)
-
-            if files is None and folder is None:
-                raise RuntimeError("file_path and folder can not both null")
-
-            from_config.file = FileConfig(files, folder)
-
         case DataSource.rpc:
             if "rpc" not in conf_file["from"]:
                 raise RuntimeError("should have [from.rpc]")

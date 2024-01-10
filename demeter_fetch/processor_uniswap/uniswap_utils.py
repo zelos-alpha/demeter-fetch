@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 
 import demeter_fetch.common._typing as _typing
-import demeter_fetch.constants as constants
+import demeter_fetch.common.constants as constants
 
 
 def signed_int(h):
@@ -31,7 +31,7 @@ def handle_proxy_event(topic_str):
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
-        type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT
+            type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT
     ):
         return int(topic_list[1], 16)
     else:

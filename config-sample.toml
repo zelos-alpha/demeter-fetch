@@ -3,6 +3,7 @@ chain = "polygon"
 datasource = "rpc" # big_query or rpc or file or chifra
 dapp_type = "uniswap" # uniswap or aave
 #http_proxy = "http://localhost:8080" # if network is bad, try use proxy
+keep_raw=true
 
 [from.uniswap]
 pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
