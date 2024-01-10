@@ -225,3 +225,20 @@ class EthError(Exception):
     def __init__(self, code, message):
         self.code = code
         self.message = message
+
+
+class UniNodesNames:
+    pool = "pool"
+    proxy_transfer = "proxy_transfer"
+    proxy_lp = "proxy_LP"
+    minute = "minute"
+    tick = "tick"
+    tick_without_pos = "tick_without_pos"
+    positions = "Positions"
+    addresses = "Addresses"
+
+
+class AaveNodesNames:
+    pool = "pool"
+    minute = "minute"
+    tick = "tick"

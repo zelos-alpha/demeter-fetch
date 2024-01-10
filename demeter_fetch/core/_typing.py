@@ -32,7 +32,7 @@ class DescDataFrame(Generic[T]):
 class Node:
     name: str
     depend: List  # list of node
-    processor: Callable[[Config, date, Dict[str, DescDataFrame]], DescDataFrame]
+    processor: Callable[[Config, date, Dict[str, pd.DataFrame]], pd.DataFrame]
     file_name: Callable[[FromConfig, str], str]
     is_download: bool = False
 

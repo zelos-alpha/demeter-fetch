@@ -21,8 +21,13 @@ def hex_to_address(topic_str):
 
 
 def split_topic(value: str) -> List[str]:
-    value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
-    return value.split(",")
+    if isinstance(value,list):
+        return value
+    elif isinstance(value,str):
+        value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
+        return value.split(",")
+    else:
+        raise NotImplementedError("Unknown topic type")
 
 
 def handle_proxy_event(topic_str):
@@ -31,7 +36,7 @@ def handle_proxy_event(topic_str):
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
-            type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT
+        type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT
     ):
         return int(topic_list[1], 16)
     else:

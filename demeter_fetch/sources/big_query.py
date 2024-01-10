@@ -5,9 +5,18 @@
 # @Description:
 from datetime import date
 
+import pandas as pd
+
 from ..common import FromConfig, Config, constants
 from .big_query_utils import BigQueryChain, query_by_sql
-from ..core import DescDataFrame
+
+
+def _update_df(df: pd.DataFrame) -> pd.DataFrame:
+    df["topics"] = df["topics"].apply(lambda x: x.tolist())
+    df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
+    df["block_timestamp"] = df["block_timestamp"].dt.tz_localize(None)
+    df["block_timestamp"] = pd.Series(df["block_timestamp"].dt.to_pydatetime(), index=df.index, dtype=object)
+    return df
 
 
 def bigquery_pool(config: FromConfig, day: date):
@@ -19,7 +28,7 @@ def bigquery_pool(config: FromConfig, day: date):
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{config.uniswap_config.pool_address}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
-    df["topics"] = df["topics"].apply(lambda x: x.tolist())
+    df = _update_df(df)
     return df
 
 

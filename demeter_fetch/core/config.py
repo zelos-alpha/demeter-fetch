@@ -32,7 +32,7 @@ def convert_to_config(conf_file: dict) -> Config:
     save_path = get_item_with_default_2(conf_file, "to", "save_path", "../")
     multi_process = get_item_with_default_2(conf_file, "to", "multi_process", False)
     skip_existed = get_item_with_default_2(conf_file, "to", "skip_existed", False)
-    keep_raw = get_item_with_default_2(conf_file, "from", "keep_raw", False)
+    keep_raw = get_item_with_default_2(conf_file, "to", "keep_raw", False)
     to_config = ToConfig(to_type, save_path, multi_process, skip_existed, keep_raw)
 
     chain = ChainType[conf_file["from"]["chain"]]

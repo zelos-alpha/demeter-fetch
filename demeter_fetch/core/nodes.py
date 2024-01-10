@@ -9,28 +9,29 @@ import numpy as np
 import os
 import sys
 from ._typing import *
-from .. import DappType, ToType
+from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 from ..common import DataSource
 from ..sources import uni_source_pool, uni_source_proxy_transfer, uni_source_proxy_lp, aave_source
+import demeter_fetch.processor_uniswap.minute as processor_minute
 
 
 class UniNodes:
     pool = Node(
-        name="pool",
+        name=UniNodesNames.pool,
         depend=[],
         processor=uni_source_pool,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.raw.csv",
         is_download=True,
     )
     proxy_transfer = Node(
-        name="proxy_transfer",
+        name=UniNodesNames.proxy_transfer,
         depend=[],
         processor=uni_source_proxy_transfer,
         file_name=lambda cfg, day: f"{cfg.chain.name}-uniswap-proxy-transfer-{day}.raw.csv",
         is_download=True,
     )
     proxy_lp = Node(
-        name="proxy_LP",
+        name=UniNodesNames.proxy_lp,
         depend=[],
         processor=uni_source_proxy_lp,
         file_name=lambda cfg, day: f"{cfg.chain.name}-uniswap-proxy-lp-{day}.raw.csv",
@@ -38,32 +39,32 @@ class UniNodes:
     )
 
     minute = Node(
-        name="minute",
+        name=UniNodesNames.minute,
         depend=[pool],
-        processor=lambda cfg, day, data: "minute",
+        processor=processor_minute.get_minute_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.minute.csv",
     )
     tick = Node(
-        name="tick",
+        name=UniNodesNames.tick,
         depend=[pool, proxy_lp],
         processor=lambda cfg, day, data: "tick",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.tick.csv",
     )
     tick_without_pos = Node(
-        name="tick_without_pos",
+        name=UniNodesNames.tick_without_pos,
         depend=[pool],
         processor=lambda cfg, day, data: "tick_without_pos",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.pool-tick.csv",
     )
 
     positions = Node(
-        name="Positions",
+        name=UniNodesNames.positions,
         depend=[tick],
         processor=lambda cfg, day, data: "positions",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.position.csv",
     )
     addresses = Node(
-        name="Addresses",
+        name=UniNodesNames.addresses,
         depend=[positions, tick_without_pos],
         processor=lambda cfg, day, data: "addresses",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.address.csv",
@@ -72,7 +73,7 @@ class UniNodes:
 
 class AaveNodes:
     pool = Node(
-        name="pool",
+        name=AaveNodesNames.pool,
         depend=[],
         processor=aave_source,
         file_name=lambda cfg, day: "",
@@ -80,13 +81,13 @@ class AaveNodes:
     )
 
     minute = Node(
-        name="minute",
+        name=AaveNodesNames.minute,
         depend=[pool],
         processor=lambda cfg, day, data: "minute",
         file_name=lambda cfg, day: "",
     )
     tick = Node(
-        name="tick",
+        name=AaveNodesNames.tick,
         depend=[pool],
         processor=lambda cfg, day, data: "tick",
         file_name=lambda cfg, day: "",

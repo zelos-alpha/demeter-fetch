@@ -14,7 +14,6 @@ import sys
 
 from ..common import Config, DataSource
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
-from ..core import DescDataFrame
 
 
 @dataclass
@@ -28,7 +27,7 @@ class EventLog:
     data = 0
 
 
-def uni_source_pool(cfg: Config, day: date, data: Dict[str, DescDataFrame]) -> DescDataFrame[EventLog]:
+def uni_source_pool(cfg: Config, day: date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     df: pd.DataFrame | None = None
     match cfg.from_config.data_source:
         case DataSource.big_query:
@@ -37,7 +36,7 @@ def uni_source_pool(cfg: Config, day: date, data: Dict[str, DescDataFrame]) -> D
             raise NotImplemented()
         case DataSource.chifra:
             raise NotImplemented()
-    return DescDataFrame(df)
+    return df
 
 
 def uni_source_proxy_lp(cfg: Config, day: date, data):
