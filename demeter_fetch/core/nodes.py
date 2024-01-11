@@ -11,8 +11,9 @@ import sys
 from ._typing import *
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 from ..common import DataSource
+from ..processor_uniswap.tick import get_pool_tick_df
+from ..processor_uniswap.minute import get_minute_df
 from ..sources import uni_source_pool, uni_source_proxy_transfer, uni_source_proxy_lp, aave_source
-import demeter_fetch.processor_uniswap.minute as processor_minute
 
 
 class UniNodes:
@@ -41,7 +42,7 @@ class UniNodes:
     minute = Node(
         name=UniNodesNames.minute,
         depend=[pool],
-        processor=processor_minute.get_minute_df,
+        processor=get_minute_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.minute.csv",
     )
     tick = Node(
@@ -53,8 +54,8 @@ class UniNodes:
     tick_without_pos = Node(
         name=UniNodesNames.tick_without_pos,
         depend=[pool],
-        processor=lambda cfg, day, data: "tick_without_pos",
-        file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.pool-tick.csv",
+        processor=get_pool_tick_df,
+        file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.pool.tick.csv",
     )
 
     positions = Node(
@@ -94,13 +95,16 @@ class AaveNodes:
     )
 
 
-def get_root_node(dapp: DappType, to_type: ToType) -> Node:
+def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
     if dapp == DappType.uniswap:
         match to_type:
             case ToType.raw:
                 return UniNodes.pool
             case ToType.tick:
-                return UniNodes.tick
+                if ignore_pos_id:
+                    return UniNodes.tick_without_pos
+                else:
+                    return UniNodes.tick
             case ToType.position:
                 return UniNodes.positions
             case ToType.minute:

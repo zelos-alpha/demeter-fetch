@@ -45,7 +45,9 @@ def convert_to_config(conf_file: dict) -> Config:
 
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
-        from_config.uniswap_config = UniswapConfig(pool_address)
+        ignore_position_id = get_item_with_default_3(conf_file, "from", "uniswap", "ignore_position_id", False)
+        from_config.uniswap_config = UniswapConfig(pool_address, ignore_position_id)
+
     elif dapp_type == DappType.aave:
         token_addresses = [x.lower() for x in conf_file["from"]["aave"]["tokens"]]
         from_config.aave_config = AaveConfig(token_addresses)
@@ -58,7 +60,6 @@ def convert_to_config(conf_file: dict) -> Config:
                 raise RuntimeError("should have [from.rpc]")
             auth_string = get_item_with_default_3(conf_file, "from", "rpc", "auth_string", None)
             keep_tmp_files = get_item_with_default_3(conf_file, "from", "rpc", "keep_tmp_files", None)
-            ignore_position_id = get_item_with_default_3(conf_file, "from", "rpc", "ignore_position_id", False)
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "rpc", "etherscan_api_key", None)
             end_point = conf_file["from"]["rpc"]["end_point"]
             batch_size = get_item_with_default_3(conf_file, "from", "rpc", "batch_size", 500)
@@ -68,7 +69,6 @@ def convert_to_config(conf_file: dict) -> Config:
                 batch_size=batch_size,
                 auth_string=auth_string,
                 keep_tmp_files=keep_tmp_files,
-                ignore_position_id=ignore_position_id,
                 etherscan_api_key=etherscan_api_key,
             )
         case DataSource.big_query:
@@ -83,17 +83,12 @@ def convert_to_config(conf_file: dict) -> Config:
                 raise RuntimeError("should have [from.chifra]")
 
             file_path = conf_file["from"]["chifra"]["file_path"]
-            ignore_position_id = get_item_with_default_3(conf_file, "from", "chifra", "ignore_position_id", False)
             proxy_file_path = get_item_with_default_3(conf_file, "from", "chifra", "proxy_file_path", None)
-
-            if not ignore_position_id and proxy_file_path is None:
-                raise RuntimeError("If you want to append uniswap proxy logs, you should export proxy pool, too")
 
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "chifra", "etherscan_api_key", None)
 
             from_config.chifra_config = ChifraConfig(
                 file_path=file_path,
-                ignore_position_id=ignore_position_id,
                 proxy_file_path=proxy_file_path,
                 etherscan_api_key=etherscan_api_key,
             )

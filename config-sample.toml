@@ -7,6 +7,7 @@ keep_raw=true
 
 [from.uniswap]
 pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
+ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
 
 [from.aave]
 tokens = [# address of erc20 token which avialable on aave
@@ -26,7 +27,6 @@ start = "2022-3-16"
 end = "2022-3-17"
 #batch_size = 500 # default is 500
 #keep_tmp_files = false
-ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
 etherscan_api_key = "some_api_key" #
 
 [from.file] # If you already have .raw.csv files, just want to convert them to tick/minute file, then use this section.

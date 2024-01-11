@@ -2,6 +2,7 @@ import datetime
 import glob
 import math
 import os
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, Set, Tuple
 
@@ -9,6 +10,92 @@ import pandas as pd
 
 import demeter_fetch.common._typing as _typing
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
+
+@dataclass
+class PoolTick:
+    block_number = 0
+    block_timestamp = 0
+    tx_type = 0
+    transaction_hash = 0
+    pool_tx_index = 0
+    pool_log_index = 0
+    proxy_log_index = 0
+    sender = 0
+    receipt = 0
+    amount0 = 0
+    amount1 = 0
+    total_liquidity = 0
+    total_liquidity_delta = 0
+    sqrtPriceX96 = 0
+    current_tick = 0
+    position_id = 0
+    tick_lower = 0
+    tick_upper = 0
+    liquidity = 0
+
+
+def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    input_param = data[_typing.UniNodesNames.pool]
+    df = input_param.copy()
+
+    df["tx_type"] = df.apply(lambda x: uniswap_utils.get_tx_type(x.topics), axis=1)
+    df[
+        [
+            "sender",
+            "receipt",
+            "amount0",
+            "amount1",
+            "sqrtPriceX96",
+            "total_liquidity",
+            "current_tick",
+            "tick_lower",
+            "tick_upper",
+            "liquidity",
+            "total_liquidity_delta",
+        ]
+    ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
+    df = df.drop(columns=["topics", "data"])
+    df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
+    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[["sqrtPriceX96", "total_liquidity", "current_tick"]].ffill()
+
+    df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
+    # convert type to keep decimal
+    df["sqrtPriceX96"] = df.apply(lambda x: convert_to_decimal(x.sqrtPriceX96), axis=1)
+    df["total_liquidity_delta"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity_delta), axis=1)
+    df["liquidity"] = df.apply(lambda x: convert_to_decimal(x.liquidity), axis=1)
+    df["total_liquidity"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity), axis=1)
+
+    df["total_liquidity_delta"] = df.apply(
+        lambda x: handle_tick(x.tick_lower, x.tick_upper, x.current_tick, x.total_liquidity_delta),
+        axis=1,
+    )
+    df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
+    df["tx_type"] = df.apply(lambda x: x.tx_type.name, axis=1)
+    df = df.rename(columns={"transaction_index": "tx_index"})
+    order = [
+        "block_number",
+        "block_timestamp",
+        "tx_type",
+        "transaction_hash",
+        "tx_index",
+        "log_index",
+        "sender",
+        "receipt",
+        "amount0",
+        "amount1",
+        "total_liquidity",
+        "total_liquidity_delta",
+        "sqrtPriceX96",
+        "current_tick",
+        "tick_lower",
+        "tick_upper",
+        "liquidity",
+    ]
+    df = df[order]
+    return df
+
+
+#########################################################################################################
 
 
 def decode_file_name(file_path, file_name: str) -> Tuple[str, datetime.date]:

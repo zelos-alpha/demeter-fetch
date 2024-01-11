@@ -35,7 +35,11 @@ def download(cfg_path):
         json.dumps(dataclasses.asdict(config), cls=utils.ComplexEncoder, indent=4),
     )
 
-    root_node = get_root_node(config.from_config.dapp_type, config.to_config.type)
+    ignore_pos = False
+    if config.from_config.uniswap_config is not None:
+        ignore_pos = config.from_config.uniswap_config.ignore_position_id
+
+    root_node = get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
     steps = engine.generate_tree(root_node)
 
     if config.from_config.start is not None and config.from_config.end is not None:

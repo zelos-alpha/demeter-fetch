@@ -86,14 +86,12 @@ class RpcConfig:
     batch_size: int = 500
     auth_string: str | None = None
     keep_tmp_files: bool = False
-    ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
     etherscan_api_key: str = None
 
 
 @dataclass
 class ChifraConfig:
     file_path: str
-    ignore_position_id: bool = False  # just for uniswap, if set to true, will not download proxy logs and leave a empty column
     proxy_file_path: str = None  # just for uniswap
     etherscan_api_key: str = None  # query block number
 
@@ -101,6 +99,7 @@ class ChifraConfig:
 @dataclass
 class UniswapConfig:
     pool_address: str
+    ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
 
 
 class AaveKey(NamedTuple):
