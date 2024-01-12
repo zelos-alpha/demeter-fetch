@@ -39,7 +39,7 @@ def uni_source_pool(cfg: Config, day: date, data: Dict[str, pd.DataFrame]) -> pd
     return df
 
 
-def uni_source_proxy_lp(cfg: Config, day: date, data):
+def uni_source_proxy_lp(cfg: Config, day: date, data) -> pd.DataFrame:
     match cfg.from_config.data_source:
         case DataSource.big_query:
             return bigquery_proxy_lp(cfg.from_config, day)

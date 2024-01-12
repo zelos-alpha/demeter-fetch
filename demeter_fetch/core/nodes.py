@@ -11,7 +11,7 @@ import sys
 from ._typing import *
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 from ..common import DataSource
-from ..processor_uniswap.tick import get_pool_tick_df
+from ..processor_uniswap.tick import get_pool_tick_df, get_tick_df
 from ..processor_uniswap.minute import get_minute_df
 from ..sources import uni_source_pool, uni_source_proxy_transfer, uni_source_proxy_lp, aave_source
 
@@ -48,7 +48,7 @@ class UniNodes:
     tick = Node(
         name=UniNodesNames.tick,
         depend=[pool, proxy_lp],
-        processor=lambda cfg, day, data: "tick",
+        processor=get_tick_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.tick.csv",
     )
     tick_without_pos = Node(

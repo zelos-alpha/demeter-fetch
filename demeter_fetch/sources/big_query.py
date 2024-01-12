@@ -41,7 +41,7 @@ def bigquery_proxy_lp(config: FromConfig, day: date):
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{BigQueryChain[config.chain.value].value["uni_proxy_addr"]}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
-    df["topics"] = df["topics"].apply(lambda x: x.tolist())
+    df = _update_df(df)
     return df
 
 

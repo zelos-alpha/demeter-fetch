@@ -9,7 +9,8 @@ from typing import Dict, Set, Tuple
 import pandas as pd
 
 import demeter_fetch.common._typing as _typing
-import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
+from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
+
 
 @dataclass
 class PoolTick:
@@ -34,11 +35,9 @@ class PoolTick:
     liquidity = 0
 
 
-def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    input_param = data[_typing.UniNodesNames.pool]
-    df = input_param.copy()
-
-    df["tx_type"] = df.apply(lambda x: uniswap_utils.get_tx_type(x.topics), axis=1)
+def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
+    df = input_df.copy()
+    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
     df[
         [
             "sender",
@@ -53,7 +52,7 @@ def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd
             "liquidity",
             "total_liquidity_delta",
         ]
-    ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
+    ] = df.apply(lambda r: handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
     df = df.drop(columns=["topics", "data"])
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[["sqrtPriceX96", "total_liquidity", "current_tick"]].ffill()
@@ -92,7 +91,52 @@ def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd
         "liquidity",
     ]
     df = df[order]
+
     return df
+
+
+def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    input_param = data[_typing.UniNodesNames.pool]
+
+    return convert_pool_tick_df(input_param)
+
+
+def get_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    pool_df = data[_typing.UniNodesNames.pool].copy()
+    proxy_df = data[_typing.UniNodesNames.proxy_lp].copy()
+    match_proxy_log(pool_df, proxy_df)
+    pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
+
+    merged_df = convert_pool_tick_df(pool_df)
+    merged_df[["proxy_topics", "proxy_data", "proxy_log_index"]] = pool_df[["proxy_topics", "proxy_data", "proxy_log_index"]]
+    merged_df.rename(columns={"tx_index": "pool_tx_index", "log_index": "pool_log_index"}, inplace=True)
+
+    merged_df["position_id"] = merged_df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
+    order = [
+        "block_number",
+        "block_timestamp",
+        "tx_type",
+        "transaction_hash",
+        "pool_tx_index",
+        "pool_log_index",
+        "proxy_log_index",
+        "sender",
+        "receipt",
+        "amount0",
+        "amount1",
+        "total_liquidity",
+        "total_liquidity_delta",
+        "sqrtPriceX96",
+        "current_tick",
+        "position_id",
+        "tick_lower",
+        "tick_upper",
+        "liquidity",
+    ]
+    merged_df = merged_df[order]
+    # merged_df = merged_df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
+
+    return merged_df
 
 
 #########################################################################################################
