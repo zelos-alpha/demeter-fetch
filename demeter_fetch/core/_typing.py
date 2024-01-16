@@ -8,9 +8,6 @@ from datetime import date
 from typing import List, Callable, Dict, TypeVar, Generic, Union
 
 import pandas as pd
-import numpy as np
-import os
-import sys
 
 from demeter_fetch import Config, FromConfig
 
