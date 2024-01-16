@@ -12,15 +12,15 @@ import sys
 
 from demeter_fetch.core import Node, generate_tree
 
-t4: Node = Node("t4", [], lambda a, b: print(a))
-t5: Node = Node("t5", [], lambda a, b: print(a))
-t6: Node = Node("t6", [], lambda a, b: print(a))
-t7: Node = Node("t7", [], lambda a, b: print(a))
-t8: Node = Node("t8", [], lambda a, b: print(a))
+t4: Node = Node("t4", [], lambda a, b: print(a), lambda a, b: "a")
+t5: Node = Node("t5", [], lambda a, b: print(a), lambda a, b: "a")
+t6: Node = Node("t6", [], lambda a, b: print(a), lambda a, b: "a")
+t7: Node = Node("t7", [], lambda a, b: print(a), lambda a, b: "a")
+t8: Node = Node("t8", [], lambda a, b: print(a), lambda a, b: "a")
 
-t3: Node = Node("t3", [t8], lambda a, b: print(a))
-t2: Node = Node("t2", [t5, t6, t7], lambda a, b: print(a))
-t1: Node = Node("t1", [t2, t3, t4], lambda a, b: print(a))
+t3: Node = Node("t3", [t8], lambda a, b: print(a), lambda a, b: "a")
+t2: Node = Node("t2", [t5, t6, t7], lambda a, b: print(a), lambda a, b: "a")
+t1: Node = Node("t1", [t2, t3, t4], lambda a, b: print(a), lambda a, b: "a")
 
 
 class TreeTest(unittest.TestCase):
