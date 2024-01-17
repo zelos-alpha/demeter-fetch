@@ -16,6 +16,7 @@ import demeter_fetch.sources.rpc_utils as rpc_utils
 def get_height_from_date(
     day: date, chain: ChainType, http_proxy, etherscan_api_key, sleep_seconds=1, sleep_seconds_without_key=8
 ) -> (int, int):
+    utils.print_log(f"Query height range in {day}")
     if etherscan_api_key is None:
         sleep_seconds = sleep_seconds_without_key
     start_height = utils.ApiUtil.query_blockno_from_time(
@@ -28,6 +29,23 @@ def get_height_from_date(
     )
 
     return start_height, end_height
+
+
+def _update_df(df: pd.DataFrame) -> pd.DataFrame:
+    if "block_timestamp" in df.columns:
+        df["block_timestamp"] = df["block_timestamp"].apply(lambda x: x.replace("T", " "))
+
+        columns = [
+            "block_number",
+            "block_timestamp",
+            "transaction_hash",
+            "transaction_index",
+            "log_index",
+            "topics",
+            "data",
+        ]
+        df = df[columns]
+    return df
 
 
 def query_logs(
@@ -45,7 +63,7 @@ def query_logs(
     skip_timestamp: bool = False,
 ):
     client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
-    # utils.print_log(f"Will download from height {start_height} to {end_height}")
+    utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
         tmp_files_paths: List[str] = rpc_utils.query_event_by_height(
             chain,
@@ -68,12 +86,13 @@ def query_logs(
     current_day_logs = []
     # Load temporary files based on height, then reorganize into raw files by day
     # Note: The logs in the tmp file have been sorted
-    # print_log("generate daily files")
+    utils.print_log("Generating daily files")
     for tmp_file in tmp_files_paths:
         logs: List[Dict] = rpc_utils.load_tmp_file(tmp_file)
         current_day_logs.extend(logs)
     df = pd.DataFrame(current_day_logs)
-    df = df.drop(columns=["block_dt"])
+    if "block_dt" in df.columns:
+        df = df.drop(columns=["block_dt"])
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     # remove tmp files
     if not keep_tmp_files:
@@ -102,6 +121,7 @@ def rpc_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         one_by_one=False,
         skip_timestamp=False,
     )
+    daily_df = _update_df(daily_df)
     return daily_df
 
 
@@ -124,6 +144,7 @@ def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         one_by_one=False,
         skip_timestamp=True,
     )
+    daily_df = _update_df(daily_df)
     return daily_df
 
 
@@ -146,4 +167,5 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
         one_by_one=True,
         skip_timestamp=True,
     )
+    daily_df = _update_df(daily_df)
     return daily_df

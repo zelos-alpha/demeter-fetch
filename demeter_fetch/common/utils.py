@@ -30,12 +30,23 @@ def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
     )
 
 
+global_pbar = None
+
+
+def set_global_pbar(pbar):
+    global global_pbar
+    global_pbar = pbar
+
+
 def print_log(*args):
-    new_tuple = (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
-    new_tuple = new_tuple + args
-    print(*new_tuple)
-
-
+    if global_pbar is not None:
+        msg = str(*args).lstrip("(").rstrip(")")
+        global_pbar.display(str(global_pbar) + f"    {str(msg)}")
+        pass
+    else:
+        new_tuple = (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
+        new_tuple = new_tuple + args
+        print(*new_tuple)
 
 
 class TextUtil(object):
@@ -128,8 +139,9 @@ def hex_to_length(hex_str: str, new_length: int):
 
 class ApiUtil:
     @staticmethod
-    def query_blockno_from_time(chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="",
-                                etherscan_api_key=None):
+    def query_blockno_from_time(
+        chain: ChainType, blk_time: datetime, is_before: bool = True, proxy="", etherscan_api_key=None
+    ):
         proxies = (
             {
                 "http": proxy,
@@ -161,6 +173,3 @@ class ApiUtil:
             return int(result_json["result"])
         else:
             raise RuntimeError("request block number failed, message: " + str(result_json))
-
-
-

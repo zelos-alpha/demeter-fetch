@@ -18,6 +18,7 @@ import demeter_fetch.common as utils
 from . import engine
 from .config import convert_to_config
 from .nodes import get_root_node
+from ..common import set_global_pbar, print_log
 
 
 def download(cfg_path):
@@ -44,23 +45,31 @@ def download(cfg_path):
 
     if config.from_config.start is not None and config.from_config.end is not None:
         day_idx = config.from_config.start
-        with tqdm(total=(config.from_config.end - config.from_config.start).days + 1, ncols=120) as pbar:
-            while day_idx <= config.from_config.end:
-                day_str = day_idx.strftime("%Y-%m-%d")
-                output = {}
-                for step in steps:
-                    step_file_name = os.path.join(config.to_config.save_path, step.file_name(config.from_config, day_str))
-                    if config.to_config.skip_existed and os.path.exists(step_file_name):
-                        df = pd.read_csv(step_file_name)
-                        output[step.name] = df
-                        continue
-                    param = {n.name: output[n.name] for n in step.depend}
-                    step_output = step.processor(config, day_idx, param)
-                    output[step.name] = step_output
-                    if config.to_config.keep_raw or step == root_node:
-                        step_output.to_csv(step_file_name, index=False)
-                day_idx += timedelta(days=1)
-                pbar.update()
-                # print(day_idx, output)
+        pbar = tqdm(
+            total=(config.from_config.end - config.from_config.start).days + 1,
+            ncols=80,
+            position=0,
+            leave=False,
+        )
+        set_global_pbar(pbar)
+        while day_idx <= config.from_config.end:
+            day_str = day_idx.strftime("%Y-%m-%d")
+            pbar.set_description(day_str)
+            output = {}
+            for step in steps:
+                step_file_name = os.path.join(config.to_config.save_path, step.file_name(config.from_config, day_str))
+                print_log(f"Current step: {step.name}")
+                if config.to_config.skip_existed and os.path.exists(step_file_name):
+                    df = pd.read_csv(step_file_name)
+                    output[step.name] = df
+                    continue
+                param = {n.name: output[n.name] for n in step.depend}
+                step_output = step.processor(config, day_idx, param)
+                output[step.name] = step_output
+                if config.to_config.keep_raw or step == root_node:
+                    step_output.to_csv(step_file_name, index=False)
+            day_idx += timedelta(days=1)
+            pbar.update()
+            # print(day_idx, output)
     else:
         pass

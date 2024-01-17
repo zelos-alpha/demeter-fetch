@@ -162,7 +162,13 @@ def query_event_by_height(
         height_cache = HeightCacheManager(chain, save_path)
     batch_count = start_blk = end_blk = 0
     skip_until = -1
-    with tqdm(total=(end_height - start_height + 1), ncols=120) as pbar:
+    utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
+    with tqdm(
+        total=(end_height - start_height + 1),
+        ncols=60,
+        position=1,
+        leave=False,
+    ) as pbar:
         for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]
             end = height_slice[-1]

@@ -86,7 +86,7 @@ def get_minute_df(config: Config, day: datetime.date, data: Dict[str, pd.DataFra
     minute_df = minute_df[
         ["timestamp", "netAmount0", "netAmount1", "closeTick", "openTick", "lowestTick", "highestTick", "inAmount0", "inAmount1", "currentLiquidity"]
     ]
-    minute_df[["closeTick", "currentLiquidity"]] = minute_df[["closeTick", "currentLiquidity"]].fillna(method="ffill")
+    minute_df[["closeTick", "currentLiquidity"]] = minute_df[["closeTick", "currentLiquidity"]].ffill()
     minute_df[["netAmount0", "netAmount1", "inAmount0", "inAmount1"]] = minute_df[["netAmount0", "netAmount1", "inAmount0", "inAmount1"]].fillna(
         value=0
     )
