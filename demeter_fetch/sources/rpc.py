@@ -1,34 +1,15 @@
-import csv
 import os
-import time
-from datetime import date, datetime
+from datetime import date
 from typing import List, Dict
 
 import pandas as pd
 
-from .. import ChainType, ChainTypeConfig
-from ..common import FromConfig, Config, constants
-from .big_query_utils import BigQueryChain, query_by_sql
 import demeter_fetch.common.utils as utils
 import demeter_fetch.sources.rpc_utils as rpc_utils
-
-
-def get_height_from_date(
-    day: date, chain: ChainType, http_proxy, etherscan_api_key, sleep_seconds=1, sleep_seconds_without_key=8
-) -> (int, int):
-    utils.print_log(f"Query height range in {day}")
-    if etherscan_api_key is None:
-        sleep_seconds = sleep_seconds_without_key
-    start_height = utils.ApiUtil.query_blockno_from_time(
-        chain, datetime.combine(day, datetime.min.time()), False, http_proxy, etherscan_api_key
-    )
-    utils.print_log(f"Querying end timestamp, wait for {sleep_seconds} seconds to prevent max rate limit")
-    time.sleep(sleep_seconds)  # to prevent request limit
-    end_height = utils.ApiUtil.query_blockno_from_time(
-        chain, datetime.combine(day, datetime.max.time()), True, http_proxy, etherscan_api_key
-    )
-
-    return start_height, end_height
+from .source_utils import get_height_from_date
+from .. import ChainType, ChainTypeConfig
+from ..common import FromConfig, constants
+from .source_utils import ContractConfig
 
 
 def _update_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -54,7 +35,7 @@ def query_logs(
     save_path: str,
     start_height: int,
     end_height: int,
-    contract: rpc_utils.ContractConfig,
+    contract: ContractConfig,
     batch_size: int = 500,
     auth_string: str | None = None,
     http_proxy: str | None = None,
@@ -110,7 +91,7 @@ def rpc_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         save_path=save_path,
         start_height=start_height,
         end_height=end_height,
-        contract=rpc_utils.ContractConfig(
+        contract=ContractConfig(
             config.uniswap_config.pool_address,
             [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK],
         ),
@@ -133,7 +114,7 @@ def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         save_path=save_path,
         start_height=start_height,
         end_height=end_height,
-        contract=rpc_utils.ContractConfig(
+        contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
             [constants.INCREASE_LIQUIDITY, constants.DECREASE_LIQUIDITY, constants.COLLECT],
         ),
@@ -156,7 +137,7 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
         save_path=save_path,
         start_height=start_height,
         end_height=end_height,
-        contract=rpc_utils.ContractConfig(
+        contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
             [constants.TRANSFER_KECCAK],
         ),

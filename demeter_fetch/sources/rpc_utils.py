@@ -14,6 +14,7 @@ from tqdm import tqdm  # process bar
 import demeter_fetch.common.utils as utils
 from demeter_fetch.common._typing import ChainType
 from demeter_fetch.common._typing import EthError
+from .source_utils import ContractConfig
 
 
 @dataclass
@@ -118,10 +119,7 @@ class HeightCacheManager:
         utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
 
-@dataclass
-class ContractConfig:
-    address: str
-    topics: List[str]
+
 
 
 def query_event_by_height(

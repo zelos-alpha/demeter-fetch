@@ -91,8 +91,6 @@ class RpcConfig:
 
 @dataclass
 class ChifraConfig:
-    file_path: str
-    proxy_file_path: str = None  # just for uniswap
     etherscan_api_key: str = None  # query block number
 
 

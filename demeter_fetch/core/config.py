@@ -81,15 +81,8 @@ def convert_to_config(conf_file: dict) -> Config:
         case DataSource.chifra:
             if "chifra" not in conf_file["from"]:
                 raise RuntimeError("should have [from.chifra]")
-
-            file_path = conf_file["from"]["chifra"]["file_path"]
-            proxy_file_path = get_item_with_default_3(conf_file, "from", "chifra", "proxy_file_path", None)
-
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "chifra", "etherscan_api_key", None)
-
             from_config.chifra_config = ChifraConfig(
-                file_path=file_path,
-                proxy_file_path=proxy_file_path,
                 etherscan_api_key=etherscan_api_key,
             )
 

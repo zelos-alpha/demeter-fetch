@@ -13,7 +13,6 @@ import pandas as pd
 import toml
 from tqdm import tqdm
 
-import demeter_fetch as df
 import demeter_fetch.common as utils
 from . import engine
 from .config import convert_to_config
@@ -72,4 +71,4 @@ def download(cfg_path):
             pbar.update()
             # print(day_idx, output)
     else:
-        pass
+        raise RuntimeError("Must specify start and end date")

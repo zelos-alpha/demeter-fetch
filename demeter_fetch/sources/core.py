@@ -14,7 +14,8 @@ import sys
 
 from ..common import Config, DataSource
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
-from .rpc import rpc_pool, rpc_proxy_lp,rpc_proxy_transfer
+from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer
+from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
 
 
 @dataclass
@@ -36,7 +37,7 @@ def uni_source_pool(cfg: Config, day: date, data: Dict[str, pd.DataFrame]) -> pd
         case DataSource.rpc:
             df = rpc_pool(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            raise NotImplemented()
+            df = chifra_pool(cfg.from_config, day)
     return df
 
 
@@ -48,7 +49,7 @@ def uni_source_proxy_lp(cfg: Config, day: date, data) -> pd.DataFrame:
         case DataSource.rpc:
             df = rpc_proxy_lp(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            raise NotImplemented()
+            df = chifra_proxy_lp(cfg.from_config, day)
     return df
 
 
@@ -60,8 +61,9 @@ def uni_source_proxy_transfer(cfg: Config, day: date, data):
         case DataSource.rpc:
             df = rpc_proxy_transfer(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            raise NotImplemented()
+            df = chifra_proxy_transfer(cfg.from_config, day)
     return df
+
 
 def aave_source(cfg: Config, day: date, data):
     match cfg.from_config.data_source:
