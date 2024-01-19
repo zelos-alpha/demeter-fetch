@@ -42,7 +42,8 @@ def convert_to_config(conf_file: dict) -> Config:
     start_time = get_item_with_default_2(conf_file, "from", "start", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
     end_time = get_item_with_default_2(conf_file, "from", "end", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
     from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy, start=start_time, end=end_time)
-
+    if start_time is None or end_time is None:
+        raise RuntimeError("start time and end time must be set")
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
         ignore_position_id = get_item_with_default_3(conf_file, "from", "uniswap", "ignore_position_id", False)

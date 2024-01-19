@@ -5,7 +5,7 @@
 # @Description:
 from dataclasses import dataclass
 from datetime import date
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 import numpy as np
@@ -16,6 +16,7 @@ from ..common import Config, DataSource
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
+from ..core import Node
 
 
 @dataclass
@@ -29,7 +30,8 @@ class EventLog:
     data = 0
 
 
-def uni_source_pool(cfg: Config, day: date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+def uni_source_pool(cfg: Config, day: date, input_files: Dict[str, List[str]], node):
+    day_str = day.strftime("%Y-%m-%d")
     df: pd.DataFrame | None = None
     match cfg.from_config.data_source:
         case DataSource.big_query:
@@ -37,11 +39,12 @@ def uni_source_pool(cfg: Config, day: date, data: Dict[str, pd.DataFrame]) -> pd
         case DataSource.rpc:
             df = rpc_pool(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            df = chifra_pool(cfg.from_config, day)
-    return df
+            df = chifra_pool(cfg.from_config, cfg.to_config.save_path, day)
+    df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
 
 
-def uni_source_proxy_lp(cfg: Config, day: date, data) -> pd.DataFrame:
+def uni_source_proxy_lp(cfg: Config, day: date, input_files: Dict[str, List[str]], node):
+    day_str = day.strftime("%Y-%m-%d")
     df: pd.DataFrame | None = None
     match cfg.from_config.data_source:
         case DataSource.big_query:
@@ -49,11 +52,12 @@ def uni_source_proxy_lp(cfg: Config, day: date, data) -> pd.DataFrame:
         case DataSource.rpc:
             df = rpc_proxy_lp(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            df = chifra_proxy_lp(cfg.from_config, day)
-    return df
+            df = chifra_proxy_lp(cfg.from_config, cfg.to_config.save_path, day)
+    df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
 
 
-def uni_source_proxy_transfer(cfg: Config, day: date, data):
+def uni_source_proxy_transfer(cfg: Config, day: date, input_files: Dict[str, List[str]], node):
+    day_str = day.strftime("%Y-%m-%d")
     df: pd.DataFrame | None = None
     match cfg.from_config.data_source:
         case DataSource.big_query:
@@ -61,8 +65,8 @@ def uni_source_proxy_transfer(cfg: Config, day: date, data):
         case DataSource.rpc:
             df = rpc_proxy_transfer(cfg.from_config, cfg.to_config.save_path, day)
         case DataSource.chifra:
-            df = chifra_proxy_transfer(cfg.from_config, day)
-    return df
+            df = chifra_proxy_transfer(cfg.from_config, cfg.to_config.save_path, day)
+    df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
 
 
 def aave_source(cfg: Config, day: date, data):

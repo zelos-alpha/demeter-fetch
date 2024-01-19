@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pandas as pd
 import requests
@@ -38,10 +39,12 @@ def set_global_pbar(pbar):
     global_pbar = pbar
 
 
-def print_log(*args):
+def print_log(*args, tqdm_bar=None):
     if global_pbar is not None:
+        tqdm_bar = global_pbar
+    if tqdm_bar is not None:
         msg = str(*args).lstrip("(").rstrip(")")
-        global_pbar.display(str(global_pbar) + f"    {str(msg)}")
+        tqdm_bar.display(str(tqdm_bar) + f"    {str(msg)}")
         pass
     else:
         new_tuple = (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
@@ -76,8 +79,11 @@ class HexUtil(object):
         i = int.from_bytes(s, "big", signed=True)
         return i
 
-
+def to_decimal(value):
+    return Decimal(value) if value else Decimal(0)
 class DataUtil(object):
+
+
     @staticmethod
     def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:
         if len(data_list) < 1:

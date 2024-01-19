@@ -5,7 +5,7 @@
 # @Description:
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Callable, Dict, TypeVar, Generic, Union
+from typing import List, Callable, Dict, TypeVar, Generic, Union, Any
 
 import pandas as pd
 
@@ -29,9 +29,11 @@ class DescDataFrame(Generic[T]):
 class Node:
     name: str
     depend: List  # list of node
-    processor: Callable[[Config, date, Dict[str, pd.DataFrame]], pd.DataFrame]
-    file_name: Callable[[FromConfig, str], str]
-    is_download: bool = False
+    # config, param{NodeName, List[files]}, Node
+    processor: Callable[[Config, date, Dict[str, List[str] | str], None], Any]
+    file_name: Callable[[FromConfig, str | None], str]
+    load_converter: Dict | None = None
+    is_daily: bool = False
 
     def __str__(self):
         return self.name

@@ -239,3 +239,4 @@ class AaveNodesNames:
     pool = "pool"
     minute = "minute"
     tick = "tick"
+

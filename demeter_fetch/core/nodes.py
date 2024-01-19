@@ -10,7 +10,7 @@ import os
 import sys
 from ._typing import *
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
-from ..common import DataSource
+from ..common import DataSource, TimeUtil, to_decimal
 from ..processor_uniswap.tick import get_pool_tick_df, get_tick_df
 from ..processor_uniswap.minute import get_minute_df
 from ..sources import uni_source_pool, uni_source_proxy_transfer, uni_source_proxy_lp, aave_source
@@ -22,21 +22,21 @@ class UniNodes:
         depend=[],
         processor=uni_source_pool,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.raw.csv",
-        is_download=True,
+        is_daily=True,
     )
     proxy_transfer = Node(
         name=UniNodesNames.proxy_transfer,
         depend=[],
         processor=uni_source_proxy_transfer,
         file_name=lambda cfg, day: f"{cfg.chain.name}-uniswap-proxy-transfer-{day}.raw.csv",
-        is_download=True,
+        is_daily=True,
     )
     proxy_lp = Node(
         name=UniNodesNames.proxy_lp,
         depend=[],
         processor=uni_source_proxy_lp,
         file_name=lambda cfg, day: f"{cfg.chain.name}-uniswap-proxy-lp-{day}.raw.csv",
-        is_download=True,
+        is_daily=True,
     )
 
     minute = Node(
@@ -44,18 +44,39 @@ class UniNodes:
         depend=[pool],
         processor=get_minute_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.minute.csv",
+        load_converter={
+            "inAmount0": to_decimal,
+            "inAmount1": to_decimal,
+            "currentLiquidity": to_decimal,
+            "netAmount0": to_decimal,
+            "netAmount1": to_decimal,
+        },
     )
     tick = Node(
         name=UniNodesNames.tick,
         depend=[pool, proxy_lp],
         processor=get_tick_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.tick.csv",
+        load_converter={
+            "amount0": to_decimal,
+            "amount1": to_decimal,
+            "total_liquidity": to_decimal,
+            "total_liquidity_delta": to_decimal,
+            "sqrtPriceX96": to_decimal,
+        },
     )
     tick_without_pos = Node(
         name=UniNodesNames.tick_without_pos,
         depend=[pool],
         processor=get_pool_tick_df,
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.pool.tick.csv",
+        load_converter={
+            "amount0": to_decimal,
+            "amount1": to_decimal,
+            "total_liquidity": to_decimal,
+            "total_liquidity_delta": to_decimal,
+            "sqrtPriceX96": to_decimal,
+        },
     )
 
     positions = Node(
@@ -63,12 +84,14 @@ class UniNodes:
         depend=[tick],
         processor=lambda cfg, day, data: "positions",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.position.csv",
+        load_converter=None,
     )
     addresses = Node(
         name=UniNodesNames.addresses,
         depend=[positions, tick_without_pos],
         processor=lambda cfg, day, data: "addresses",
         file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.address.csv",
+        load_converter=None,
     )
 
 
@@ -78,7 +101,7 @@ class AaveNodes:
         depend=[],
         processor=aave_source,
         file_name=lambda cfg, day: "",
-        is_download=True,
+        is_daily=True,
     )
 
     minute = Node(
@@ -86,12 +109,14 @@ class AaveNodes:
         depend=[pool],
         processor=lambda cfg, day, data: "minute",
         file_name=lambda cfg, day: "",
+        csv_converter=None,
     )
     tick = Node(
         name=AaveNodesNames.tick,
         depend=[pool],
         processor=lambda cfg, day, data: "tick",
         file_name=lambda cfg, day: "",
+        csv_converter=None,
     )
 
 

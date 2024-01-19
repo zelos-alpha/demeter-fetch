@@ -4,7 +4,7 @@ import math
 import os
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Dict, Set, Tuple
+from typing import Dict, Set, Tuple, List
 
 import pandas as pd
 
@@ -55,7 +55,9 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     ] = df.apply(lambda r: handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
     df = df.drop(columns=["topics", "data"])
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
-    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[["sqrtPriceX96", "total_liquidity", "current_tick"]].ffill()
+    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
+        ["sqrtPriceX96", "total_liquidity", "current_tick"]
+    ].ffill()
 
     df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
     # convert type to keep decimal
@@ -95,20 +97,28 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    input_param = data[_typing.UniNodesNames.pool]
+def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, input_files: Dict[str, List[str]], node):
+    day_str = day.strftime("%Y-%m-%d")
+    input_file_name = input_files[_typing.UniNodesNames.pool][0]
+    input_param = pd.read_csv(os.path.join(cfg.to_config.save_path, input_file_name))
+    df = convert_pool_tick_df(input_param)
+    df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
 
-    return convert_pool_tick_df(input_param)
 
+def get_tick_df(cfg: _typing.Config, day: datetime.date, input_files: Dict[str, List[str]], node):
+    day_str = day.strftime("%Y-%m-%d")
 
-def get_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    pool_df = data[_typing.UniNodesNames.pool].copy()
-    proxy_df = data[_typing.UniNodesNames.proxy_lp].copy()
+    pool_file_name = input_files[_typing.UniNodesNames.pool][0]
+    proxy_file_name = input_files[_typing.UniNodesNames.proxy_lp][0]
+    pool_df = pd.read_csv(os.path.join(cfg.to_config.save_path, pool_file_name))
+    proxy_df = pd.read_csv(os.path.join(cfg.to_config.save_path, proxy_file_name))
     match_proxy_log(pool_df, proxy_df)
     pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
 
     merged_df = convert_pool_tick_df(pool_df)
-    merged_df[["proxy_topics", "proxy_data", "proxy_log_index"]] = pool_df[["proxy_topics", "proxy_data", "proxy_log_index"]]
+    merged_df[["proxy_topics", "proxy_data", "proxy_log_index"]] = pool_df[
+        ["proxy_topics", "proxy_data", "proxy_log_index"]
+    ]
     merged_df.rename(columns={"tx_index": "pool_tx_index", "log_index": "pool_log_index"}, inplace=True)
 
     merged_df["position_id"] = merged_df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
@@ -136,7 +146,7 @@ def get_tick_df(cfg: _typing.Config, day: datetime.date, data: Dict[str, pd.Data
     merged_df = merged_df[order]
     # merged_df = merged_df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
 
-    return merged_df
+    merged_df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
 
 
 #########################################################################################################
@@ -157,7 +167,9 @@ def check_file(file_path, file_name, pool, start_date, end_date) -> bool:
 
 
 def merge_file(start_date, end_date, file_path, pool_address) -> pd.DataFrame:
-    all_files = glob.glob(os.path.join(file_path, "*.csv"))  # advisable to use os.path.join as this makes concatenation OS independent
+    all_files = glob.glob(
+        os.path.join(file_path, "*.csv")
+    )  # advisable to use os.path.join as this makes concatenation OS independent
 
     wanted_files = [file for file in all_files if check_file(file_path, file, pool_address, start_date, end_date)]
 
@@ -326,7 +338,9 @@ def preprocess_one(df):
     df["position_id"] = df.apply(lambda x: uniswap_utils.handle_proxy_event(x.proxy_topics), axis=1)
     df = df.drop(columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"])
     df = df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
-    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[["sqrtPriceX96", "total_liquidity", "current_tick"]].ffill()
+    df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
+        ["sqrtPriceX96", "total_liquidity", "current_tick"]
+    ].ffill()
 
     df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
     # convert type to keep decimal

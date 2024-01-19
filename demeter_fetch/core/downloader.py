@@ -8,16 +8,17 @@ import dataclasses
 import json
 import os
 from datetime import timedelta
+from typing import List
 
 import pandas as pd
 import toml
 from tqdm import tqdm
 
 import demeter_fetch.common as utils
-from . import engine
+from . import engine, Node
 from .config import convert_to_config
 from .nodes import get_root_node
-from ..common import set_global_pbar, print_log
+from ..common import print_log, set_global_pbar, TimeUtil
 
 
 def download(cfg_path):
@@ -40,35 +41,39 @@ def download(cfg_path):
         ignore_pos = config.from_config.uniswap_config.ignore_position_id
 
     root_node = get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
-    steps = engine.generate_tree(root_node)
+    steps: List[Node] = engine.generate_tree(root_node)
 
-    if config.from_config.start is not None and config.from_config.end is not None:
-        day_idx = config.from_config.start
-        pbar = tqdm(
-            total=(config.from_config.end - config.from_config.start).days + 1,
-            ncols=80,
-            position=0,
-            leave=False,
-        )
-        set_global_pbar(pbar)
-        while day_idx <= config.from_config.end:
-            day_str = day_idx.strftime("%Y-%m-%d")
-            pbar.set_description(day_str)
-            output = {}
-            for step in steps:
-                step_file_name = os.path.join(config.to_config.save_path, step.file_name(config.from_config, day_str))
-                print_log(f"Current step: {step.name}")
+    for step in steps:
+        print_log(f"Current step: {step.name}")
+        set_global_pbar(None)
+        # if daily, global loop will handle processbar, outfile existence, gather param
+        if step.is_daily:
+            day_idx = config.from_config.start
+            pbar = tqdm(
+                total=(config.from_config.end - config.from_config.start).days + 1,
+                ncols=80,
+                position=0,
+                leave=False,
+            )
+            set_global_pbar(pbar)
+            while day_idx <= config.from_config.end:
+                day_str = day_idx.strftime("%Y-%m-%d")
+                step_file_name = step.file_name(config.from_config, day_str)
                 if config.to_config.skip_existed and os.path.exists(step_file_name):
-                    df = pd.read_csv(step_file_name)
-                    output[step.name] = df
                     continue
-                param = {n.name: output[n.name] for n in step.depend}
-                step_output = step.processor(config, day_idx, param)
-                output[step.name] = step_output
-                if config.to_config.keep_raw or step == root_node:
-                    step_output.to_csv(step_file_name, index=False)
-            day_idx += timedelta(days=1)
-            pbar.update()
-            # print(day_idx, output)
-    else:
-        raise RuntimeError("Must specify start and end date")
+                param = {depend.name: depend.file_name(config.from_config, day_str) for depend in step.depend}
+                step.processor(config, day_idx, param, step)
+                day_idx += timedelta(days=1)
+                pbar.update()
+        # if not daily, will handle outfile existence, gather param
+        else:
+            param = {}
+            step_file_name = step.file_name(config.from_config, None)
+            if config.to_config.skip_existed and os.path.exists(step_file_name):
+                continue
+            for depend in step.depend:
+                param[depend.name] = [
+                    depend.file_name(config.from_config, day.strftime("%Y-%m-%d"))
+                    for day in TimeUtil.get_date_array(config.from_config.start, config.from_config.end)
+                ]
+            step.processor(config, None, param, step)
