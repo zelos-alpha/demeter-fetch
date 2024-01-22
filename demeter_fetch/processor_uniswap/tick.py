@@ -4,12 +4,12 @@ import math
 import os
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Dict, Set, Tuple, List
+from typing import Dict, Set, Tuple, Callable
 
 import pandas as pd
 
-import demeter_fetch.common._typing as _typing
 from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
+from ..common import to_decimal,DailyNode,UniNodesNames,OnchainTxType
 
 
 @dataclass
@@ -97,56 +97,82 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_pool_tick_df(cfg: _typing.Config, day: datetime.date, input_files: Dict[str, List[str]], node):
-    day_str = day.strftime("%Y-%m-%d")
-    input_file_name = input_files[_typing.UniNodesNames.pool][0]
-    input_param = pd.read_csv(os.path.join(cfg.to_config.save_path, input_file_name))
-    df = convert_pool_tick_df(input_param)
-    df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
+class UniTick(DailyNode):
+    def __init__(self, depends):
+        super().__init__(depends)
+        self.name = UniNodesNames.tick
+
+    def get_file_name_by_day(self, day_str: str = "") -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.tick.csv"
+
+    def load_csv_converter(self) -> Dict[str, Callable]:
+        return {
+            "amount0": to_decimal,
+            "amount1": to_decimal,
+            "total_liquidity": to_decimal,
+            "total_liquidity_delta": to_decimal,
+            "sqrtPriceX96": to_decimal,
+        }
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
+        pool_df = data[UniNodesNames.pool]
+        proxy_df = data[UniNodesNames.proxy_lp]
+        match_proxy_log(pool_df, proxy_df)
+        pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
+
+        merged_df = convert_pool_tick_df(pool_df)
+        merged_df[["proxy_topics", "proxy_data", "proxy_log_index"]] = pool_df[
+            ["proxy_topics", "proxy_data", "proxy_log_index"]
+        ]
+        merged_df.rename(columns={"tx_index": "pool_tx_index", "log_index": "pool_log_index"}, inplace=True)
+
+        merged_df["position_id"] = merged_df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
+        order = [
+            "block_number",
+            "block_timestamp",
+            "tx_type",
+            "transaction_hash",
+            "pool_tx_index",
+            "pool_log_index",
+            "proxy_log_index",
+            "sender",
+            "receipt",
+            "amount0",
+            "amount1",
+            "total_liquidity",
+            "total_liquidity_delta",
+            "sqrtPriceX96",
+            "current_tick",
+            "position_id",
+            "tick_lower",
+            "tick_upper",
+            "liquidity",
+        ]
+        merged_df = merged_df[order]
+        return merged_df
 
 
-def get_tick_df(cfg: _typing.Config, day: datetime.date, input_files: Dict[str, List[str]], node):
-    day_str = day.strftime("%Y-%m-%d")
+class UniTickNoPos(DailyNode):
+    def __init__(self, depends):
+        super().__init__(depends)
+        self.name = UniNodesNames.tick_without_pos
 
-    pool_file_name = input_files[_typing.UniNodesNames.pool][0]
-    proxy_file_name = input_files[_typing.UniNodesNames.proxy_lp][0]
-    pool_df = pd.read_csv(os.path.join(cfg.to_config.save_path, pool_file_name))
-    proxy_df = pd.read_csv(os.path.join(cfg.to_config.save_path, proxy_file_name))
-    match_proxy_log(pool_df, proxy_df)
-    pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
+    def get_file_name_by_day(self, day_str: str = "") -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.pool.tick.csv"
 
-    merged_df = convert_pool_tick_df(pool_df)
-    merged_df[["proxy_topics", "proxy_data", "proxy_log_index"]] = pool_df[
-        ["proxy_topics", "proxy_data", "proxy_log_index"]
-    ]
-    merged_df.rename(columns={"tx_index": "pool_tx_index", "log_index": "pool_log_index"}, inplace=True)
+    def load_csv_converter(self) -> Dict[str, Callable]:
+        return {
+            "amount0": to_decimal,
+            "amount1": to_decimal,
+            "total_liquidity": to_decimal,
+            "total_liquidity_delta": to_decimal,
+            "sqrtPriceX96": to_decimal,
+        }
 
-    merged_df["position_id"] = merged_df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
-    order = [
-        "block_number",
-        "block_timestamp",
-        "tx_type",
-        "transaction_hash",
-        "pool_tx_index",
-        "pool_log_index",
-        "proxy_log_index",
-        "sender",
-        "receipt",
-        "amount0",
-        "amount1",
-        "total_liquidity",
-        "total_liquidity_delta",
-        "sqrtPriceX96",
-        "current_tick",
-        "position_id",
-        "tick_lower",
-        "tick_upper",
-        "liquidity",
-    ]
-    merged_df = merged_df[order]
-    # merged_df = merged_df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
-
-    merged_df.to_csv(os.path.join(cfg.to_config.save_path, node.file_name(cfg.from_config, day_str)), index=False)
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
+        input_param = data[UniNodesNames.pool]
+        df = convert_pool_tick_df(input_param)
+        return df
 
 
 #########################################################################################################
@@ -238,12 +264,12 @@ def drop_duplicate(df: pd.Series):
     df_count = df["key"].value_counts()
     for index, row in df.iterrows():
         match row.tx_type:
-            case _typing.OnchainTxType.SWAP:
+            case OnchainTxType.SWAP:
                 pass
-            case _typing.OnchainTxType.MINT:
+            case OnchainTxType.MINT:
                 if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
-            case _typing.OnchainTxType.COLLECT:
+            case OnchainTxType.COLLECT:
                 """
                 极端例子:
                 1. https://polygonscan.com/tx/0x2d88b0cc9f8008135accc8667aa907931edf0be01d311fe437336be7cfe511fd#eventlog, log: 371,382 需要分离
@@ -257,7 +283,7 @@ def drop_duplicate(df: pd.Series):
                         allow_error = 50
                     if not is_collect_data_same(row.pool_data, row.proxy_data, allow_error):
                         process_duplicate_row(index, row, row_to_remove, df_count, df)
-            case _typing.OnchainTxType.BURN:
+            case OnchainTxType.BURN:
                 if data_is_not_empty(row.proxy_data) and not is_burn_data_same(row.pool_data, row.proxy_data):
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
             case _:
@@ -311,7 +337,7 @@ def convert_to_decimal(value):
 
 
 def preprocess_one(df):
-    df["tx_type"] = df.apply(lambda x: uniswap_utils.get_tx_type(x.pool_topics), axis=1)
+    df["tx_type"] = df.apply(lambda x: get_tx_type(x.pool_topics), axis=1)
     df["key"] = df.apply(lambda x: x.transaction_hash + "_" + str(x.pool_log_index), axis=1)
     drop_duplicate(df)
     # FIXME BUG: start == end。  merge fail
@@ -330,12 +356,12 @@ def preprocess_one(df):
             "total_liquidity_delta",
         ]
     ] = df.apply(
-        lambda x: uniswap_utils.handle_event(x.tx_type, x.pool_topics, x.pool_data),
+        lambda x: handle_event(x.tx_type, x.pool_topics, x.pool_data),
         axis=1,
         result_type="expand",
     )
     # block_number, block_timestamp, tx_type, transaction_hash, pool_tx_index, pool_log_index, proxy_log_index, sender, receipt, amount0, amount1, total_liquidity, total_liquidity_delta, sqrtPriceX96, current_tick, position_id, tick_lower, tick_upper, liquidity
-    df["position_id"] = df.apply(lambda x: uniswap_utils.handle_proxy_event(x.proxy_topics), axis=1)
+    df["position_id"] = df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
     df = df.drop(columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"])
     df = df.sort_values(["block_number", "pool_log_index"], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
