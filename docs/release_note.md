@@ -1,3 +1,10 @@
+# v1.0.0
+
+* rewrite core
+* full source support for aave
+* breaking change:
+  * raw data type for uniswap has all changed
+
 # v0.2.0
 
 * import uniswap data from chifra

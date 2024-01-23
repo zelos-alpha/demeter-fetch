@@ -6,16 +6,17 @@
 from typing import List
 
 from ..common import Node
+from ..processor_uniswap.position import UniUserLP
 from ..processor_uniswap.tick import UniTick, UniTickNoPos
 from ..processor_uniswap.minute import UniMinute
 from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 
 
-def _get_reversed_copy(l):
-    l1 = l.copy()
-    l1.reverse()
-    return l1
+def _get_reversed_copy(list_to_reverse):
+    ret_list = list_to_reverse.copy()
+    ret_list.reverse()
+    return ret_list
 
 
 def generate_tree(root: Node) -> List[Node]:
@@ -39,21 +40,7 @@ class UniNodes:
     minute = UniMinute([pool])
     tick = UniTick([pool, proxy_lp])
     tick_without_pos = UniTickNoPos([pool])
-
-    positions = Node(
-        name=UniNodesNames.positions,
-        depend=[tick],
-        processor=lambda cfg, day, data: "positions",
-        file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.position.csv",
-        load_converter=None,
-    )
-    addresses = Node(
-        name=UniNodesNames.addresses,
-        depend=[positions, tick_without_pos],
-        processor=lambda cfg, day, data: "addresses",
-        file_name=lambda cfg, day: f"{cfg.chain.name}-{cfg.uniswap_config.pool_address}-{day}.address.csv",
-        load_converter=None,
-    )
+    user_lp = UniUserLP([proxy_transfer, tick])
 
 
 class AaveNodes:

@@ -36,10 +36,10 @@ class Node:
             return
         for depend in self.depends:
             param[depend.name] = depend.get_full_paths
-        df = self._process(param, None)
+        df = self._process(param)
         df.to_csv(step_file_name, index=False)
 
-    def _process(self, data: Dict[str, List[str]], day: date | None = None) -> pd.DataFrame():
+    def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
         """
         :param data: Dict[depend_step_name, List[depend step files]],
         :param day:
@@ -73,6 +73,9 @@ class Node:
 
 
 class DailyNode(Node):
+    """
+    Node whose input and output are both daily
+    """
     def __init__(self, depends: List):
         super().__init__(depends)
         self.is_daily = True

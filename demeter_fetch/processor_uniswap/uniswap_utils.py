@@ -123,6 +123,12 @@ def add_proxy_log(df, index, proxy_row):
 
 
 def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
+    """
+
+    :param pool_logs:
+    :param proxy_logs:
+    :return:
+    """
     pool_logs["tx_type"] = pool_logs.apply(lambda x: get_tx_type(x.topics), axis=1)
     proxy_logs = proxy_logs.set_index(keys="transaction_hash")
     pool_logs["topics"] = pool_logs["topics"].apply(lambda x: split_topic(x))
@@ -177,10 +183,16 @@ def compare_int_with_error(a: int, b: int, error: int = None) -> bool:
 
 def compare_burn_data(a: str, b: str) -> bool:
     """
+    Compare burn topic data, to decide burn event in pool and proxy is the same.
+    Amount in burn and collect might be different, so it has to compare_int_with_error
+    example:
+    1. https://polygonscan.com/tx/0x2d88b0cc9f8008135accc8667aa907931edf0be01d311fe437336be7cfe511fd#eventlog, there are two burn: log: 371,382
+    2. https://polygonscan.com/tx/0xca50d94a36bc730a4ebb46b9e7535075d7da8a4efbbf9cc53638b058516dc907#eventlog, amount in collect topic is different
+
+    Data struct:
     0x0000000000000000000000000000000000000000000000000014aca30ddf7569
       000000000000000000000000000000000000000000000000000041b051acc70d
       0000000000000000000000000000000000000000000000000000000000000000
-
     """
     if len(a) != 194 or len(b) != 194:
         return False

@@ -231,8 +231,8 @@ class UniNodesNames:
     minute = "minute"
     tick = "tick"
     tick_without_pos = "tick_without_pos"
-    positions = "Positions"
-    addresses = "Addresses"
+    positions = "positions"
+    user_lp="user_lp"
 
 
 class AaveNodesNames:
