@@ -1,7 +1,6 @@
 import datetime
 from dataclasses import dataclass
 from typing import Dict, Callable
-from typing_extensions import deprecated
 
 import pandas
 import pandas as pd
@@ -128,7 +127,6 @@ class UniMinute(DailyNode):
         return minute_df
 
 
-@deprecated
 def preprocess_one(raw_data: pd.DataFrame) -> pd.DataFrame:
     if raw_data.size <= 0:
         return raw_data

@@ -16,8 +16,8 @@ from .utils import TimeUtil, set_global_pbar
 
 
 class Node:
-    def __init__(self, depends: List):
-        self.name = ""
+    def __init__(self, depends: List, name=""):
+        self.name = name
         self.is_daily = False
         self.depends: List[Node] = depends
         self.config: Config | None = None
@@ -76,6 +76,7 @@ class DailyNode(Node):
     """
     Node whose input and output are both daily
     """
+
     def __init__(self, depends: List):
         super().__init__(depends)
         self.is_daily = True

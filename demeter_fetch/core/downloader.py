@@ -37,7 +37,7 @@ def download(cfg_path):
         ignore_pos = config.from_config.uniswap_config.ignore_position_id
 
     root_node = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
-    steps: List[Node] = engine.generate_tree(root_node)
+    steps: List[Node] = engine.get_relative_nodes(root_node)
 
     [step.set_config(config) for step in steps]
 

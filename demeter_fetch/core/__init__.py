@@ -6,4 +6,4 @@
 
 from .commands import get_commend_args
 from .downloader import download
-from .engine import generate_tree
+from .engine import get_relative_nodes

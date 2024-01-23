@@ -19,7 +19,7 @@ def _get_reversed_copy(list_to_reverse):
     return ret_list
 
 
-def generate_tree(root: Node) -> List[Node]:
+def get_relative_nodes(root: Node) -> List[Node]:
     depth_first_array = []
     stack = [root]
     while len(stack) > 0:
@@ -29,7 +29,11 @@ def generate_tree(root: Node) -> List[Node]:
             # if you want to use a list as a stack, you have to add elements in the tail
             stack.extend(_get_reversed_copy(poped.depends))
     depth_first_array.reverse()
-    return depth_first_array
+    no_dup_array = []
+    for n in depth_first_array:
+        if n not in no_dup_array:
+            no_dup_array.append(n)
+    return no_dup_array
 
 
 class UniNodes:
