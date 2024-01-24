@@ -102,7 +102,7 @@ class UniTick(DailyNode):
         super().__init__(depends)
         self.name = UniNodesNames.tick
 
-    def get_file_name_by_day(self, day_str: str = "") -> str:
+    def get_file_name(self, day_str: str = "") -> str:
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.tick.csv"
 
     def load_csv_converter(self) -> Dict[str, Callable]:
@@ -157,7 +157,7 @@ class UniTickNoPos(DailyNode):
         super().__init__(depends)
         self.name = UniNodesNames.tick_without_pos
 
-    def get_file_name_by_day(self, day_str: str = "") -> str:
+    def get_file_name(self, day_str: str = "") -> str:
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.pool.tick.csv"
 
     def load_csv_converter(self) -> Dict[str, Callable]:

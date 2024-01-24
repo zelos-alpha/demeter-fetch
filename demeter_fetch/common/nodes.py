@@ -31,7 +31,7 @@ class Node:
 
     def work(self):
         param = {}
-        step_file_name = self.get_full_path_by_day()
+        step_file_name = self.get_full_path()
         if self.config.to_config.skip_existed and os.path.exists(step_file_name):
             return
         for depend in self.depends:
@@ -47,15 +47,15 @@ class Node:
         """
         return pd.DataFrame()
 
-    def get_file_name_by_day(self, day_str: str = "") -> str:
+    def get_file_name(self, day_str: str = "") -> str:
         return f"{self.name}{day_str}.csv"
 
-    def get_full_path_by_day(self, day_str: str = "") -> str:
-        return os.path.join(self.to_path, self.get_file_name_by_day(day_str))
+    def get_full_path(self, day_str: str = "") -> str:
+        return os.path.join(self.to_path, self.get_file_name(day_str))
 
     @property
     def get_full_paths(self) -> List[str]:
-        return [self.get_full_path_by_day("")]
+        return [self.get_full_path("")]
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
@@ -94,21 +94,22 @@ class DailyNode(Node):
         set_global_pbar(pbar)
         while day_idx <= self.config.from_config.end:
             day_str = day_idx.strftime("%Y-%m-%d")
-            step_file_name = self.get_full_path_by_day(day_str)
+            step_file_name = self.get_full_path(day_str)
             if self.config.to_config.skip_existed and os.path.exists(step_file_name):
+                day_idx += timedelta(days=1)
                 continue
             param = {}
             for depend in self.depends:
                 if depend.is_daily:
-                    depend_file_path = depend.get_full_path_by_day(day_str)
+                    depend_file_path = depend.get_full_path(day_str)
                     param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
                     pass
                 else:
-                    depend_file_path = depend.get_full_path_by_day("")
+                    depend_file_path = depend.get_full_path("")
                     param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
                     pass
             df = self._process_one_day(param, day_idx)
-            df.to_csv(self.get_full_path_by_day(day_str), index=False)
+            df.to_csv(self.get_full_path(day_str), index=False)
             day_idx += timedelta(days=1)
             pbar.update()
 
@@ -118,6 +119,6 @@ class DailyNode(Node):
     @property
     def get_full_paths(self) -> List[str]:
         return [
-            self.get_full_path_by_day(day.strftime("%Y-%m-%d"))
+            self.get_full_path(day.strftime("%Y-%m-%d"))
             for day in TimeUtil.get_date_array(self.from_config.start, self.from_config.end)
         ]

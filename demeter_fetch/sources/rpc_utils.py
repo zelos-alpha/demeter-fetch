@@ -2,12 +2,14 @@ import json
 import os.path
 import pickle
 import random
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from operator import itemgetter
 from typing import List, Dict
 
+import pandas as pd
 import requests
 from tqdm import tqdm  # process bar
 
@@ -72,6 +74,9 @@ class EthRpcClient:
         else:
             return None
 
+    def get_tx_receipt(self, tx_hash):
+        return self.send("eth_getTransactionReceipt", [tx_hash])
+
     def get_logs(self, param: GetLogsParam):
         if param.toBlock:
             param.toBlock = hex(param.toBlock)
@@ -119,7 +124,39 @@ class HeightCacheManager:
         utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
 
+def _query_tx_receipt(param):
+    tx_hash, client = param
+    resp = client.get_tx_receipt(tx_hash)
+    return resp
 
+
+def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFrame:
+    param_list = [(tx_hash, client) for tx_hash in tx_list]
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        tx_receipts = list(
+            tqdm(executor.map(_query_tx_receipt, param_list), ncols=60, position=1, leave=False, total=len(tx_list))
+        )
+
+    logs_list = []
+    for tx in tx_receipts:
+        if tx is None:
+            continue
+        for log in tx["logs"]:
+            logs_list.append(
+                {
+                    "block_number": int(log["blockNumber"], 16),
+                    "transaction_hash": log["transactionHash"],
+                    "transaction_index": int(log["transactionIndex"], 16),
+                    "from": tx["from"],
+                    "to": tx["to"],
+                    "log_index": int(log["logIndex"], 16),
+                    "log_address": log["address"],
+                    "topics": log["topics"],
+                    "data": log["data"] if log["data"] != "0x" else "",
+                }
+            )
+    df = pd.DataFrame(logs_list)
+    return df
 
 
 def query_event_by_height(
@@ -161,12 +198,7 @@ def query_event_by_height(
     batch_count = start_blk = end_blk = 0
     skip_until = -1
     utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
-    with tqdm(
-        total=(end_height - start_height + 1),
-        ncols=60,
-        position=1,
-        leave=False,
-    ) as pbar:
+    with tqdm(total=(end_height - start_height + 1), ncols=60, position=1, leave=False) as pbar:
         for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]
             end = height_slice[-1]

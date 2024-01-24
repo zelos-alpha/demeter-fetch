@@ -39,9 +39,14 @@ class TreeTest(unittest.TestCase):
         position: Node = Node([user_tick], "position")
         user_lp: Node = Node([position], "user_lp")
         result1 = get_relative_nodes(user_lp)
+        result1 = [n.name for n in result1]
         user_tick: Node = Node([tick, tx], "user_tick")
+        position: Node = Node([user_tick], "position")
+        user_lp: Node = Node([position], "user_lp")
         result2 = get_relative_nodes(user_lp)
+        result2 = [n.name for n in result2]
 
         print(result1)
+        print(result2)
         self.assertTrue(result2 == result1)
         # [proxy_lp, pool, tick, proxy_lp, pool, tick, tx, user_tick, position, user_lp]

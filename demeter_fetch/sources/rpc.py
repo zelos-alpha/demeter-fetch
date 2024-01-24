@@ -29,6 +29,19 @@ def _update_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def query_tx_logs(
+    chain: ChainType,
+    end_point: str,
+    save_path: str,
+    auth_string: str | None = None,
+    http_proxy: str | None = None,
+) -> pd.DataFrame:
+    client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
+    utils.print_log(f"Will download transaction logs of uniswap")
+
+    pass
+
+
 def query_logs(
     chain: ChainType,
     end_point: str,
@@ -42,7 +55,7 @@ def query_logs(
     keep_tmp_files: bool = False,
     one_by_one: bool = False,
     skip_timestamp: bool = False,
-):
+) -> pd.DataFrame:
     client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
     utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
@@ -150,3 +163,10 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
     )
     daily_df = _update_df(daily_df)
     return daily_df
+
+
+def rpc_uni_tx_logs(config: FromConfig, tx_hashes: pd.Series) -> pd.DataFrame:
+    client = rpc_utils.EthRpcClient(config.rpc.end_point, config.http_proxy, config.rpc.auth_string)
+    df = rpc_utils.query_event_by_tx(client, tx_hashes)
+    df = df.drop(columns=["from", "to"])
+    return df

@@ -38,7 +38,7 @@ def download(cfg_path):
 
     root_node = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
     steps: List[Node] = engine.get_relative_nodes(root_node)
-
+    utils.print_log("Will execute the following steps: ",steps)
     [step.set_config(config) for step in steps]
 
     for step in steps:

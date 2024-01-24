@@ -6,10 +6,9 @@
 from typing import List
 
 from ..common import Node
-from ..processor_uniswap.position import UniUserLP
-from ..processor_uniswap.tick import UniTick, UniTickNoPos
-from ..processor_uniswap.minute import UniMinute
-from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource
+from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
+
+from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransactionLogs
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 
 
@@ -40,30 +39,22 @@ class UniNodes:
     pool = UniSourcePool([])
     proxy_transfer = UniSourceProxyTransfer([])
     proxy_lp = UniSourceProxyLp([])
-
     minute = UniMinute([pool])
     tick = UniTick([pool, proxy_lp])
+
     tick_without_pos = UniTickNoPos([pool])
+
+    tx_logs = UniTransactionLogs([tick])
+    position = UniPositions([tick, tx_logs])
+
     user_lp = UniUserLP([proxy_transfer, tick])
 
 
 class AaveNodes:
     pool = AaveSource([])
 
-    # minute = Node(
-    #     name=AaveNodesNames.minute,
-    #     depend=[pool],
-    #     processor=lambda cfg, day, data: "minute",
-    #     file_name=lambda cfg, day: "",
-    #     csv_converter=None,
-    # )
-    # tick = Node(
-    #     name=AaveNodesNames.tick,
-    #     depend=[pool],
-    #     processor=lambda cfg, day, data: "tick",
-    #     file_name=lambda cfg, day: "",
-    #     csv_converter=None,
-    # )
+    minute = Node([pool])
+    tick = Node([pool])
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
@@ -77,11 +68,11 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 else:
                     return UniNodes.tick
             case ToType.position:
-                return UniNodes.positions
+                return UniNodes.position
             case ToType.minute:
                 return UniNodes.minute
-            case ToType.address:
-                return UniNodes.addresses
+            case ToType.user_lp:
+                return UniNodes.user_lp
             case _:
                 raise NotImplemented(f"{dapp} {to_type} not supported")
 
@@ -93,6 +84,7 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return AaveNodes.minute
             case ToType.tick:
                 return AaveNodes.tick
-
+            case _:
+                raise NotImplemented(f"{dapp} {to_type} not supported")
     else:
         raise NotImplemented(f"{dapp} not supported")
