@@ -1,8 +1,7 @@
 import os
-from datetime import timedelta
 from decimal import Decimal
-from enum import Enum
 from typing import Tuple, Dict, Callable, List
+
 import pandas as pd
 from tqdm import tqdm
 
@@ -10,12 +9,8 @@ from .. import ChainType
 from ..common import (
     ChainTypeConfig,
     UniNodesNames,
-    DailyNode,
     Node,
     set_global_pbar,
-    get_transfer_from_logs,
-    split_topic,
-    constants,
 )
 from ..sources.rpc_utils import set_position_id
 
@@ -33,10 +28,73 @@ class UniUserLP(Node):
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
-        return {}
+        return {
+            "liquidity": to_decimal,
+        }
 
     def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
-        return Node
+        position_df = pd.read_csv(
+            data[UniNodesNames.positions][0],
+            converters=self.get_depend_by_name(UniNodesNames.positions).load_csv_converter,
+        )
+        position_df = position_df[position_df["tx_type"].isin(["MINT", "BURN"])]
+        position_df["liq_delta"] = position_df.apply(
+            lambda r: -r["liquidity"] if r["tx_type"] == "BURN" else r["liquidity"], axis=1
+        )
+        grouped_position = position_df.groupby(["position_id"])
+        user_lp_list = []
+        for idx, position_tx in grouped_position:
+            liquidity = Decimal(0)
+            # before start time, if there are a mint, last liquidity might be negative
+            # e.g. mint 10, before start time, then mint 20, and burn 30, We will only find mint 20 and burn 30,
+            # liquidity at last will be -10
+            # In this situation, we insert a moke mint transaction to add 10 liquidity.
+            total_liq = position_tx["liq_delta"].sum()
+            if total_liq < 0:
+                user_lp_list.append(
+                    {
+                        "address": position_tx.iloc[0]["owner"],
+                        "position_id": idx[0],
+                        "tick_lower": position_tx.iloc[0]["tick_lower"],
+                        "tick_upper": position_tx.iloc[0]["tick_upper"],
+                        "start_time": "",
+                        "end_time": position_tx.iloc[0]["block_timestamp"],
+                        "liquidity": -total_liq,  # ,
+                        "start_hash": "",
+                        "end_hash": position_tx.iloc[0]["transaction_hash"],
+                        "log_index": 0,
+                        "block_number": position_tx.iloc[0]["block_number"] - 1,
+                    }
+                )
+                liquidity = total_liq
+            for i in range(len(position_tx.index)):
+                if position_tx.iloc[i]["tx_type"] == "MINT":
+                    liquidity += position_tx.iloc[i]["liquidity"]
+                elif position_tx.iloc[i]["tx_type"] == "BURN":
+                    liquidity -= position_tx.iloc[i]["liquidity"]
+                    if liquidity <= 0:
+                        continue
+                row = {
+                    "address": position_tx.iloc[i]["owner"],
+                    "position_id": idx[0],
+                    "tick_lower": position_tx.iloc[i]["tick_lower"],
+                    "tick_upper": position_tx.iloc[i]["tick_upper"],
+                    "start_time": position_tx.iloc[i]["block_timestamp"],
+                    "end_time": "",
+                    "liquidity": liquidity,  # ,
+                    "start_hash": position_tx.iloc[i]["transaction_hash"],
+                    "end_hash": "",
+                    "log_index": position_tx.iloc[i]["pool_log_index"],
+                    "block_number": position_tx.iloc[i]["block_number"],
+                }
+                if i < len(position_tx.index) - 1:
+                    row["end_time"] = position_tx.iloc[i + 1]["block_timestamp"]
+                    row["end_hash"] = position_tx.iloc[i + 1]["transaction_hash"]
+                user_lp_list.append(row)
+        df = pd.DataFrame(user_lp_list)
+        df = df.sort_values(["address", "position_id", "block_number", "log_index"])
+        df = df.drop(columns=["block_number", "log_index"])
+        return df
 
 
 class UniPositions(Node):
@@ -53,7 +111,12 @@ class UniPositions(Node):
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
-        return {}
+        return {
+            "amount0": to_decimal,
+            "amount1": to_decimal,
+            "liquidity": to_decimal,
+            "sqrtPriceX96": to_decimal,
+        }
 
     def __trace_tx(self, transfers: pd.DataFrame, to_str="to", from_str="from"):
         """
@@ -140,8 +203,6 @@ class UniPositions(Node):
                 "receipt",
                 "amount0",
                 "amount1",
-                "total_liquidity",
-                "total_liquidity_delta",
                 "sqrtPriceX96",
                 "current_tick",
             ]
@@ -150,6 +211,7 @@ class UniPositions(Node):
         return total_df
 
 
+# ======================================================================================================
 def to_decimal(value) -> Decimal:
     return Decimal(value) if value else Decimal(0)
 

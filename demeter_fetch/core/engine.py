@@ -41,13 +41,10 @@ class UniNodes:
     proxy_lp = UniSourceProxyLp([])
     minute = UniMinute([pool])
     tick = UniTick([pool, proxy_lp])
-
     tick_without_pos = UniTickNoPos([pool])
-
     tx = UniTransaction([tick])
     position = UniPositions([tick, tx])
-
-    user_lp = UniUserLP([proxy_transfer, tick])
+    user_lp = UniUserLP([position])
 
 
 class AaveNodes:

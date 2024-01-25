@@ -110,6 +110,7 @@ class UniTick(DailyNode):
         return {
             "amount0": to_decimal,
             "amount1": to_decimal,
+            "liquidity": to_decimal,
             "total_liquidity": to_decimal,
             "total_liquidity_delta": to_decimal,
             "sqrtPriceX96": to_decimal,
