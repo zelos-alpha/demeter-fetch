@@ -100,20 +100,20 @@ class AaveSource(DailyNode):
 class UniTransactionLogs(DailyNode):
     def __init__(self, depends):
         super().__init__(depends)
-        self.name = UniNodesNames.transaction
+        self.name = UniNodesNames.tx_logs
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         tick_df = data[UniNodesNames.tick]
-        tick_df = tick_df[tick_df["tx_type"].isin("MINT", "BURN")]
+        tick_df = tick_df[tick_df["tx_type"].isin(["MINT", "BURN"])]
         tx = tick_df["transaction_hash"].drop_duplicates()
         df: pd.DataFrame | None = None
         match self.from_config.data_source:
             case DataSource.big_query:
-                raise NotImplemented()
+                raise NotImplementedError()
             case DataSource.rpc:
                 df = rpc_uni_tx_logs(self.from_config, tx)
             case DataSource.chifra:
-                raise NotImplemented()
+                raise NotImplementedError()
         return df
 
     def get_file_name(self, day_str: str = "") -> str:

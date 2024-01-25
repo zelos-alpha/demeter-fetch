@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -79,11 +80,12 @@ class HexUtil(object):
         i = int.from_bytes(s, "big", signed=True)
         return i
 
+
 def to_decimal(value):
     return Decimal(value) if value else Decimal(0)
+
+
 class DataUtil(object):
-
-
     @staticmethod
     def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:
         if len(data_list) < 1:
@@ -141,6 +143,26 @@ def hex_to_length(hex_str: str, new_length: int):
         if hex_without_0x[-new_length - 1] != "0":
             raise RuntimeError("Not enough leading zeros to remove")
         return hex_without_0x[-new_length:] if not has_0x else "0x" + hex_without_0x[-new_length:]
+
+
+def split_topic(value: str | list) -> List[str]:
+    if isinstance(value, list):
+        return value
+    elif isinstance(value, str):
+        value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
+        return value.split(",")
+    else:
+        raise NotImplementedError("Unknown topic type")
+
+
+def get_transfer_from_logs(df: pd.DataFrame) -> pd.DataFrame:
+    logs = df[["transaction_hash","log_address", "topics","topic0", "data"]]
+    logs = logs[logs["topic0"] == constants.TRANSFER_KECCAK]
+    logs["from"] = logs["topics"].apply(lambda x: hex_to_length(x[1], 40))
+    logs["to"] = logs["topics"].apply(lambda x: hex_to_length(x[2], 40))
+    logs["value"] = logs["data"].apply(lambda x: Decimal(int(x, 16) if isinstance(x,str) else 0))
+    logs = logs.drop(columns=["topics", "topic0", "data"])
+    return logs
 
 
 class ApiUtil:

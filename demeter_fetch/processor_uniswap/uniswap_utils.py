@@ -7,6 +7,7 @@ import pandas as pd
 
 import demeter_fetch.common._typing as _typing
 import demeter_fetch.common.constants as constants
+from demeter_fetch.common import split_topic
 
 
 def signed_int(h):
@@ -22,14 +23,7 @@ def hex_to_address(topic_str):
     return "0x" + topic_str[26:]
 
 
-def split_topic(value: str) -> List[str]:
-    if isinstance(value, list):
-        return value
-    elif isinstance(value, str):
-        value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
-        return value.split(",")
-    else:
-        raise NotImplementedError("Unknown topic type")
+
 
 
 def handle_proxy_event(topic_str):

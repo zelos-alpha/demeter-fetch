@@ -9,7 +9,7 @@ from typing import Dict, Set, Tuple, Callable
 import pandas as pd
 
 from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
-from ..common import to_decimal,DailyNode,UniNodesNames,OnchainTxType
+from ..common import to_decimal, DailyNode, UniNodesNames, OnchainTxType
 
 
 @dataclass
@@ -105,6 +105,7 @@ class UniTick(DailyNode):
     def get_file_name(self, day_str: str = "") -> str:
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.tick.csv"
 
+    @property
     def load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "amount0": to_decimal,
@@ -160,6 +161,7 @@ class UniTickNoPos(DailyNode):
     def get_file_name(self, day_str: str = "") -> str:
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.pool.tick.csv"
 
+    @property
     def load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "amount0": to_decimal,

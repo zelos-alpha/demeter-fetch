@@ -65,6 +65,10 @@ class Node:
         """
         return {}
 
+    def get_depend_by_name(self, name: str):
+        possible = list(filter(lambda d: d.name == name, self.depends))
+        return possible[0] if len(possible) > 0 else None
+
     def __str__(self):
         return self.name
 
@@ -84,15 +88,10 @@ class DailyNode(Node):
     def work(self):
         set_global_pbar(None)
         # if daily, global loop will handle processbar, outfile existence, gather param
-        day_idx = self.config.from_config.start
-        pbar = tqdm(
-            total=(self.config.from_config.end - self.config.from_config.start).days + 1,
-            ncols=80,
-            position=0,
-            leave=False,
-        )
+        day_idx = self.from_config.start
+        pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)
         set_global_pbar(pbar)
-        while day_idx <= self.config.from_config.end:
+        while day_idx <= self.from_config.end:
             day_str = day_idx.strftime("%Y-%m-%d")
             step_file_name = self.get_full_path(day_str)
             if self.config.to_config.skip_existed and os.path.exists(step_file_name):

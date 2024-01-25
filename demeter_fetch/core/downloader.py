@@ -36,13 +36,17 @@ def download(cfg_path):
     if config.from_config.uniswap_config is not None:
         ignore_pos = config.from_config.uniswap_config.ignore_position_id
 
-    root_node = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
-    steps: List[Node] = engine.get_relative_nodes(root_node)
-    utils.print_log("Will execute the following steps: ",steps)
+    root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
+    steps: List[Node] = engine.get_relative_nodes(root_step)
+    utils.print_log("Will execute the following steps: ", steps)
     [step.set_config(config) for step in steps]
 
     for step in steps:
-        print_log(f"Current step: {step.name}")
         set_global_pbar(None)
-        if step.is_daily:
-            step.work()
+        print_log(f"Current step: {step.name}")
+        step.work()
+    # remove raw files
+    if not config.to_config.keep_raw:
+        for step in steps:
+            if step != root_step:
+                [os.remove(f) for f in step.get_full_paths]
