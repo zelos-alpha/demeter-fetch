@@ -27,14 +27,12 @@ ChainTypeConfig = {
         "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
-        "warpped_native_token":"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", # weth
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
-        "warpped_native_token":"0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", # wmatic
     },
     ChainType.optimism: {
         "allow": [DataSource.rpc, DataSource.chifra],
@@ -236,7 +234,7 @@ class UniNodesNames:
     proxy_lp = "proxy_LP"
     minute = "minute"
     tick = "tick"
-    tx_logs = "tx_logs"
+    tx = "tx"
     tick_without_pos = "tick_without_pos"
     positions = "positions"
     user_lp = "user_lp"

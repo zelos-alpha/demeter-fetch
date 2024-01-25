@@ -8,7 +8,7 @@ from typing import List
 from ..common import Node
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
 
-from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransactionLogs
+from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 
 
@@ -44,8 +44,8 @@ class UniNodes:
 
     tick_without_pos = UniTickNoPos([pool])
 
-    tx_logs = UniTransactionLogs([tick])
-    position = UniPositions([tick, tx_logs])
+    tx = UniTransaction([tick])
+    position = UniPositions([tick, tx])
 
     user_lp = UniUserLP([proxy_transfer, tick])
 

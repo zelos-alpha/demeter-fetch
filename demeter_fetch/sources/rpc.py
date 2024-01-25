@@ -165,8 +165,8 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
     return daily_df
 
 
-def rpc_uni_tx_logs(config: FromConfig, tx_hashes: pd.Series) -> pd.DataFrame:
+def rpc_uni_tx(config: FromConfig, tx_hashes: pd.Series) -> pd.DataFrame:
     client = rpc_utils.EthRpcClient(config.rpc.end_point, config.http_proxy, config.rpc.auth_string)
-    df = rpc_utils.query_event_by_tx(client, tx_hashes)
+    df = rpc_utils.query_tx(client, tx_hashes)
     # df = df.drop(columns=["from", "to"])
     return df

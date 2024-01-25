@@ -9,6 +9,7 @@ from datetime import datetime
 from operator import itemgetter
 from typing import List, Dict
 
+import numpy as np
 import pandas as pd
 import requests
 from tqdm import tqdm  # process bar
@@ -77,6 +78,23 @@ class EthRpcClient:
     def get_tx_receipt(self, tx_hash):
         return self.send("eth_getTransactionReceipt", [tx_hash])
 
+    def get_tx(self, tx_hash):
+        """
+        response:
+            "hash":"0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
+            "nonce":"0x",
+            "blockHash": "0xbeab0aa2411b7ab17f30a99d3cb9c6ef2fc5426d6ad6fd9e2a26a6aed1d1055b",
+            "blockNumber": "0x15df", // 5599
+            "transactionIndex":  "0x1", // 1
+            "from":"0x407d73d8a49eeb85d32cf465507dd71d507100c1",
+            "to":"0x85h43d8a49eeb85d32cf465507dd71d507100c1",
+            "value":"0x7f110", // 520464
+            "gas": "0x7f110", // 520464
+            "gasPrice":"0x09184e72a000",
+            "input":"0x603880600c6000396000f300603880600c6000396000f3603880600c6000396000f360",
+        """
+        return self.send("eth_getTransactionByHash", [tx_hash])
+
     def get_logs(self, param: GetLogsParam):
         if param.toBlock:
             param.toBlock = hex(param.toBlock)
@@ -128,6 +146,38 @@ def _query_tx_receipt(param):
     tx_hash, client = param
     resp = client.get_tx_receipt(tx_hash)
     return resp
+
+
+def _query_tx(param):
+    tx_hash, client = param
+    resp = client.get_tx(tx_hash)
+    return resp
+
+
+def query_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFrame:
+    param_list = [(tx_hash, client) for tx_hash in tx_list]
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        txes = list(tqdm(executor.map(_query_tx, param_list), ncols=60, position=1, leave=False, total=len(tx_list)))
+
+    tx_list = []
+    for tx in txes:
+        if tx is None:
+            continue
+        tx_list.append(
+            {
+                "transaction_hash": tx["hash"],  # "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
+                "block_number": int(tx["blockNumber"], 16),
+                "transaction_index": int(tx["transactionIndex"], 16),  #  "0x1",
+                "from": tx["from"],  #  "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
+                "to": tx["to"],  #  "0x85h43d8a49eeb85d32cf465507dd71d507100c1",
+                "value": int(tx["value"], 16),  #  "0x7f110",
+                "gas": int(tx["gas"], 16),  #  "0x7f110",
+                "gasPrice": int(tx["gasPrice"], 16),  #  "0x09184e72a000",
+            }
+        )
+
+    df = pd.DataFrame(tx_list)
+    return df
 
 
 def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFrame:
@@ -311,3 +361,9 @@ def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
     log["block_dt"] = block_dict.get(height)
 
     return log
+
+
+def set_position_id(row: pd.Series) -> str:
+    if (row["position_id"] is not None) and (not np.isnan(row["position_id"])):
+        return str(int(row["position_id"]))
+    return f"{row['owner']}-{int(row['tick_lower'])}-{int(row['tick_upper'])}"

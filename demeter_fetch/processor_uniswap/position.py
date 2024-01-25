@@ -17,6 +17,7 @@ from ..common import (
     split_topic,
     constants,
 )
+from ..sources.rpc_utils import set_position_id
 
 
 class UniUserLP(Node):
@@ -36,27 +37,6 @@ class UniUserLP(Node):
 
     def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
         return Node
-
-
-class TxType(Enum):
-    mint = 1
-    burn = 2
-    both = 3
-    none = 4
-
-
-def get_tx_type_from_logs(logs: pd.DataFrame) -> TxType:
-    mint_count = len(logs[logs["topic0"] == constants.MINT_KECCAK].index)
-    burn_count = len(logs[logs["topic0"] == constants.BURN_KECCAK].index)
-
-    tx_type = TxType.none
-    if mint_count > 0 and burn_count > 0:
-        tx_type = TxType.both
-    elif mint_count > 0:
-        tx_type = TxType.mint
-    elif burn_count > 0:
-        tx_type = TxType.burn
-    return tx_type
 
 
 class UniPositions(Node):
@@ -99,42 +79,25 @@ class UniPositions(Node):
                 from_addr = found.loc[last_tx_index][from_str]
                 transfers.loc[last_tx_index, "used"] = 1
             else:
-                last_tx_index=None
+                last_tx_index = None
         return from_addr
 
-    def get_tx_user(self, chain: ChainType, logs: pd.DataFrame) -> str:
+    def get_tx_user(self, chain: ChainType, txes: pd.DataFrame) -> str:
         """
         Get real owner of this tx by trace token flow
         """
-        logs = logs.copy()
-        logs["topics"] = logs["topics"].apply(split_topic)
-        logs["topic0"] = logs["topics"].apply(lambda x: x[0])
-
-        transfers = get_transfer_from_logs(logs)
-        if ChainTypeConfig[chain]["warpped_native_token"] is None:
-            raise NotImplementedError(f"Owner find for chain {chain.name} is not implied")
-        transfers = transfers[
-            ~transfers["log_address"].isin(
-                [ChainTypeConfig[chain]["uniswap_proxy_addr"], ChainTypeConfig[chain]["warpped_native_token"]]
-            )
-        ]
-        if len(transfers.index) < 1:
+        if len(txes.index) < 1:
             return ""
-        tx_type = get_tx_type_from_logs(logs)
-        transfers["used"] = 0
-        if tx_type == TxType.none:
-            return ""
-        address = ""
-        if tx_type == TxType.mint or tx_type == TxType.both:
-            address = self.__trace_tx(transfers)
-        elif tx_type == TxType.burn:
-            address = self.__trace_tx(transfers, "from", "to")
+        tx: pd.Series = txes.iloc[0]
 
-        return address
+        if tx["to"] == ChainTypeConfig[chain]["uniswap_proxy_addr"]:
+            return tx["from"]
+        else:
+            return tx["to"]
 
     def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
         tick_csv_paths = data[UniNodesNames.tick]
-        log_csv_paths = data[UniNodesNames.tx_logs]
+        log_csv_paths = data[UniNodesNames.tx]
         tick_csv_paths.sort()
         log_csv_paths.sort()
         pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)
@@ -144,20 +107,46 @@ class UniPositions(Node):
             daily_tick_df = pd.read_csv(
                 tick_csv_paths[i], converters=self.get_depend_by_name(UniNodesNames.tick).load_csv_converter
             )
-            daily_tx_log_df = pd.read_csv(
-                log_csv_paths[i], converters=self.get_depend_by_name(UniNodesNames.tx_logs).load_csv_converter
+            daily_tx_df = pd.read_csv(
+                log_csv_paths[i], converters=self.get_depend_by_name(UniNodesNames.tx).load_csv_converter
             )
             daily_tick_df = daily_tick_df[daily_tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
             tx_hashes = daily_tick_df["transaction_hash"].drop_duplicates()
             owners = {
-                hash: self.get_tx_user(
-                    self.from_config.chain, daily_tx_log_df[daily_tx_log_df["transaction_hash"] == hash]
-                )
+                hash: self.get_tx_user(self.from_config.chain, daily_tx_df[daily_tx_df["transaction_hash"] == hash])
                 for hash in tx_hashes
             }
             daily_tick_df["owner"] = daily_tick_df["transaction_hash"].apply(lambda hash: owners[hash])
             total_df = pd.concat([total_df, daily_tick_df])
             pbar.update()
+
+        # set position id for empty
+        total_df["position_id"] = total_df.apply(set_position_id, axis=1)
+        total_df = total_df[
+            [
+                "position_id",
+                "tx_type",
+                "owner",
+                "tick_lower",
+                "tick_upper",
+                "liquidity",
+                "block_number",
+                "block_timestamp",
+                "transaction_hash",
+                "pool_tx_index",
+                "pool_log_index",
+                "proxy_log_index",
+                "sender",
+                "receipt",
+                "amount0",
+                "amount1",
+                "total_liquidity",
+                "total_liquidity_delta",
+                "sqrtPriceX96",
+                "current_tick",
+            ]
+        ]
+        total_df = total_df.sort_values(["position_id", "block_number", "pool_log_index"])
         return total_df
 
 

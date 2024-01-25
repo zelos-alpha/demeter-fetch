@@ -156,11 +156,13 @@ def split_topic(value: str | list) -> List[str]:
 
 
 def get_transfer_from_logs(df: pd.DataFrame) -> pd.DataFrame:
-    logs = df[["transaction_hash","log_address", "topics","topic0", "data"]]
+    logs = df[["transaction_hash", "log_address", "topics", "data"]]
+    logs["topics"] = logs["topics"].apply(split_topic)
+    logs["topic0"] = logs["topics"].apply(lambda x: x[0])
     logs = logs[logs["topic0"] == constants.TRANSFER_KECCAK]
     logs["from"] = logs["topics"].apply(lambda x: hex_to_length(x[1], 40))
     logs["to"] = logs["topics"].apply(lambda x: hex_to_length(x[2], 40))
-    logs["value"] = logs["data"].apply(lambda x: Decimal(int(x, 16) if isinstance(x,str) else 0))
+    logs["value"] = logs["data"].apply(lambda x: Decimal(int(x, 16) if isinstance(x, str) else 0))
     logs = logs.drop(columns=["topics", "topic0", "data"])
     return logs
 
