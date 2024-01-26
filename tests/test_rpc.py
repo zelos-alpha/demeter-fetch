@@ -6,7 +6,7 @@ import pandas as pd
 import toml
 
 import demeter_fetch.common._typing as typing
-from demeter_fetch.common import utils, constants
+from demeter_fetch.common import utils
 from demeter_fetch.source_rpc.eth_rpc_client import (
     EthRpcClient,
     HeightCacheManager,
@@ -45,7 +45,12 @@ class UniLpDataTest(unittest.TestCase):
             client=client,
             contract_config=ContractConfig(
                 "0x45dda9cb7c25131df268515131f647d726f50608",
-                [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK],
+                [
+                    typing.KECCAK.SWAP.value,
+                    typing.KECCAK.BURN.value,
+                    typing.KECCAK.COLLECT.value,
+                    typing.KECCAK.MINT.value,
+                ],
             ),
             start_height=42447801,
             end_height=42448800,  # diff = 999, will save in one batch
@@ -94,7 +99,12 @@ class UniLpDataTest(unittest.TestCase):
             client=client,
             contract_config=ContractConfig(
                 "0x45dda9cb7c25131df268515131f647d726f50608",
-                [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK],
+                [
+                    typing.KECCAK.SWAP.value,
+                    typing.KECCAK.BURN.value,
+                    typing.KECCAK.COLLECT.value,
+                    typing.KECCAK.MINT.value,
+                ],
             ),
             start_height=42447301,  # height difference cannot be divided by 2*500
             end_height=42448799,

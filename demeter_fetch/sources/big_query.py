@@ -7,8 +7,10 @@ from datetime import date
 
 import pandas as pd
 
-from ..common import FromConfig, Config, constants
 from .big_query_utils import BigQueryChain, query_by_sql
+from .. import ChainTypeConfig
+from ..common import FromConfig, utils
+import demeter_fetch.common._typing as TYPE
 
 
 def _update_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -24,7 +26,7 @@ def bigquery_pool(config: FromConfig, day: date):
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
         FROM {BigQueryChain[config.chain.value].value["table_name"]}
-        WHERE  topics[SAFE_OFFSET(0)] in {constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK}
+        WHERE  topics[SAFE_OFFSET(0)] in {TYPE.KECCAK.SWAP.value, TYPE.KECCAK.BURN.value, TYPE.KECCAK.COLLECT.value, TYPE.KECCAK.MINT.value}
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{config.uniswap_config.pool_address}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
@@ -37,8 +39,8 @@ def bigquery_proxy_lp(config: FromConfig, day: date):
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
         FROM {BigQueryChain[config.chain.value].value["table_name"]}
-        WHERE  topics[SAFE_OFFSET(0)] in {constants.INCREASE_LIQUIDITY, constants.DECREASE_LIQUIDITY, constants.COLLECT}
-            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{BigQueryChain[config.chain.value].value["uni_proxy_addr"]}"
+        WHERE  topics[SAFE_OFFSET(0)] in {TYPE.KECCAK.UNI_PROXY_INCREASE.value, TYPE.KECCAK.UNI_PROXY_DECREASE.value, TYPE.KECCAK.UNI_PROXY_COLLECT.value}
+            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uni_proxy_addr"]}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
     df = _update_df(df)
@@ -50,8 +52,8 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
         FROM {BigQueryChain[config.chain.value].value["table_name"]}
-        WHERE  topics[SAFE_OFFSET(0)] in ('{constants.TRANSFER_KECCAK}')
-            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{BigQueryChain[config.chain.value].value["uni_proxy_addr"]}"
+        WHERE  topics[SAFE_OFFSET(0)] in ('{TYPE.KECCAK.TRANSFER.value}')
+            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uni_proxy_addr"]}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
     df["topics"] = df["topics"].apply(lambda x: x.tolist())
@@ -60,8 +62,30 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
 
 def bigquery_aave(config: FromConfig, day: date):
     day_str = day.strftime("%Y-%m-%d")
+    token_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in config.aave_config.tokens])
+    keccak_str = ",".join(
+        [
+            '"' + utils.hex_to_length(x, 64) + '"'
+            for x in [
+                TYPE.KECCAK.AAVE_SUPPLY.value,
+                TYPE.KECCAK.AAVE_REPAY.value,
+                TYPE.KECCAK.AAVE_BORROW.value,
+                TYPE.KECCAK.AAVE_REPAY.value,
+                TYPE.KECCAK.AAVE_LIQUIDATION.value,
+                TYPE.KECCAK.AAVE_UPDATED.value,
+            ]
+        ]
+    )
+    sql = f"""
+            SELECT block_number,transaction_hash,block_timestamp,transaction_index,log_index,topics,DATA
+            FROM {BigQueryChain[config.chain.value].value["table_name"]}
+            WHERE
+              topics[SAFE_OFFSET(0)] IN ({keccak_str})
+              AND topics[SAFE_OFFSET(1)] IN ({token_str})
+              AND DATE(block_timestamp) >= DATE("{day_str}")
+              AND DATE(block_timestamp) <= DATE("{day_str}")
+              AND address = "{ChainTypeConfig[config.chain]['aave_v3_pool_addr']}"
+        """
+    df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
+    df["topics"] = df["topics"].apply(lambda x: x.tolist())
     pass
-
-
-def bigquery_aave(config: Config, day: date):
-    return "bigquery_aave"

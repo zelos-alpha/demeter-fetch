@@ -5,7 +5,8 @@ import pandas as pd
 from .chifra_utils import query_log_by_chifra
 from .source_utils import ContractConfig
 from .. import ChainTypeConfig
-from ..common import FromConfig, Config, constants
+from ..common import FromConfig
+import demeter_fetch.common._typing as TYPE
 
 
 def chifra_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
@@ -14,7 +15,7 @@ def chifra_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         day=day,
         contract=ContractConfig(
             config.uniswap_config.pool_address,
-            [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK],
+            [TYPE.KECCAK.SWAP.value, TYPE.KECCAK.BURN.value, TYPE.KECCAK.COLLECT.value, TYPE.KECCAK.MINT.value],
         ),
         to_path=save_path,
         keep_tmp_files=False,
@@ -30,7 +31,11 @@ def chifra_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFra
         day=day,
         contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
-            [constants.INCREASE_LIQUIDITY, constants.DECREASE_LIQUIDITY, constants.COLLECT],
+            [
+                TYPE.KECCAK.UNI_PROXY_DECREASE.value,
+                TYPE.KECCAK.UNI_PROXY_INCREASE.value,
+                TYPE.KECCAK.UNI_PROXY_COLLECT.value,
+            ],
         ),
         to_path=save_path,
         keep_tmp_files=False,
@@ -46,7 +51,7 @@ def chifra_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.D
         day=day,
         contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
-            [constants.TRANSFER_KECCAK],
+            [TYPE.KECCAK.TRANSFER.value],
         ),
         to_path=save_path,
         keep_tmp_files=False,

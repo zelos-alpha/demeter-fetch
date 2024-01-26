@@ -8,8 +8,8 @@ from typing import List, Dict
 import pandas as pd
 from tqdm import tqdm  # process bar
 
-import demeter_fetch.common.constants as constants
 import demeter_fetch.common.utils as utils
+import demeter_fetch.common._typing as TYPE
 from demeter_fetch.common._typing import ChainType, ChainTypeConfig
 from demeter_fetch.source_rpc.eth_rpc_client import EthRpcClient, query_event_by_height, ContractConfig, load_tmp_file
 from demeter_fetch.common.utils import print_log
@@ -47,7 +47,9 @@ def query_uniswap_pool_logs(
         )
         utils.print_log(f"Querying end timestamp, wait for {sleep_time} seconds to prevent max rate limit")
         time.sleep(sleep_time)  # to prevent request limit
-        end_height = utils.ApiUtil.query_blockno_from_time(chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key)
+        end_height = utils.ApiUtil.query_blockno_from_time(
+            chain, datetime.combine(end, datetime.max.time()), True, http_proxy, etherscan_api_key
+        )
 
     # 通过eth rpc下载, 并获得按照高度划分的event临时文件列表
     client = EthRpcClient(end_point, http_proxy, auth_string)
@@ -56,7 +58,10 @@ def query_uniswap_pool_logs(
         tmp_files_paths: List[str] = query_event_by_height(
             chain,
             client,
-            ContractConfig(pool_addr, [constants.SWAP_KECCAK, constants.BURN_KECCAK, constants.COLLECT_KECCAK, constants.MINT_KECCAK]),
+            ContractConfig(
+                pool_addr,
+                [TYPE.KECCAK.SWAP.value, TYPE.KECCAK.BURN.value, TYPE.KECCAK.COLLECT.value, TYPE.KECCAK.MINT.value],
+            ),
             start_height,
             end_height,
             save_path=save_path,
@@ -132,7 +137,10 @@ def append_proxy_log(
     tmp_files_paths: List[str] = query_event_by_height(
         chain,
         client,
-        ContractConfig(ChainTypeConfig[chain]["uniswap_proxy_addr"], [constants.INCREASE_LIQUIDITY, constants.DECREASE_LIQUIDITY, constants.COLLECT]),
+        ContractConfig(
+            ChainTypeConfig[chain]["uniswap_proxy_addr"],
+            [TYPE.KECCAK.UNI_PROXY_INCREASE.value, TYPE.KECCAK.UNI_PROXY_COLLECT.value, TYPE.KECCAK.UNI_PROXY_DECREASE],
+        ),
         start_height,
         end_height,
         save_path=save_path,
@@ -158,7 +166,7 @@ def append_proxy_log(
             proxy_log_df.set_index("transaction_hash", inplace=True)
             proxy_log_df = _process_topic(proxy_log_df, True)
             daily_pool_logs = _process_topic(daily_pool_logs)
-            daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
+            daily_pool_logs["tx_type"] = daily_pool_logs.apply(lambda x: TYPE.uni_topic_mapping[x.topic_array[0]], axis=1)
             utils.UniswapUtil.match_proxy_log(daily_pool_logs, proxy_log_df)
 
             # save new raw files
@@ -212,7 +220,16 @@ def _save_one_day(save_path: str, day: date, contract_address: str, one_day_data
     full_path = os.path.join(save_path, utils.get_file_name(chain, contract_address, day))
     with open(full_path, "w") as csvfile:
         writer = csv.DictWriter(
-            csvfile, fieldnames=["block_number", "block_timestamp", "transaction_hash", "pool_tx_index", "pool_log_index", "pool_topics", "pool_data"]
+            csvfile,
+            fieldnames=[
+                "block_number",
+                "block_timestamp",
+                "transaction_hash",
+                "pool_tx_index",
+                "pool_log_index",
+                "pool_topics",
+                "pool_data",
+            ],
         )
         writer.writeheader()
         for item in one_day_data:

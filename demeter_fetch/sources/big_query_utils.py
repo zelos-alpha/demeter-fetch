@@ -11,8 +11,8 @@ global_client: Client | None = None
 
 
 class BigQueryChain(Enum):
-    ethereum = {"table_name": "bigquery-public-data.crypto_ethereum.logs", "uni_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"}
-    polygon = {"table_name": "public-data-finance.crypto_polygon.logs", "uni_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88"}
+    ethereum = {"table_name": "bigquery-public-data.crypto_ethereum.logs"}
+    polygon = {"table_name": "public-data-finance.crypto_polygon.logs"}
 
 
 def _set_environment(auth_file: str, http_proxy: str = None):

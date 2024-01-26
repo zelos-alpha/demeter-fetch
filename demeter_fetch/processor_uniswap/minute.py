@@ -6,8 +6,8 @@ import pandas
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import SingleOutDailyNode, DailyParam
-from demeter_fetch.common import MinuteData, OnchainTxType, MinuteDataNames, UniNodesNames
+from demeter_fetch.common import DailyNode, DailyParam, get_tx_type
+from demeter_fetch.common import MinuteData, KECCAK, MinuteDataNames, UniNodesNames
 from demeter_fetch.common import TextUtil, TimeUtil, DataUtil, to_decimal
 
 
@@ -36,7 +36,7 @@ class MinuteData:
     currentLiquidity = 0
 
 
-class UniMinute(SingleOutDailyNode):
+class UniMinute(DailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.minute
@@ -59,8 +59,8 @@ class UniMinute(SingleOutDailyNode):
 
         df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
         df = df.set_index(keys=["block_timestamp"])
-        df["tx_type"] = df.apply(lambda x: uniswap_utils.get_tx_type(x.topics), axis=1)
-        df = df[df["tx_type"] == OnchainTxType.SWAP]
+        df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+        df = df[df["tx_type"] == KECCAK.SWAP]
         decoded_df = pd.DataFrame()
         decoded_df[
             [
@@ -135,7 +135,7 @@ def preprocess_one(raw_data: pd.DataFrame) -> pd.DataFrame:
     minute_rows = []
     data = []
     total_index = 1
-    raw_data["tx_type"] = raw_data.apply(lambda x: uniswap_utils.get_tx_type(x.pool_topics), axis=1)
+    raw_data["tx_type"] = raw_data.apply(lambda x: get_tx_type(x.pool_topics), axis=1)
 
     for index, row in raw_data.iterrows():
         current_time = TimeUtil.get_minute(ModuleUtils.get_datetime(row["block_timestamp"]))
@@ -174,13 +174,13 @@ def sample_data_to_one_minute(current_time, minute_rows) -> MinuteData:
         # print(tx_type, sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, current_tick, tick_lower,
         #       tick_upper, delta_liquidity)
         match r.tx_type:
-            case OnchainTxType.MINT:
+            case KECCAK.MINT:
                 pass
-            case OnchainTxType.BURN:
+            case KECCAK.BURN:
                 pass
-            case OnchainTxType.COLLECT:
+            case KECCAK.COLLECT:
                 pass
-            case OnchainTxType.SWAP:
+            case KECCAK.SWAP:
                 data.net_amount0 += amount0
                 data.net_amount1 += amount1
                 if amount0 > 0:

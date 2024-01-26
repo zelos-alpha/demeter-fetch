@@ -1,9 +1,9 @@
-import numpy as np
-import pandas as pd
-from typing import List
 from _decimal import Decimal
-import demeter_fetch.common.constants as constants
-import demeter_fetch.common._typing as _typing
+from typing import List
+
+import numpy as np
+
+import demeter_fetch.common._typing as TYPE
 
 RAY = 10**27
 
@@ -17,14 +17,6 @@ def decode_event_ReserveDataUpdated(row):
         Decimal(int(row["DATA"][(2 + 64 * 4) :], 16)) / RAY,
     )
 
-
-def get_tx_type(topics_str):
-    if pd.isna(topics_str):
-        return topics_str
-    topic_list = split_topic(topics_str)
-    type_topic = topic_list[0]
-    tx_type = constants.type_dict[type_topic]
-    return tx_type
 
 
 def split_topic(value: str) -> List[str]:
@@ -60,7 +52,7 @@ def handle_event(tx_type, topics_str, data_hex):
     chunks = len(no_0x_data)
     match tx_type:
         # reserve,
-        case _typing.OnchainTxType.SUPPLY:
+        case TYPE.KECCAK.AAVE_SUPPLY:
             # reserve,onBehalfOf,referralCode,user,amount
             # reserve: trading pool
             # onBehalfOf: supply asset owner
@@ -73,7 +65,7 @@ def handle_event(tx_type, topics_str, data_hex):
             split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
             user = hex_to_address(split_data[0])
             amount = signed_int(split_data[1])
-        case _typing.OnchainTxType.WITHDRAW:
+        case TYPE.KECCAK.AAVE_WITHDRAW:
             # reserve,user,to,amount
             # reserve: trading pool
             # user: msg sender
@@ -83,7 +75,7 @@ def handle_event(tx_type, topics_str, data_hex):
             user = hex_to_address(topic_list[2])
             owner = to = hex_to_address(topic_list[3])
             amount = signed_int(data_hex)
-        case _typing.OnchainTxType.BORROW:
+        case TYPE.KECCAK.AAVE_BORROW:
             # reserve,onBehalfOf,referralCode,user,amount,interestRateMode,borrowRate
             # reserve: trading pool
             # onBehalfOf: borrow asset owner
@@ -100,7 +92,7 @@ def handle_event(tx_type, topics_str, data_hex):
             amount = signed_int(split_data[1])
             interest_rate_mode = signed_int(split_data[2])
             borrow_rate = signed_int(split_data[3])
-        case _typing.OnchainTxType.REPAY:
+        case TYPE.KECCAK.AAVE_REPAY:
             # repayer 还款人, user 债务人
             # reserve,user,repayer,amount,useATokens
             # reserve: trading pool
@@ -114,7 +106,7 @@ def handle_event(tx_type, topics_str, data_hex):
             split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
             amount = signed_int(split_data[0])
             atoken = signed_int(split_data[1])
-        case _typing.OnchainTxType.LIQUIDATION:
+        case TYPE.KECCAK.AAVE_LIQUIDATION:
             # liquidator repay debt_asset debt_amount and get collateral_asset liquidated_collateral_amount
             # 清算者购买被清算者一定数量的抵押资产（collateral asset）来偿还被清算者特定资产债务（debt asset）
             # 清算者将用于购买的债务资产转移到atoken，atoken将抵押物或者抵押物对应的atoken转移到清算者，销毁被清算者的一部分债务代币。

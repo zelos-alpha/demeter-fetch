@@ -1,7 +1,29 @@
+from typing import Dict
+
 import pandas as pd
 
+from demeter_fetch import AaveNodesNames,KECCAK
+from demeter_fetch.common import AaveDailyNode, get_tx_type
+from demeter_fetch.common.nodes import AaveDailyParam
 from demeter_fetch.processor_aave.aave_utils import decode_event_ReserveDataUpdated
-from datetime import datetime
+from datetime import datetime, date
+
+
+class AaveMinute(AaveDailyNode):
+    def __init__(self, depends):
+        super().__init__(depends)
+        self.name = AaveNodesNames.minute
+
+    def _get_file_name(self, param: AaveDailyParam) -> str:
+        return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.minute.csv"
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> Dict[str, pd.DataFrame]:
+        ret = {}
+        for token, raw_df in data.items():
+            df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+            df = df[df["tx_type"] == KECCAK.AAVE_UPDATED]
+            ret[token] = preprocess_one(raw_df)
+        return ret
 
 
 def preprocess_one(raw_df: pd.DataFrame):

@@ -1,13 +1,10 @@
-import json
 from decimal import Decimal
-from typing import List
 
 import numpy as np
 import pandas as pd
 
 import demeter_fetch.common._typing as _typing
-import demeter_fetch.common.constants as constants
-from demeter_fetch.common import split_topic
+from demeter_fetch.common import split_topic, get_tx_type
 
 
 def signed_int(h):
@@ -23,27 +20,19 @@ def hex_to_address(topic_str):
     return "0x" + topic_str[26:]
 
 
-
-
-
 def handle_proxy_event(topic_str):
     if topic_str is None or isinstance(topic_str, float) or len(topic_str) == 0:  # is none or nan
         return None
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
-        type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT
+            type_topic == _typing.KECCAK.UNI_PROXY_INCREASE.value
+            or type_topic == _typing.KECCAK.UNI_PROXY_DECREASE.value
+            or type_topic == _typing.KECCAK.UNI_PROXY_COLLECT.value
     ):
         return int(topic_list[1], 16)
     else:
         return None
-
-
-def get_tx_type(topics_str):
-    topic_list = split_topic(topics_str)
-    type_topic = topic_list[0]
-    tx_type = constants.type_dict[type_topic]
-    return tx_type
 
 
 def handle_event(tx_type, topics_str, data_hex):
@@ -63,20 +52,22 @@ def handle_event(tx_type, topics_str, data_hex):
     chunk_size = 64
     chunks = len(no_0x_data)
     match tx_type:
-        case _typing.OnchainTxType.SWAP:
+        case _typing.KECCAK.SWAP:
             sender = hex_to_address(topic_list[1])
             receipt = hex_to_address(topic_list[2])
             split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
-            amount0, amount1, sqrtPriceX96, current_liquidity, current_tick = [signed_int(onedata) for onedata in split_data]
+            amount0, amount1, sqrtPriceX96, current_liquidity, current_tick = [
+                signed_int(onedata) for onedata in split_data
+            ]
 
-        case _typing.OnchainTxType.BURN:
+        case _typing.KECCAK.BURN:
             sender = hex_to_address(topic_list[1])
             tick_lower = signed_int(topic_list[2])
             tick_upper = signed_int(topic_list[3])
             split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data]
             delta_liquidity = -liquidity
-        case _typing.OnchainTxType.MINT:
+        case _typing.KECCAK.MINT:
             # sender = topic_str_to_address(topic_list[1])
             owner = hex_to_address(topic_list[1])
             tick_lower = signed_int(topic_list[2])
@@ -85,7 +76,7 @@ def handle_event(tx_type, topics_str, data_hex):
             sender = hex_to_address(split_data[0])
             liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
             delta_liquidity = liquidity
-        case _typing.OnchainTxType.COLLECT:
+        case _typing.KECCAK.COLLECT:
             tick_lower = signed_int(topic_list[2])
             tick_upper = signed_int(topic_list[3])
             split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
@@ -134,19 +125,19 @@ def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
     pool_logs["proxy_topics"] = [[]] * pool_logs.shape[0]
 
     for index, row in pool_logs.iterrows():
-        if row.tx_type == _typing.OnchainTxType.SWAP:
+        if row.tx_type == _typing.KECCAK.SWAP:
             continue
         if row.transaction_hash not in proxy_logs.index:
             continue
         proxy_tx: pd.DataFrame = proxy_logs.loc[[row.transaction_hash]]
-        proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == constants.topic_dict[row.topic_name]]
+        proxy_tx_matched: pd.DataFrame = proxy_tx.loc[proxy_tx.topic_name == _typing.uni_topic_mapping[row.topic_name]]
 
         for pindex, possible_match in proxy_tx_matched.iterrows():
-            if row.tx_type == _typing.OnchainTxType.MINT:
+            if row.tx_type == _typing.KECCAK.MINT:
                 if row.data[66:] == possible_match.data[2:]:
                     add_proxy_log(pool_logs, index, possible_match)
                     break
-            elif row.tx_type == _typing.OnchainTxType.COLLECT or row.tx_type == _typing.OnchainTxType.BURN:
+            elif row.tx_type == _typing.KECCAK.COLLECT or row.tx_type == _typing.KECCAK.BURN:
                 if compare_burn_data(row.data, possible_match.data):
                     add_proxy_log(pool_logs, index, possible_match)
                     break

@@ -33,6 +33,7 @@ class Node:
         self.to_path = config.to_config.save_path
 
     def work(self):
+        set_global_pbar(None)
         missing_params: List[EmptyNamedTuple] = []
         if self.config.to_config.skip_existed:
             step_file_names = self.get_file_paths
@@ -45,9 +46,12 @@ class Node:
         data = {}
         for depend in self.depends:
             data[depend.name] = list(depend.get_file_paths.values())
+        pbar = tqdm(total=len(missing_params), ncols=80, position=0, leave=False)
+        set_global_pbar(pbar)
         for param in missing_params:
             df = self._process_one(data, param)
             df.to_csv(self.get_file_path(param), index=False)
+            pbar.update()
 
     def _process_one(self, data: Dict[str, List[str]], param: namedtuple) -> pd.DataFrame:
         return pd.DataFrame()
@@ -85,7 +89,7 @@ class Node:
 DailyParam = namedtuple("DailyParam", ["day"])
 
 
-class SingleOutDailyNode(Node):
+class DailyNode(Node):
     """
     Node whose input and output and dependings are daily, and generate only one file per day.
     """
@@ -130,7 +134,7 @@ class SingleOutDailyNode(Node):
 AaveDailyParam = namedtuple("AaveDailyParam", ["day", "token"])
 
 
-class AaveNode(Node):
+class AaveDailyNode(Node):
     """
     Node whose input and output and dependings are daily, and generate multiple files per day.
     """
@@ -146,3 +150,40 @@ class AaveNode(Node):
                 param = AaveDailyParam(day, token)
                 ret[param] = self.get_file_path(param)
         return ret
+
+    def work(self):
+        set_global_pbar(None)
+        # if daily, global loop will handle processbar, outfile existence, gather param
+        day_idx = self.from_config.start
+        pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)
+        set_global_pbar(pbar)
+        while day_idx <= self.from_config.end:
+            # check file exist
+            if self.config.to_config.skip_existed:
+                all_exist = True
+                for token in self.from_config.aave_config.tokens:
+                    param = AaveDailyParam(day_idx, token)
+                    step_file_name = self.get_file_path(param)
+                    if not os.path.exists(step_file_name):
+                        all_exist = False
+                        break
+                if all_exist:
+                    continue
+                day_idx += timedelta(days=1)
+
+            param = {}
+            for depend in self.depends:
+                token_data = {}
+                for token in self.from_config.aave_config.tokens:
+                    path = depend.get_file_path(AaveDailyParam(day_idx, token))
+                    token_data[token] = pd.read_csv(path, converters=depend.load_csv_converter)
+                param[depend.name] = token_data
+
+            token_dfs = self._process_one_day(param, day_idx)
+            for token, df in token_dfs.items():
+                df.to_csv(self.get_file_path(AaveDailyParam(day_idx, token)), index=False)
+            day_idx += timedelta(days=1)
+            pbar.update()
+
+    def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date) -> Dict[str, pd.DataFrame]:
+        return {}

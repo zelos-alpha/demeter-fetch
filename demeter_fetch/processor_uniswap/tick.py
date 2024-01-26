@@ -8,8 +8,8 @@ from typing import Dict, Set, Tuple, Callable
 
 import pandas as pd
 
-from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
-from ..common import to_decimal, SingleOutDailyNode, UniNodesNames, OnchainTxType, DailyParam
+from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event
+from ..common import to_decimal, DailyNode, UniNodesNames, DailyParam, get_tx_type, KECCAK
 
 
 @dataclass
@@ -97,7 +97,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-class UniTick(SingleOutDailyNode):
+class UniTick(DailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.tick
@@ -154,7 +154,7 @@ class UniTick(SingleOutDailyNode):
         return merged_df
 
 
-class UniTickNoPos(SingleOutDailyNode):
+class UniTickNoPos(DailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.tick_without_pos
@@ -267,12 +267,12 @@ def drop_duplicate(df: pd.Series):
     df_count = df["key"].value_counts()
     for index, row in df.iterrows():
         match row.tx_type:
-            case OnchainTxType.SWAP:
+            case KECCAK.SWAP:
                 pass
-            case OnchainTxType.MINT:
+            case KECCAK.MINT:
                 if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
-            case OnchainTxType.COLLECT:
+            case KECCAK.COLLECT:
                 """
                 极端例子:
                 1. https://polygonscan.com/tx/0x2d88b0cc9f8008135accc8667aa907931edf0be01d311fe437336be7cfe511fd#eventlog, log: 371,382 需要分离
@@ -286,7 +286,7 @@ def drop_duplicate(df: pd.Series):
                         allow_error = 50
                     if not is_collect_data_same(row.pool_data, row.proxy_data, allow_error):
                         process_duplicate_row(index, row, row_to_remove, df_count, df)
-            case OnchainTxType.BURN:
+            case KECCAK.BURN:
                 if data_is_not_empty(row.proxy_data) and not is_burn_data_same(row.pool_data, row.proxy_data):
                     process_duplicate_row(index, row, row_to_remove, df_count, df)
             case _:
