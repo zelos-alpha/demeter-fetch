@@ -58,5 +58,10 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     return df
 
 
+def bigquery_aave(config: FromConfig, day: date):
+    day_str = day.strftime("%Y-%m-%d")
+    pass
+
+
 def bigquery_aave(config: Config, day: date):
     return "bigquery_aave"

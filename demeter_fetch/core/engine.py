@@ -48,10 +48,10 @@ class UniNodes:
 
 
 class AaveNodes:
-    pool = AaveSource([])
+    raw = AaveSource([])
 
-    minute = Node([pool])
-    tick = Node([pool])
+    minute = Node([raw])
+    tick = Node([raw])
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
@@ -76,7 +76,7 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
     elif dapp == DappType.aave:
         match to_type:
             case ToType.raw:
-                return AaveNodes.pool
+                return AaveNodes.raw
             case ToType.minute:
                 return AaveNodes.minute
             case ToType.tick:

@@ -12,7 +12,7 @@ import pandas as pd
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx
-from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node
+from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam
 
 
 @dataclass
@@ -42,8 +42,8 @@ class UniSourcePool(DailyNode):
                 df = chifra_pool(self.from_config, self.to_path, day)
         return df
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.raw.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
 class UniSourceProxyLp(DailyNode):
@@ -62,8 +62,8 @@ class UniSourceProxyLp(DailyNode):
                 df = chifra_proxy_lp(self.from_config, self.to_path, day)
         return df
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-uniswap-proxy-lp-{day_str}.raw.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-uniswap-proxy-lp-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
 class UniSourceProxyTransfer(DailyNode):
@@ -82,19 +82,28 @@ class UniSourceProxyTransfer(DailyNode):
                 df = chifra_proxy_transfer(self.from_config, self.to_path, day)
         return df
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-uniswap-proxy-transfer-{day_str}.raw.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-uniswap-proxy-transfer-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
 class AaveSource(DailyNode):
     def __init__(self, depends):
         super().__init__(depends)
-        self.name = AaveNodesNames.pool
+        self.name = AaveNodesNames.raw
 
-    def aave_source(self, data: Dict[str, str], day: date):
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
+        df: pd.DataFrame | None = None
         match self.from_config.data_source:
             case DataSource.big_query:
-                return bigquery_aave(self.from_config, day)
+                return bigquery_proxy_transfer(self.from_config, day)
+            case DataSource.rpc:
+                df = rpc_proxy_transfer(self.from_config, self.to_path, day)
+            case DataSource.chifra:
+                df = chifra_proxy_transfer(self.from_config, self.to_path, day)
+        return df
+
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-aave_v3-{self.from_config.aave_config.tokens}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
 class UniTransaction(DailyNode):
@@ -116,5 +125,5 @@ class UniTransaction(DailyNode):
                 raise NotImplementedError()
         return df
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-uniswap-tx-{day_str}.raw.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-uniswap-pool-tx-{param.day.strftime('%Y-%m-%d')}.raw.csv"

@@ -9,7 +9,7 @@ from typing import Dict, Set, Tuple, Callable
 import pandas as pd
 
 from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
-from ..common import to_decimal, DailyNode, UniNodesNames, OnchainTxType
+from ..common import to_decimal, DailyNode, UniNodesNames, OnchainTxType, DailyParam
 
 
 @dataclass
@@ -102,8 +102,8 @@ class UniTick(DailyNode):
         super().__init__(depends)
         self.name = UniNodesNames.tick
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.tick.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.tick.csv"
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
@@ -159,8 +159,8 @@ class UniTickNoPos(DailyNode):
         super().__init__(depends)
         self.name = UniNodesNames.tick_without_pos
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.pool.tick.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.pool.tick.csv"
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:

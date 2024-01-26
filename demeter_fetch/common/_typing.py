@@ -38,8 +38,6 @@ ChainTypeConfig = {
         "allow": [DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
-        # you have to find a real mint tx, to make sure warpped native token is not transfered from proxy to pool
-        # "warpped_native_token":"0x4200000000000000000000000000000000000042",
     },
     ChainType.arbitrum: {
         "allow": [DataSource.rpc, DataSource.chifra],
@@ -241,6 +239,6 @@ class UniNodesNames:
 
 
 class AaveNodesNames:
-    pool = "pool"
+    raw = "raw"
     minute = "minute"
     tick = "tick"

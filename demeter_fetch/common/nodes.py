@@ -3,6 +3,7 @@
 # @Time    : 2024-01-09 11:21
 # @Author  : 32ethers
 # @Description:
+from collections import namedtuple
 from datetime import timedelta, date
 
 import os
@@ -14,12 +15,14 @@ from tqdm import tqdm
 from ._typing import Config, FromConfig
 from .utils import TimeUtil, set_global_pbar
 
+EmptyNamedTuple = namedtuple("EmptyNamedTuple", [])
+
 
 class Node:
     def __init__(self, depends: List, name=""):
         self.name = name
-        self.is_daily = False
         self.depends: List[Node] = depends
+        self.depends_dict: Dict[str, Node] = {d.name: d for d in self.depends}
         self.config: Config | None = None
         self.from_config: FromConfig | None = None
         self.to_path: str | None = None
@@ -30,32 +33,36 @@ class Node:
         self.to_path = config.to_config.save_path
 
     def work(self):
-        param = {}
-        step_file_name = self.get_full_path()
-        if self.config.to_config.skip_existed and os.path.exists(step_file_name):
-            return
+        missing_param = []
+        if self.config.to_config.skip_existed:
+            step_file_names = self.get_file_paths
+            for key, fn in step_file_names.items():
+                if not os.path.exists(fn):
+                    missing_param.append(key)
+                    break
+            if len(missing_param) < 1:
+                return
+        data = {}
         for depend in self.depends:
-            param[depend.name] = depend.get_full_paths
-        df = self._process(param)
-        df.to_csv(step_file_name, index=False)
+            data[depend.name] = list(depend.get_file_paths.values())
+        dfs = self._process(data, missing_param)
+        for key, df in dfs.items():
+            df.to_csv(self.get_file_path(key), index=False)
 
-    def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
-        """
-        :param data: Dict[depend_step_name, List[depend step files]],
-        :param day:
-        :return:
-        """
-        return pd.DataFrame()
+    def _process(self, data: Dict[str, List[str]], params: List[Dict]) -> Dict[namedtuple, pd.DataFrame]:
+        return {EmptyNamedTuple(): pd.DataFrame()}
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.name}{day_str}.csv"
+    def _get_file_name(self, param: namedtuple) -> str:
+        return f"{self.name}-{str(param)}.csv"
 
-    def get_full_path(self, day_str: str = "") -> str:
-        return os.path.join(self.to_path, self.get_file_name(day_str))
+    def get_file_path(self, param: namedtuple) -> str:
+        return os.path.join(self.to_path, self._get_file_name(param))
 
     @property
-    def get_full_paths(self) -> List[str]:
-        return [self.get_full_path("")]
+    def get_file_paths(self) -> Dict[namedtuple, str]:
+        return {
+            EmptyNamedTuple(): self.get_file_path(EmptyNamedTuple()),
+        }
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
@@ -66,8 +73,7 @@ class Node:
         return {}
 
     def get_depend_by_name(self, name: str):
-        possible = list(filter(lambda d: d.name == name, self.depends))
-        return possible[0] if len(possible) > 0 else None
+        return self.depends_dict[name]
 
     def __str__(self):
         return self.name
@@ -76,14 +82,16 @@ class Node:
         return self.name
 
 
+DailyParam = namedtuple("DailyParam", ["day"])
+
+
 class DailyNode(Node):
     """
-    Node whose input and output are both daily
+    Node whose input and output and depredations are daily, and only one file per day.
     """
 
     def __init__(self, depends: List):
         super().__init__(depends)
-        self.is_daily = True
 
     def work(self):
         set_global_pbar(None)
@@ -92,23 +100,19 @@ class DailyNode(Node):
         pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)
         set_global_pbar(pbar)
         while day_idx <= self.from_config.end:
-            day_str = day_idx.strftime("%Y-%m-%d")
-            step_file_name = self.get_full_path(day_str)
+            # day_str = day_idx.strftime("%Y-%m-%d")
+            day_param = DailyParam(day_idx)
+            step_file_name = self.get_file_path(day_param)
             if self.config.to_config.skip_existed and os.path.exists(step_file_name):
                 day_idx += timedelta(days=1)
                 continue
             param = {}
             for depend in self.depends:
-                if depend.is_daily:
-                    depend_file_path = depend.get_full_path(day_str)
-                    param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
-                    pass
-                else:
-                    depend_file_path = depend.get_full_path("")
-                    param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
-                    pass
+                depend_file_path = depend.get_file_path(day_param)
+                param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
+
             df = self._process_one_day(param, day_idx)
-            df.to_csv(self.get_full_path(day_str), index=False)
+            df.to_csv(self.get_file_path(day_param), index=False)
             day_idx += timedelta(days=1)
             pbar.update()
 
@@ -116,8 +120,8 @@ class DailyNode(Node):
         return pd.DataFrame()
 
     @property
-    def get_full_paths(self) -> List[str]:
-        return [
-            self.get_full_path(day.strftime("%Y-%m-%d"))
+    def get_file_paths(self) -> Dict[namedtuple, str]:
+        return {
+            DailyParam(day): self.get_file_path(DailyParam(day))
             for day in TimeUtil.get_date_array(self.from_config.start, self.from_config.end)
-        ]
+        }

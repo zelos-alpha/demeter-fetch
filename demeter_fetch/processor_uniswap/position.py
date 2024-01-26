@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 from decimal import Decimal
 from typing import Tuple, Dict, Callable, List
 
@@ -11,6 +12,7 @@ from ..common import (
     UniNodesNames,
     Node,
     set_global_pbar,
+    EmptyNamedTuple,
 )
 from ..sources.rpc_utils import set_position_id
 
@@ -20,7 +22,7 @@ class UniUserLP(Node):
         super().__init__(depends)
         self.name = UniNodesNames.user_lp
 
-    def get_file_name(self, day_str: str = "") -> str:
+    def _get_file_name(self, param: namedtuple) -> str:
         return (
             f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-"
             f"{self.from_config.start.strftime('%Y-%m-%d')}-{self.from_config.end.strftime('%Y-%m-%d')}.user_lp.csv"
@@ -32,7 +34,7 @@ class UniUserLP(Node):
             "liquidity": to_decimal,
         }
 
-    def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
+    def _process(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         position_df = pd.read_csv(
             data[UniNodesNames.positions][0],
             converters=self.get_depend_by_name(UniNodesNames.positions).load_csv_converter,
@@ -94,7 +96,7 @@ class UniUserLP(Node):
         df = pd.DataFrame(user_lp_list)
         df = df.sort_values(["address", "position_id", "block_number", "log_index"])
         df = df.drop(columns=["block_number", "log_index"])
-        return df
+        return {EmptyNamedTuple(): df}
 
 
 class UniPositions(Node):
@@ -102,7 +104,7 @@ class UniPositions(Node):
         super().__init__(depends)
         self.name = UniNodesNames.positions
 
-    def get_file_name(self, day_str: str = "") -> str:
+    def _get_file_name(self, param: namedtuple) -> str:
         return (
             f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-"
             f"{self.from_config.start.strftime('%Y-%m-%d')}-{self.from_config.end.strftime('%Y-%m-%d')}"
@@ -118,33 +120,6 @@ class UniPositions(Node):
             "sqrtPriceX96": to_decimal,
         }
 
-    def __trace_tx(self, transfers: pd.DataFrame, to_str="to", from_str="from"):
-        """
-        Trace token transfer, from pool to origial user
-        if swap from and to, it can trace token transfer from pool, and find the transfer end
-        """
-        last_txs = transfers[transfers[to_str] == self.from_config.uniswap_config.pool_address]
-        if len(last_txs.index) < 1:
-            return ""
-        last_tx_index = last_txs.index[0]
-        from_addr = last_txs.loc[last_tx_index][from_str]
-        transfers.loc[last_tx_index, "used"] = 1
-
-        while last_tx_index is not None:
-            found = transfers[
-                (transfers["log_address"] == transfers.loc[last_tx_index]["log_address"])
-                & (transfers[to_str] == transfers.loc[last_tx_index][from_str])
-                & (transfers["used"] == 0)
-                & (transfers["value"] == transfers.loc[last_tx_index]["value"])
-            ]
-            if len(found.index) > 0:
-                last_tx_index = found.index[0]
-                from_addr = found.loc[last_tx_index][from_str]
-                transfers.loc[last_tx_index, "used"] = 1
-            else:
-                last_tx_index = None
-        return from_addr
-
     def get_tx_user(self, chain: ChainType, txes: pd.DataFrame) -> str:
         """
         Get real owner of this tx by trace token flow
@@ -158,7 +133,7 @@ class UniPositions(Node):
         else:
             return tx["to"]
 
-    def _process(self, data: Dict[str, List[str]]) -> pd.DataFrame():
+    def _process(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         tick_csv_paths = data[UniNodesNames.tick]
         log_csv_paths = data[UniNodesNames.tx]
         tick_csv_paths.sort()
@@ -208,7 +183,7 @@ class UniPositions(Node):
             ]
         ]
         total_df = total_df.sort_values(["position_id", "block_number", "pool_log_index"])
-        return total_df
+        return {EmptyNamedTuple(): total_df}
 
 
 # ======================================================================================================

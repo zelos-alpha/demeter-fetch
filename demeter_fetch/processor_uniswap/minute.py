@@ -6,7 +6,7 @@ import pandas
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import DailyNode
+from demeter_fetch.common import DailyNode, DailyParam
 from demeter_fetch.common import MinuteData, OnchainTxType, MinuteDataNames, UniNodesNames
 from demeter_fetch.common import TextUtil, TimeUtil, DataUtil, to_decimal
 
@@ -41,8 +41,8 @@ class UniMinute(DailyNode):
         super().__init__(depends)
         self.name = UniNodesNames.minute
 
-    def get_file_name(self, day_str: str = "") -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{day_str}.minute.csv"
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.minute.csv"
 
     @property
     def load_csv_converter(self) -> Dict[str, Callable]:
