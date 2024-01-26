@@ -9,7 +9,7 @@ from typing import Dict, Set, Tuple, Callable
 import pandas as pd
 
 from .uniswap_utils import match_proxy_log, get_tx_type, handle_event, handle_proxy_event
-from ..common import to_decimal, DailyNode, UniNodesNames, OnchainTxType, DailyParam
+from ..common import to_decimal, SingleOutDailyNode, UniNodesNames, OnchainTxType, DailyParam
 
 
 @dataclass
@@ -97,7 +97,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-class UniTick(DailyNode):
+class UniTick(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.tick
@@ -154,7 +154,7 @@ class UniTick(DailyNode):
         return merged_df
 
 
-class UniTickNoPos(DailyNode):
+class UniTickNoPos(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.tick_without_pos

@@ -6,7 +6,7 @@ import pandas
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import DailyNode, DailyParam
+from demeter_fetch.common import SingleOutDailyNode, DailyParam
 from demeter_fetch.common import MinuteData, OnchainTxType, MinuteDataNames, UniNodesNames
 from demeter_fetch.common import TextUtil, TimeUtil, DataUtil, to_decimal
 
@@ -36,7 +36,7 @@ class MinuteData:
     currentLiquidity = 0
 
 
-class UniMinute(DailyNode):
+class UniMinute(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.minute

@@ -34,7 +34,7 @@ class UniUserLP(Node):
             "liquidity": to_decimal,
         }
 
-    def _process(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
+    def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         position_df = pd.read_csv(
             data[UniNodesNames.positions][0],
             converters=self.get_depend_by_name(UniNodesNames.positions).load_csv_converter,
@@ -96,7 +96,7 @@ class UniUserLP(Node):
         df = pd.DataFrame(user_lp_list)
         df = df.sort_values(["address", "position_id", "block_number", "log_index"])
         df = df.drop(columns=["block_number", "log_index"])
-        return {EmptyNamedTuple(): df}
+        return df
 
 
 class UniPositions(Node):
@@ -133,7 +133,7 @@ class UniPositions(Node):
         else:
             return tx["to"]
 
-    def _process(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
+    def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         tick_csv_paths = data[UniNodesNames.tick]
         log_csv_paths = data[UniNodesNames.tx]
         tick_csv_paths.sort()
@@ -183,7 +183,7 @@ class UniPositions(Node):
             ]
         ]
         total_df = total_df.sort_values(["position_id", "block_number", "pool_log_index"])
-        return {EmptyNamedTuple(): total_df}
+        return total_df
 
 
 # ======================================================================================================

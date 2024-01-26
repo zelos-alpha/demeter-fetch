@@ -7,7 +7,7 @@ from collections import namedtuple
 from datetime import timedelta, date
 
 import os
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Tuple
 
 import pandas as pd
 from tqdm import tqdm
@@ -33,24 +33,24 @@ class Node:
         self.to_path = config.to_config.save_path
 
     def work(self):
-        missing_param = []
+        missing_params: List[EmptyNamedTuple] = []
         if self.config.to_config.skip_existed:
             step_file_names = self.get_file_paths
             for key, fn in step_file_names.items():
                 if not os.path.exists(fn):
-                    missing_param.append(key)
+                    missing_params.append(key)
                     break
-            if len(missing_param) < 1:
+            if len(missing_params) < 1:
                 return
         data = {}
         for depend in self.depends:
             data[depend.name] = list(depend.get_file_paths.values())
-        dfs = self._process(data, missing_param)
-        for key, df in dfs.items():
-            df.to_csv(self.get_file_path(key), index=False)
+        for param in missing_params:
+            df = self._process_one(data, param)
+            df.to_csv(self.get_file_path(param), index=False)
 
-    def _process(self, data: Dict[str, List[str]], params: List[Dict]) -> Dict[namedtuple, pd.DataFrame]:
-        return {EmptyNamedTuple(): pd.DataFrame()}
+    def _process_one(self, data: Dict[str, List[str]], param: namedtuple) -> pd.DataFrame:
+        return pd.DataFrame()
 
     def _get_file_name(self, param: namedtuple) -> str:
         return f"{self.name}-{str(param)}.csv"
@@ -85,9 +85,9 @@ class Node:
 DailyParam = namedtuple("DailyParam", ["day"])
 
 
-class DailyNode(Node):
+class SingleOutDailyNode(Node):
     """
-    Node whose input and output and depredations are daily, and only one file per day.
+    Node whose input and output and dependings are daily, and generate only one file per day.
     """
 
     def __init__(self, depends: List):
@@ -125,3 +125,24 @@ class DailyNode(Node):
             DailyParam(day): self.get_file_path(DailyParam(day))
             for day in TimeUtil.get_date_array(self.from_config.start, self.from_config.end)
         }
+
+
+AaveDailyParam = namedtuple("AaveDailyParam", ["day", "token"])
+
+
+class AaveNode(Node):
+    """
+    Node whose input and output and dependings are daily, and generate multiple files per day.
+    """
+
+    def __init__(self, depends: List):
+        super().__init__(depends)
+
+    @property
+    def get_file_paths(self) -> Dict[namedtuple, str]:
+        ret = {}
+        for day in TimeUtil.get_date_array(self.from_config.start, self.from_config.end):
+            for token in self.from_config.aave_config.tokens:
+                param = AaveDailyParam(day, token)
+                ret[param] = self.get_file_path(param)
+        return ret

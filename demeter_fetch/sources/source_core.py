@@ -12,7 +12,7 @@ import pandas as pd
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx
-from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam
+from ..common import DataSource, UniNodesNames, AaveNodesNames, SingleOutDailyNode, Node, DailyParam
 
 
 @dataclass
@@ -26,7 +26,7 @@ class EventLog:
     data = 0
 
 
-class UniSourcePool(DailyNode):
+class UniSourcePool(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.pool
@@ -46,7 +46,7 @@ class UniSourcePool(DailyNode):
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
-class UniSourceProxyLp(DailyNode):
+class UniSourceProxyLp(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.proxy_lp
@@ -66,7 +66,7 @@ class UniSourceProxyLp(DailyNode):
         return f"{self.from_config.chain.name}-uniswap-proxy-lp-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
-class UniSourceProxyTransfer(DailyNode):
+class UniSourceProxyTransfer(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.proxy_transfer
@@ -86,7 +86,7 @@ class UniSourceProxyTransfer(DailyNode):
         return f"{self.from_config.chain.name}-uniswap-proxy-transfer-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
-class AaveSource(DailyNode):
+class AaveSource(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = AaveNodesNames.raw
@@ -106,7 +106,7 @@ class AaveSource(DailyNode):
         return f"{self.from_config.chain.name}-aave_v3-{self.from_config.aave_config.tokens}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
 
-class UniTransaction(DailyNode):
+class UniTransaction(SingleOutDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
         self.name = UniNodesNames.tx
