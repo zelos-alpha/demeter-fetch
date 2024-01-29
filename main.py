@@ -18,6 +18,4 @@ if __name__ == "__main__":
     elif args.tools is not None:
         if args.tools == "date_to_height":
             date_to_height(args)
-            # args=argParser.parse_args(["tool","chifra",])a
-            # print(args)
         pass

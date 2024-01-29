@@ -18,7 +18,6 @@ def decode_event_ReserveDataUpdated(row):
     )
 
 
-
 def split_topic(value: str) -> List[str]:
     value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
     return value.split(",")
@@ -62,7 +61,7 @@ def handle_event(tx_type, topics_str, data_hex):
             reserve = hex_to_address(topic_list[1])
             owner = onBehalfOf = hex_to_address(topic_list[2])
             referralCode = signed_int(topic_list[3])
-            split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             user = hex_to_address(split_data[0])
             amount = signed_int(split_data[1])
         case TYPE.KECCAK.AAVE_WITHDRAW:
@@ -87,7 +86,7 @@ def handle_event(tx_type, topics_str, data_hex):
             reserve = hex_to_address(topic_list[1])
             owner = onBehalfOf = hex_to_address(topic_list[2])
             referralCode = signed_int(topic_list[3])
-            split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             user = hex_to_address(split_data[0])
             amount = signed_int(split_data[1])
             interest_rate_mode = signed_int(split_data[2])
@@ -103,7 +102,7 @@ def handle_event(tx_type, topics_str, data_hex):
             reserve = hex_to_address(topic_list[1])
             owner = user = hex_to_address(topic_list[2])
             repayer = hex_to_address(topic_list[3])
-            split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             amount = signed_int(split_data[0])
             atoken = signed_int(split_data[1])
         case TYPE.KECCAK.AAVE_LIQUIDATION:
@@ -118,7 +117,7 @@ def handle_event(tx_type, topics_str, data_hex):
             # liquidatedCollateralAmount: The amount of collateral received by the liquidator
             # liquidator: The address of the liquidator
             # receiveAToken: True if the liquidators wants to receive the collateral aTokens, `false` if he wants to receive the underlying collateral asset directly
-            split_data = ["0x" + no_0x_data[i: i + chunk_size] for i in range(0, chunks, chunk_size)]
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             reserve = collateral_asset = hex_to_address(topic_list[1])  # 清算者想要购买的抵押资产。
             owner = user = hex_to_address(topic_list[3])  # 被清算者
             amount = liquidated_collateral_amount = signed_int(split_data[1])  # 清算者购买的抵押资产数量
@@ -128,12 +127,4 @@ def handle_event(tx_type, topics_str, data_hex):
             atoken = signed_int(split_data[3])  # 清算者是否以atoken的形式接收清算得到的抵押资产。
         case _:
             raise ValueError("not support tx type")
-    return (
-        reserve,
-        owner,
-        Decimal(amount),
-        liquidator,
-        debt_asset,
-        Decimal(debt_amount),
-        atoken
-    )
+    return (reserve, owner, Decimal(amount), liquidator, debt_asset, Decimal(debt_amount), atoken)
