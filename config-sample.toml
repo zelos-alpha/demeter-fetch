@@ -25,7 +25,7 @@ end_point = "https://localhost:8545"
 #batch_size = 500 # default is 500
 #keep_tmp_files = false
 etherscan_api_key = "some_api_key" #
-
+force_no_proxy=false
 
 [from.chifra]
 etherscan_api_key = "" # must fill if query etherscan for block, proxy must set.

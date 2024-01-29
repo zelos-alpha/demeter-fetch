@@ -56,7 +56,12 @@ class EthRpcClient:
 
     @staticmethod
     def __decode_json_rpc(response: requests.Response):
-        content = response.json()
+        try:
+            content = response.json()
+        except Exception as e:
+            print(f"Decode rpc response failed, error: {e}")
+            raise e
+
         if "error" in content:
             raise EthError(content["error"]["code"], content["error"]["message"])
         return content["result"]

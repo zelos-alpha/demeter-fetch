@@ -87,6 +87,7 @@ class RpcConfig:
     auth_string: str | None = None
     keep_tmp_files: bool = False
     etherscan_api_key: str = None
+    force_no_proxy:bool=False # if set to true, will ignore proxy setting
 
 
 @dataclass

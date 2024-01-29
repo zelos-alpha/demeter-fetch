@@ -39,9 +39,15 @@ def convert_to_config(conf_file: dict) -> Config:
     data_source = DataSource[conf_file["from"]["datasource"]]
     dapp_type = DappType[conf_file["from"]["dapp_type"]]
     http_proxy = get_item_with_default_2(conf_file, "from", "http_proxy", None)
-    start_time = get_item_with_default_2(conf_file, "from", "start", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
-    end_time = get_item_with_default_2(conf_file, "from", "end", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date())
-    from_config = FromConfig(chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy, start=start_time, end=end_time)
+    start_time = get_item_with_default_2(
+        conf_file, "from", "start", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date()
+    )
+    end_time = get_item_with_default_2(
+        conf_file, "from", "end", None, lambda x: datetime.strptime(x, "%Y-%m-%d").date()
+    )
+    from_config = FromConfig(
+        chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy, start=start_time, end=end_time
+    )
     if start_time is None or end_time is None:
         raise RuntimeError("start time and end time must be set")
     if dapp_type == DappType.uniswap:
@@ -64,13 +70,14 @@ def convert_to_config(conf_file: dict) -> Config:
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "rpc", "etherscan_api_key", None)
             end_point = conf_file["from"]["rpc"]["end_point"]
             batch_size = get_item_with_default_3(conf_file, "from", "rpc", "batch_size", 500)
-
+            force_no_proxy = get_item_with_default_3(conf_file, "from", "rpc", "force_no_proxy", False)
             from_config.rpc = RpcConfig(
                 end_point=end_point,
                 batch_size=batch_size,
                 auth_string=auth_string,
                 keep_tmp_files=keep_tmp_files,
                 etherscan_api_key=etherscan_api_key,
+                force_no_proxy=force_no_proxy
             )
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
