@@ -6,7 +6,7 @@
 from typing import List
 
 from ..common import Node
-from ..processor_aave.minute import AaveMinute
+from ..processor_aave import AaveMinute, AaveTick
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
 
 from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction
@@ -52,7 +52,7 @@ class AaveNodes:
     raw = AaveSource([])
 
     minute = AaveMinute([raw])
-    tick = Node([raw])
+    tick = AaveTick([raw])
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:

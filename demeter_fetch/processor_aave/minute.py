@@ -17,7 +17,7 @@ class AaveMinute(AaveDailyNode):
     def _get_file_name(self, param: AaveDailyParam) -> str:
         return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.minute.csv"
 
-    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date, tokens) -> Dict[str, pd.DataFrame]:
+    def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date, tokens) -> Dict[str, pd.DataFrame]:
         ret: Dict[str, pd.DataFrame] = {}
         df = data[AaveNodesNames.raw]
         for token, token_df in df.items():
@@ -28,7 +28,6 @@ class AaveMinute(AaveDailyNode):
 
 
 def preprocess_one(raw_df: pd.DataFrame):
-
     result_df = pd.DataFrame()
     result_df[
         [
