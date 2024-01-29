@@ -8,7 +8,7 @@ import pandas as pd
 import demeter_fetch.sources.rpc_utils as rpc_utils
 from .source_utils import get_height_from_date
 from .. import ChainType, ChainTypeConfig
-from ..common import FromConfig, KECCAK, utils
+from ..common import FromConfig, KECCAK, utils, split_topic, hex_to_length
 from .source_utils import ContractConfig
 
 
@@ -174,3 +174,36 @@ def rpc_uni_tx(config: FromConfig, tx_hashes: pd.Series) -> pd.DataFrame:
     df = rpc_utils.query_tx(client, tx_hashes)
     # df = df.drop(columns=["from", "to"])
     return df
+
+
+def rpc_aave(config: FromConfig, save_path: str, day: date, tokens):
+    start_height, end_height = get_height_from_date(day, config.chain, config.http_proxy, config.rpc.etherscan_api_key)
+    daily_df = query_logs(
+        chain=config.chain,
+        end_point=config.rpc.end_point,
+        save_path=save_path,
+        start_height=start_height,
+        end_height=end_height,
+        contract=ContractConfig(
+            ChainTypeConfig[config.chain]["aave_v3_pool_addr"],
+            [
+                KECCAK.AAVE_REPAY.value,
+                KECCAK.AAVE_BORROW.value,
+                KECCAK.AAVE_SUPPLY.value,
+                KECCAK.AAVE_WITHDRAW.value,
+                KECCAK.AAVE_UPDATED.value,
+                KECCAK.AAVE_LIQUIDATION.value,
+            ],
+        ),
+        batch_size=config.rpc.batch_size,
+        auth_string=config.rpc.auth_string,
+        http_proxy=config.http_proxy if not config.rpc.force_no_proxy else None,
+        keep_tmp_files=config.rpc.keep_tmp_files,
+        one_by_one=False,
+        skip_timestamp=False,
+    )
+    daily_df = _update_df(daily_df)
+    daily_df["topics"] = daily_df["topics"].apply(lambda x: split_topic(x))
+    daily_df["token"] = daily_df["topics"].apply(lambda r: hex_to_length(r[1], 40))
+    daily_df = daily_df[daily_df["token"].isin(tokens)]
+    return daily_df

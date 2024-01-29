@@ -60,7 +60,7 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     return df
 
 
-def bigquery_aave(config: FromConfig, day: date, tokens:List[str]):
+def bigquery_aave(config: FromConfig, day: date, tokens: List[str]):
     day_str = day.strftime("%Y-%m-%d")
     token_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tokens])
     keccak_str = ",".join(
@@ -70,14 +70,14 @@ def bigquery_aave(config: FromConfig, day: date, tokens:List[str]):
                 KECCAK.AAVE_SUPPLY.value,
                 KECCAK.AAVE_REPAY.value,
                 KECCAK.AAVE_BORROW.value,
-                KECCAK.AAVE_REPAY.value,
+                KECCAK.AAVE_WITHDRAW.value,
                 KECCAK.AAVE_LIQUIDATION.value,
                 KECCAK.AAVE_UPDATED.value,
             ]
         ]
     )
     sql = f"""
-            SELECT block_number,transaction_hash,block_timestamp,transaction_index,log_index,topics,DATA
+            SELECT block_number,block_timestamp,transaction_hash,transaction_index,log_index,topics,DATA as data
             FROM {BigQueryChain[config.chain.value].value["table_name"]}
             WHERE
               topics[SAFE_OFFSET(0)] IN ({keccak_str})

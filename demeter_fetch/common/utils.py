@@ -150,7 +150,7 @@ def split_topic(value: str | list) -> List[str]:
         value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
         return value.split(",")
     else:
-        raise NotImplementedError("Unknown topic type")
+        raise RuntimeError("Unknown topic type")
 
 
 def get_tx_type(topics_str):
@@ -200,7 +200,7 @@ class ApiUtil:
                 result = requests.get(url, proxies=proxies)
                 retry = 0
             except Exception as ex:
-                print_log("Query etherscan failed, error: " + str(ex))
+                print("Query etherscan failed, error: " + str(ex))
                 retry -= 1
         if not result:
             raise RuntimeError("request error with retry 3 times.")

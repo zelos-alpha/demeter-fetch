@@ -11,7 +11,7 @@ import pandas as pd
 
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
-from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx
+from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave
 from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode, utils
 from ..common.nodes import AaveDailyParam
 
@@ -98,7 +98,7 @@ class AaveSource(AaveDailyNode):
             case DataSource.big_query:
                 df = bigquery_aave(self.from_config, day, tokens)
             case DataSource.rpc:
-                raise NotImplementedError()
+                df = rpc_aave(self.from_config, self.to_path, day, tokens)
             case DataSource.chifra:
                 raise NotImplementedError()
         df["token"] = df["topics"].apply(lambda x: utils.hex_to_length(x[1], 40))

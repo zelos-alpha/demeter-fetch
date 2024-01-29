@@ -10,7 +10,7 @@ from demeter_fetch.common.nodes import AaveDailyParam
 class AaveTick(AaveDailyNode):
     def __init__(self, depends):
         super().__init__(depends)
-        self.name = AaveNodesNames.minute
+        self.name = AaveNodesNames.tick
 
     def _get_file_name(self, param: AaveDailyParam) -> str:
         return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.tick.csv"
@@ -43,7 +43,7 @@ def preprocess_one(df: pd.DataFrame):
             ret_df[column] = None
         return ret_df
     ret_df[append_columns] = df.apply(
-        lambda x: aave_utils.handle_event(x.tx_type, x.topics, x.DATA),
+        lambda x: aave_utils.handle_event(x.tx_type, x.topics, x.data),
         axis=1,
         result_type="expand",
     )
