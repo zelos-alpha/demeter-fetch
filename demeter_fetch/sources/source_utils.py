@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import List
+from typing import List, Tuple, Dict
 
 import demeter_fetch.common.utils as utils
 from .. import ChainType
@@ -13,9 +13,14 @@ class ContractConfig:
     topics: List[str]
 
 
+height_cache: Dict[date, Tuple[int, int]] = {}
+
+
 def get_height_from_date(
     day: date, chain: ChainType, http_proxy, etherscan_api_key, sleep_seconds=1, sleep_seconds_without_key=8
 ) -> (int, int):
+    if day in height_cache.keys():
+        return height_cache[day]
     utils.print_log(f"Query height range in {day}")
     if etherscan_api_key is None:
         sleep_seconds = sleep_seconds_without_key
@@ -27,5 +32,5 @@ def get_height_from_date(
     end_height = utils.ApiUtil.query_blockno_from_time(
         chain, datetime.combine(day, datetime.max.time()), True, http_proxy, etherscan_api_key
     )
-
+    height_cache[day] = (start_height, end_height)
     return start_height, end_height

@@ -154,7 +154,7 @@ def split_topic(value: str | list) -> List[str]:
 
 
 def get_tx_type(topics_str):
-    if pd.isna(topics_str):
+    if not isinstance(topics_str,list) and pd.isna(topics_str):
         return topics_str
     topic_list = split_topic(topics_str)
     type_topic = topic_list[0]

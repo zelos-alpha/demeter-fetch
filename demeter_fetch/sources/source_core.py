@@ -12,7 +12,7 @@ import pandas as pd
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx
-from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode
+from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode, utils
 from ..common.nodes import AaveDailyParam
 
 
@@ -92,16 +92,21 @@ class AaveSource(AaveDailyNode):
         super().__init__(depends)
         self.name = AaveNodesNames.raw
 
-    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date, tokens: List[str]) -> Dict[str, pd.DataFrame]:
         df: pd.DataFrame | None = None
         match self.from_config.data_source:
             case DataSource.big_query:
-                return bigquery_aave(self.from_config, day)
+                df = bigquery_aave(self.from_config, day, tokens)
             case DataSource.rpc:
                 raise NotImplementedError()
             case DataSource.chifra:
                 raise NotImplementedError()
-        return df
+        df["token"] = df["topics"].apply(lambda x: utils.hex_to_length(x[1], 40))
+        tokens_df = {}
+        for token_addr, token_df in df.groupby(["token"]):
+            clean_df = token_df.drop(columns=["token"])
+            tokens_df[token_addr[0]] = clean_df
+        return tokens_df
 
     def _get_file_name(self, param: AaveDailyParam) -> str:
         return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.raw.csv"

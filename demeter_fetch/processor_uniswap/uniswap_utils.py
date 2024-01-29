@@ -142,7 +142,7 @@ def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
                     add_proxy_log(pool_logs, index, possible_match)
                     break
             else:
-                raise ValueError("not support tx type")
+                raise ValueError("not supported tx type")
     # if no column is generated
 
     if "proxy_data" not in pool_logs.columns:

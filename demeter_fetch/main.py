@@ -69,7 +69,7 @@ def date_to_height(chifra_params):
 
 def main():
     if len(sys.argv) == 1:
-        utils.print_log("use parameter -h for help")  # please set a config file. in toml format. eg: 'python main.py config.toml'.
+        utils.print_log("use parameter -h for help")  # please set a config file. in toml format. eg: 'python main.py config.aave.toml'.
         exit(1)
     if len(sys.argv) > 1 and sys.argv[1].endswith(".toml"):
         download(sys.argv[1])

@@ -4,12 +4,11 @@ from typing import List, Dict
 
 import pandas as pd
 
-import demeter_fetch.common.utils as utils
-import demeter_fetch.common._typing as TYPE
+
 import demeter_fetch.sources.rpc_utils as rpc_utils
 from .source_utils import get_height_from_date
 from .. import ChainType, ChainTypeConfig
-from ..common import FromConfig
+from ..common import FromConfig, KECCAK, utils
 from .source_utils import ContractConfig
 
 
@@ -107,7 +106,7 @@ def rpc_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         end_height=end_height,
         contract=ContractConfig(
             config.uniswap_config.pool_address,
-            [TYPE.KECCAK.SWAP.value, TYPE.KECCAK.BURN.value, TYPE.KECCAK.COLLECT.value, TYPE.KECCAK.MINT.value],
+            [KECCAK.SWAP.value, KECCAK.BURN.value, KECCAK.COLLECT.value, KECCAK.MINT.value],
         ),
         batch_size=config.rpc.batch_size,
         auth_string=config.rpc.auth_string,
@@ -130,7 +129,11 @@ def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         end_height=end_height,
         contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
-            [TYPE.KECCAK.UNI_PROXY_DECREASE.value, TYPE.KECCAK.UNI_PROXY_INCREASE.value, TYPE.KECCAK.UNI_PROXY_COLLECT.value],
+            [
+                KECCAK.UNI_PROXY_DECREASE.value,
+                KECCAK.UNI_PROXY_INCREASE.value,
+                KECCAK.UNI_PROXY_COLLECT.value,
+            ],
         ),
         batch_size=config.rpc.batch_size,
         auth_string=config.rpc.auth_string,
@@ -153,7 +156,7 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
         end_height=end_height,
         contract=ContractConfig(
             ChainTypeConfig[config.chain]["uniswap_proxy_addr"],
-            [TYPE.KECCAK.TRANSFER.value],
+            [KECCAK.TRANSFER.value],
         ),
         batch_size=config.rpc.batch_size,
         auth_string=config.rpc.auth_string,

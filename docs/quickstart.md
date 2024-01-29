@@ -46,7 +46,7 @@ Then prepare a configration file according to [config-sample.toml](../config-sam
 At last, execute:
 
 ```shell
-demeter-fetch -c config.toml
+demeter-fetch -c config.aave.toml
 ```
 
 If you want to run the latest version, you can clone this repo, and run locally.
@@ -54,7 +54,7 @@ If you want to run the latest version, you can clone this repo, and run locally.
 ```shell
 git clone https://github.com/zelos-alpha/demeter-fetch.git
 cd demeter-fetch
-python main.py -c config.toml
+python main.py -c config.aave.toml
 ```
 
 More samples are here: [samples](samples.md)

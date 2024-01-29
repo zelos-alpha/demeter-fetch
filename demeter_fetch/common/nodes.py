@@ -162,28 +162,30 @@ class AaveDailyNode(Node):
             if self.config.to_config.skip_existed:
                 all_exist = True
                 for token in self.from_config.aave_config.tokens:
-                    param = AaveDailyParam(day_idx, token)
-                    step_file_name = self.get_file_path(param)
+                    data_depends = AaveDailyParam(day_idx, token)
+                    step_file_name = self.get_file_path(data_depends)
                     if not os.path.exists(step_file_name):
                         all_exist = False
                         break
                 if all_exist:
+                    day_idx += timedelta(days=1)
                     continue
-                day_idx += timedelta(days=1)
 
-            param = {}
+            data_depends = {}
             for depend in self.depends:
                 token_data = {}
                 for token in self.from_config.aave_config.tokens:
                     path = depend.get_file_path(AaveDailyParam(day_idx, token))
                     token_data[token] = pd.read_csv(path, converters=depend.load_csv_converter)
-                param[depend.name] = token_data
+                data_depends[depend.name] = token_data
 
-            token_dfs = self._process_one_day(param, day_idx)
+            token_dfs = self._process_one_day(data_depends, day_idx, self.from_config.aave_config.tokens)
             for token, df in token_dfs.items():
                 df.to_csv(self.get_file_path(AaveDailyParam(day_idx, token)), index=False)
             day_idx += timedelta(days=1)
             pbar.update()
 
-    def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date) -> Dict[str, pd.DataFrame]:
+    def _process_one_day(
+        self, data: Dict[str, Dict[str, pd.DataFrame]], day: date, tokens: List[str]
+    ) -> Dict[str, pd.DataFrame]:
         return {}
