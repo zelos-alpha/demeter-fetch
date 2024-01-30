@@ -10,7 +10,7 @@ from typing import Dict, List
 import pandas as pd
 
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
-from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer
+from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave
 from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode, utils
 from ..common.nodes import AaveDailyParam
@@ -99,7 +99,7 @@ class UniTransaction(DailyNode):
         df: pd.DataFrame | None = None
         match self.from_config.data_source:
             case DataSource.big_query:
-                df = bigquery_transaction(self.from_config, day,tx)
+                df = bigquery_transaction(self.from_config, day, tx)
             case DataSource.rpc:
                 df = rpc_uni_tx(self.from_config, tx)
             case DataSource.chifra:
@@ -123,7 +123,7 @@ class AaveSource(AaveDailyNode):
             case DataSource.rpc:
                 df = rpc_aave(self.from_config, self.to_path, day, tokens)
             case DataSource.chifra:
-                raise NotImplementedError()
+                df = chifra_aave(self.from_config, self.to_path, day, tokens)
         df["token"] = df["topics"].apply(lambda x: utils.hex_to_length(x[1], 40))
         tokens_df = {}
         for token_addr, token_df in df.groupby(["token"]):

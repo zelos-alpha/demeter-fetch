@@ -2,6 +2,9 @@
 
 * rewrite core
 * full source support for aave
+* add type:
+  * userswap user_lp
+  * add uniswap position
 * breaking change:
   * raw data type for uniswap has all changed
 
