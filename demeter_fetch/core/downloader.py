@@ -49,5 +49,5 @@ def download(cfg_path):
     if not config.to_config.keep_raw:
         for step in steps:
             if step != root_step:
-                for sf in step.get_file_paths:
-                    [os.remove(f) for f in sf.values()]
+                for param, sf in step.get_file_paths.items():
+                    os.remove(sf)

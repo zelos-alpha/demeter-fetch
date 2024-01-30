@@ -67,6 +67,8 @@ def convert_to_config(conf_file: dict) -> Config:
                 raise RuntimeError("should have [from.rpc]")
             auth_string = get_item_with_default_3(conf_file, "from", "rpc", "auth_string", None)
             keep_tmp_files = get_item_with_default_3(conf_file, "from", "rpc", "keep_tmp_files", None)
+            if keep_raw == False and keep_tmp_files is None:
+                keep_tmp_files = False
             etherscan_api_key = get_item_with_default_3(conf_file, "from", "rpc", "etherscan_api_key", None)
             end_point = conf_file["from"]["rpc"]["end_point"]
             batch_size = get_item_with_default_3(conf_file, "from", "rpc", "batch_size", 500)
@@ -77,7 +79,7 @@ def convert_to_config(conf_file: dict) -> Config:
                 auth_string=auth_string,
                 keep_tmp_files=keep_tmp_files,
                 etherscan_api_key=etherscan_api_key,
-                force_no_proxy=force_no_proxy
+                force_no_proxy=force_no_proxy,
             )
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:
