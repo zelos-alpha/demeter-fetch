@@ -176,8 +176,8 @@ def query_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFra
                 "from": tx["from"],  #  "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
                 "to": tx["to"],  #  "0x85h43d8a49eeb85d32cf465507dd71d507100c1",
                 "value": int(tx["value"], 16),  #  "0x7f110",
-                "gas": int(tx["gas"], 16),  #  "0x7f110",
-                "gasPrice": int(tx["gasPrice"], 16),  #  "0x09184e72a000",
+                # "gas": int(tx["gas"], 16),  #  "0x7f110",
+                # "gas_price": int(tx["gasPrice"], 16),  #  "0x09184e72a000",
             }
         )
 

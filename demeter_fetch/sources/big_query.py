@@ -60,6 +60,19 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     return df
 
 
+def bigquery_transaction(config: FromConfig, day: date, tx: List[str]):
+    day_str = day.strftime("%Y-%m-%d")
+    tx_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tx])
+    sql = f"""
+    select `hash` as transaction_hash ,block_number,transaction_index,from_address as `from`,to_address as `to`,value
+    from {BigQueryChain[config.chain.value].value["tx_table_name"]}
+    where DATE(block_timestamp) = DATE("{day_str}")
+        and  `hash` in ({tx_str})
+    """
+    df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
+    return df
+
+
 def bigquery_aave(config: FromConfig, day: date, tokens: List[str]):
     day_str = day.strftime("%Y-%m-%d")
     token_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tokens])
