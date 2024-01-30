@@ -78,7 +78,7 @@ class UniMinute(DailyNode):
         ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
         decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
         decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
-        minute_df = decoded_df.resample("1T").agg(
+        minute_df = decoded_df.resample("1min").agg(
             {
                 "amount0": "sum",
                 "amount1": "sum",
@@ -90,7 +90,7 @@ class UniMinute(DailyNode):
         minute_df = minute_df.rename(columns={"amount0": "netAmount0", "amount1": "netAmount1"})
         minute_df[["openTick", "highestTick", "lowestTick", "closeTick"]] = (
             decoded_df["current_tick"]
-            .resample("1T")
+            .resample("1min")
             .agg(
                 {
                     "openTick": "first",

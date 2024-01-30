@@ -9,3 +9,4 @@ sample-data
 *.pyc
 /.vscode
 /config.uni.toml
+venv
