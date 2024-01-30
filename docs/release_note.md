@@ -2,11 +2,14 @@
 
 * rewrite core
 * full source support for aave
+* remove type file, it can be replaced by other types. 
 * add type:
   * userswap user_lp
   * add uniswap position
 * breaking change:
   * raw data type for uniswap has all changed
+  * date config has been moved to from
+  * ignore_position_id is moved to uniswap
 
 # v0.2.0
 
