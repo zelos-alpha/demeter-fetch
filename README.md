@@ -21,8 +21,8 @@ Demeter-fetch supports export formats such as:
 * **Uniswap**:
 	* ✔️ **minutely OHLC**: Open, high, low, close of data (price, liquidity etc.) in a minute interval.
 	* ✔️ **tick**: formatted transaction of uniswap
-	* 🔴 **positions(TODO)**: transaction data for position dimension
-	* 🔴 **LP of address(TODO)**: transactions of liquidity providers 
+	* ✔️ **positions(TODO)**: transaction data for position dimension
+	* ✔️ **LP of address(TODO)**: transactions of liquidity providers 
 	* 🔴 **fee on tick(TODO)**: How many fees can be collected per minute for each tick. 
 	* 🔴 **return rate(TODO)**: Return rate of positions
 * **AAVE**:
@@ -45,8 +45,8 @@ flowchart TB;
    tick --> other_defi;
    subgraph Uniswap;
       direction TB;
-      position:::to_do;
-      address_LP[LP of address]:::to_do;
+      position:::done;
+      address_LP[LP of address]:::done;
       fee_on_tick[fee on tick]:::to_do;
       return_rate[return rate]:::to_do;
    end
@@ -79,7 +79,6 @@ valuable library to the wider Uniswap community.
 
 * Support more DEFI projects.
 * Add more statistics for uniswap.
-* Refactoring the execution engine to support complex workflow.
 
 ## 5 Links
 

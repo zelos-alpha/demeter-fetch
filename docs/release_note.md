@@ -1,15 +1,16 @@
 # v1.0.0
 
-* rewrite core
-* full source support for aave
-* remove type file, it can be replaced by other types. 
+* The kernel is refactored to support future needs.
+* Add two source (chifra and bigquery) support for aave
 * add type:
-  * userswap user_lp
-  * add uniswap position
+  * user_lp for userswap, it indicates actions of liquidtion provides
+  * add uniswap position, which enable us to view investment behavior from a position perspective
 * breaking change:
-  * raw data type for uniswap has all changed
-  * date config has been moved to from
-  * ignore_position_id is moved to uniswap
+  * Raw data type has changed, now raw data is independent of DEFI type, it's just another representation of the event log.
+  * The chifra download supports automatic invocation of chifra export command, you can execute demeter-fetch directly on the server where chifra is installed, without run chifra export commend first. 
+  * Some config has changed:
+    * date config has been moved to from
+    * ignore_position_id is moved to uniswap
 
 # v0.2.0
 

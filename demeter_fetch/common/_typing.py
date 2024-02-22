@@ -133,7 +133,6 @@ class ToConfig:
     multi_process: bool
     skip_existed: bool
     keep_raw: bool
-    to_file_list: Dict = field(default_factory=dict)
 
 
 class KECCAK(str, Enum):
