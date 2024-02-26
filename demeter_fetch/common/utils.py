@@ -191,7 +191,7 @@ class ApiUtil:
         url = ChainTypeConfig[chain]["query_height_api"]
         blk_time = blk_time.replace(tzinfo=timezone.utc)
         url = url.replace("%1", str(int(blk_time.timestamp()))).replace("%2", before_or_after)
-        if etherscan_api_key is not None:
+        if etherscan_api_key is not None and etherscan_api_key != "":
             url += "&apikey=" + etherscan_api_key
         retry = 3
         result = None
