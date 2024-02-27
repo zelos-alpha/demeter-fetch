@@ -24,6 +24,7 @@ demeter_fetch
 |   |-- __init__.py
 |   |-- minute.py
 |   |-- position.py
+|   |-- relative_price.py
 |   |-- tick.py
 |   `-- uniswap_utils.py
 |-- sources
