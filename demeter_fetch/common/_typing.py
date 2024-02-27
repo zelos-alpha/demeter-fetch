@@ -68,6 +68,7 @@ class ToType(str, Enum):
     raw = "raw"
     position = "position"
     user_lp = "user_lp"
+    price = "price"
 
 
 class DappType(str, Enum):
@@ -87,7 +88,7 @@ class RpcConfig:
     auth_string: str | None = None
     keep_tmp_files: bool = False
     etherscan_api_key: str = None
-    force_no_proxy:bool=False # if set to true, will ignore proxy setting
+    force_no_proxy: bool = False  # if set to true, will ignore proxy setting
 
 
 @dataclass
@@ -96,9 +97,18 @@ class ChifraConfig:
 
 
 @dataclass
+class TokenConfig:
+    name: str
+    decimal: str
+
+
+@dataclass
 class UniswapConfig:
     pool_address: str
     ignore_position_id: bool = False  # if set to true, will not download proxy logs and leave a empty column
+    token0: TokenConfig | None = None
+    token1: TokenConfig | None = None
+    is_token0_base: bool | None = None
 
 
 class AaveKey(NamedTuple):
@@ -248,6 +258,7 @@ class UniNodesNames:
     tick_without_pos = "tick_without_pos"
     positions = "positions"
     user_lp = "user_lp"
+    relative_price = "relative_price"
 
 
 class AaveNodesNames:

@@ -76,6 +76,10 @@ class Node:
         """
         return {}
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return []
+
     def get_depend_by_name(self, name: str):
         return self.depends_dict[name]
 
@@ -113,7 +117,9 @@ class DailyNode(Node):
             param = {}
             for depend in self.depends:
                 depend_file_path = depend.get_file_path(day_param)
-                param[depend.name] = pd.read_csv(depend_file_path, converters=depend.load_csv_converter)
+                param[depend.name] = pd.read_csv(
+                    depend_file_path, converters=depend.load_csv_converter, parse_dates=depend.parse_date_column
+                )
 
             df = self._process_one_day(param, day_idx)
             df.to_csv(self.get_file_path(day_param), index=False)
@@ -176,7 +182,9 @@ class AaveDailyNode(Node):
                 token_data = {}
                 for token in self.from_config.aave_config.tokens:
                     path = depend.get_file_path(AaveDailyParam(day_idx, token))
-                    token_data[token] = pd.read_csv(path, converters=depend.load_csv_converter)
+                    token_data[token] = pd.read_csv(
+                        path, converters=depend.load_csv_converter, parse_dates=depend.parse_date_column
+                    )
                 data_depends[depend.name] = token_data
 
             token_dfs = self._process_one_day(data_depends, day_idx, self.from_config.aave_config.tokens)

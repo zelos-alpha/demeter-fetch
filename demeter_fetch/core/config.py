@@ -7,24 +7,41 @@
 from demeter_fetch.common import *
 
 
-def get_item_with_default_2(cfg: Dict, key1: str, key2: str, default_val, converter=None):
+def get_item_with_default(cfg: Dict, keys: List, default_val, converter=None):
+    def return_val():
+        if converter is None or val is None:
+            return val
+        else:
+            return converter(val)
+
     val = default_val
-    if key2 in cfg[key1]:
-        val = cfg[key1][key2]
-    if converter is None or val is None:
-        return val
-    else:
-        return converter(val)
+    obj = cfg
+    for key in keys:
+        if key in obj:
+            obj = obj[key]
+        else:
+            return return_val()
+    val = obj
+    return return_val()
+
+
+def get_item_with_default_2(cfg: Dict, key1: str, key2: str, default_val, converter=None):
+    return get_item_with_default(cfg, [key1, key2], default_val, converter)
+    # val = default_val
+    # if key2 in cfg[key1]:
+    #     val = cfg[key1][key2]
+    # if converter is None or val is None:
+    #     return val
+    # else:
+    #     return converter(val)
 
 
 def get_item_with_default_3(cfg: Dict, key1: str, key2: str, key3: str, default_val, converter=None):
-    val = default_val
-    if key3 in cfg[key1][key2]:
-        val = cfg[key1][key2][key3]
-    if converter is None or val is None:
-        return val
-    else:
-        return converter(val)
+    return get_item_with_default(cfg, [key1, key2, key3], default_val, converter)
+
+
+def get_item_with_default_4(cfg: Dict, key1: str, key2: str, key3: str, key4: str, default_val, converter=None):
+    return get_item_with_default(cfg, [key1, key2, key3, key4], default_val, converter)
 
 
 def convert_to_config(conf_file: dict) -> Config:
@@ -48,12 +65,24 @@ def convert_to_config(conf_file: dict) -> Config:
     from_config = FromConfig(
         chain=chain, data_source=data_source, dapp_type=dapp_type, http_proxy=http_proxy, start=start_time, end=end_time
     )
+
     if start_time is None or end_time is None:
         raise RuntimeError("start time and end time must be set")
     if dapp_type == DappType.uniswap:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
         ignore_position_id = get_item_with_default_3(conf_file, "from", "uniswap", "ignore_position_id", False)
         from_config.uniswap_config = UniswapConfig(pool_address, ignore_position_id)
+        if "token0" in conf_file["from"]["uniswap"]:
+            token0_name = get_item_with_default_4(conf_file, "from", "uniswap", "token0", "name", "")
+            token0_decimal = get_item_with_default_4(conf_file, "from", "uniswap", "token0", "decimal", 0)
+            from_config.uniswap_config.token0 = TokenConfig(token0_name, token0_decimal)
+        if "token1" in conf_file["from"]["uniswap"]:
+            token1_name = get_item_with_default_4(conf_file, "from", "uniswap", "token1", "name", "")
+            token1_decimal = get_item_with_default_4(conf_file, "from", "uniswap", "token1", "decimal", 0)
+            from_config.uniswap_config.token1 = TokenConfig(token1_name, token1_decimal)
+        from_config.uniswap_config.is_token0_base = get_item_with_default_3(
+            conf_file, "from", "uniswap", "is_token0_base", None
+        )
 
     elif dapp_type == DappType.aave:
         token_addresses = [x.lower() for x in conf_file["from"]["aave"]["tokens"]]

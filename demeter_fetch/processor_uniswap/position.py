@@ -34,10 +34,15 @@ class UniUserLP(Node):
             "liquidity": to_decimal,
         }
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["start_time", "end_time"]
+
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         position_df = pd.read_csv(
             data[UniNodesNames.positions][0],
             converters=self.get_depend_by_name(UniNodesNames.positions).load_csv_converter,
+            parse_dates=self.get_depend_by_name(UniNodesNames.positions).parse_date_column,
         )
         position_df = position_df[position_df["tx_type"].isin(["MINT", "BURN"])]
         position_df["liq_delta"] = position_df.apply(
@@ -133,6 +138,10 @@ class UniPositions(Node):
         else:
             return tx["to"]
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
+
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
         tick_csv_paths = data[UniNodesNames.tick]
         log_csv_paths = data[UniNodesNames.tx]
@@ -143,10 +152,14 @@ class UniPositions(Node):
         total_df = pd.DataFrame()
         for i in range(len(tick_csv_paths)):
             daily_tick_df = pd.read_csv(
-                tick_csv_paths[i], converters=self.get_depend_by_name(UniNodesNames.tick).load_csv_converter
+                tick_csv_paths[i],
+                converters=self.get_depend_by_name(UniNodesNames.tick).load_csv_converter,
+                parse_dates=self.get_depend_by_name(UniNodesNames.tick).parse_date_column,
             )
             daily_tx_df = pd.read_csv(
-                log_csv_paths[i], converters=self.get_depend_by_name(UniNodesNames.tx).load_csv_converter
+                log_csv_paths[i],
+                converters=self.get_depend_by_name(UniNodesNames.tx).load_csv_converter,
+                parse_dates=self.get_depend_by_name(UniNodesNames.tx).parse_date_column,
             )
             daily_tick_df = daily_tick_df[daily_tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
             tx_hashes = daily_tick_df["transaction_hash"].drop_duplicates()

@@ -1,3 +1,8 @@
+# v1.0.1
+
+* fix bug in querying block range tool.
+* add file type of uniswap price
+
 # v1.0.0
 
 * The kernel is refactored to support future needs.

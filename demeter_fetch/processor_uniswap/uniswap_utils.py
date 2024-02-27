@@ -26,13 +26,19 @@ def handle_proxy_event(topic_str):
     topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
-            type_topic == _typing.KECCAK.UNI_PROXY_INCREASE.value
-            or type_topic == _typing.KECCAK.UNI_PROXY_DECREASE.value
-            or type_topic == _typing.KECCAK.UNI_PROXY_COLLECT.value
+        type_topic == _typing.KECCAK.UNI_PROXY_INCREASE.value
+        or type_topic == _typing.KECCAK.UNI_PROXY_DECREASE.value
+        or type_topic == _typing.KECCAK.UNI_PROXY_COLLECT.value
     ):
         return int(topic_list[1], 16)
     else:
         return None
+
+
+def x96_sqrt_to_decimal(sqrt_priceX96, decimal0, decimal1, is_0_base):
+    price = int(sqrt_priceX96) / 2**96
+    tmp = (price**2) * (10 ** (decimal0 - decimal1))
+    return 1 / tmp if is_0_base else tmp
 
 
 def handle_event(tx_type, topics_str, data_hex):

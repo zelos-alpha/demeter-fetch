@@ -1,7 +1,7 @@
 import datetime
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Dict, Callable
+from typing import Dict, Callable, List
 
 import pandas as pd
 
@@ -113,6 +113,10 @@ class UniTick(DailyNode):
             "sqrtPriceX96": to_decimal,
         }
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
+
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         pool_df = data[UniNodesNames.pool]
         proxy_df = data[UniNodesNames.proxy_lp]
@@ -168,6 +172,10 @@ class UniTickNoPos(DailyNode):
             "total_liquidity_delta": to_decimal,
             "sqrtPriceX96": to_decimal,
         }
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         input_param = data[UniNodesNames.pool]

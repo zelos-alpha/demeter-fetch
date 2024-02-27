@@ -17,7 +17,8 @@ def _update_df(df: pd.DataFrame) -> pd.DataFrame:
     df["topics"] = df["topics"].apply(lambda x: x.tolist())
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     df["block_timestamp"] = df["block_timestamp"].dt.tz_localize(None)
-    df["block_timestamp"] = pd.Series(df["block_timestamp"].dt.to_pydatetime(), index=df.index, dtype=object)
+    # pd.Series(df["block_timestamp"].dt.to_pydatetime(), index=df.index, dtype=object)
+    df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
     return df
 
 

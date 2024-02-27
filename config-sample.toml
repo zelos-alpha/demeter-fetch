@@ -7,8 +7,16 @@ start = "2022-3-16"
 end = "2022-3-17"
 
 [from.uniswap]
-pool_address = "0x9B08288C3Be4F62bbf8d1C20Ac9C5e6f9467d8B7"
+pool_address = "0x45dda9cb7c25131df268515131f647d726f50608"
 ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+is_token0_base = true # 0 or 1
+[from.uniswap.token0]
+name = "usdc"
+decimal = 6
+[from.uniswap.token1]
+name = "eth"
+decimal = 18
+
 
 [from.aave]
 tokens = [# address of erc20 token which avialable on aave
@@ -25,7 +33,7 @@ end_point = "https://localhost:8545"
 #batch_size = 500 # default is 500
 #keep_tmp_files = false
 etherscan_api_key = "some_api_key" #
-force_no_proxy=false # if force_no_proxy==true, will query ethereum rpc without proxy.
+force_no_proxy = false # if force_no_proxy==true, will query ethereum rpc without proxy.
 
 [from.chifra]
 etherscan_api_key = "" # If this is set, query from etherscan will be faster.

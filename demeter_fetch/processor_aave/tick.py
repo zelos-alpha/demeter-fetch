@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 import demeter_fetch.processor_aave.aave_utils as aave_utils
@@ -33,6 +33,10 @@ class AaveTick(AaveDailyNode):
             ]
             ret[token] = preprocess_one(token_df)
         return ret
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
 
 def preprocess_one(df: pd.DataFrame):

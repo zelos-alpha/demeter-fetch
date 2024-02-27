@@ -1,6 +1,6 @@
 import datetime
 from dataclasses import dataclass
-from typing import Dict, Callable
+from typing import Dict, Callable, List
 
 import pandas as pd
 
@@ -52,6 +52,10 @@ class UniMinute(DailyNode):
             "netAmount0": to_decimal,
             "netAmount1": to_decimal,
         }
+
+    @property
+    def parse_date_column(self) -> List[int]:
+        return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
         df = data[UniNodesNames.pool]

@@ -1,5 +1,5 @@
 numpy==1.26.3
-pandas==2.2.0
+pandas>=2.0.0
 protobuf==4.25.2
 Requests==2.31.0
 toml==0.10.2

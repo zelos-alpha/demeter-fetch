@@ -46,6 +46,10 @@ class UniSourcePool(DailyNode):
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
+
 
 class UniSourceProxyLp(DailyNode):
     def __init__(self, depends):
@@ -66,6 +70,10 @@ class UniSourceProxyLp(DailyNode):
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-uniswap-proxy-lp-{param.day.strftime('%Y-%m-%d')}.raw.csv"
 
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
+
 
 class UniSourceProxyTransfer(DailyNode):
     def __init__(self, depends):
@@ -85,6 +93,10 @@ class UniSourceProxyTransfer(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-uniswap-proxy-transfer-{param.day.strftime('%Y-%m-%d')}.raw.csv"
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
 
 class UniTransaction(DailyNode):
@@ -108,6 +120,10 @@ class UniTransaction(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-uniswap-pool-tx-{param.day.strftime('%Y-%m-%d')}.raw.csv"
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
 
 class AaveSource(AaveDailyNode):
@@ -133,3 +149,7 @@ class AaveSource(AaveDailyNode):
 
     def _get_file_name(self, param: AaveDailyParam) -> str:
         return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.raw.csv"
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]

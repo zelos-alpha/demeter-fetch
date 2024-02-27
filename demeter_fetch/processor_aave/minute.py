@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 
@@ -25,6 +25,10 @@ class AaveMinute(AaveDailyNode):
             token_df = token_df[token_df["tx_type"] == KECCAK.AAVE_UPDATED]
             ret[token] = preprocess_one(token_df)
         return ret
+
+    @property
+    def parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
 
 def preprocess_one(raw_df: pd.DataFrame):

@@ -83,6 +83,10 @@ def to_decimal(value):
     return Decimal(value) if value else Decimal(0)
 
 
+def to_int(value):
+    return int(value) if value else int(0)
+
+
 class DataUtil(object):
     @staticmethod
     def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:

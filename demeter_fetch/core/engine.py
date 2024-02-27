@@ -8,6 +8,7 @@ from typing import List
 from ..common import Node
 from ..processor_aave import AaveMinute, AaveTick
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
+from ..processor_uniswap.relative_price import UniRelativePrice
 
 from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
@@ -46,6 +47,7 @@ class UniNodes:
     tx = UniTransaction([tick])
     position = UniPositions([tick, tx])
     user_lp = UniUserLP([position])
+    rel_price = UniRelativePrice([tick_without_pos])
 
 
 class AaveNodes:
@@ -71,6 +73,8 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return UniNodes.minute
             case ToType.user_lp:
                 return UniNodes.user_lp
+            case ToType.price:
+                return UniNodes.rel_price
             case _:
                 raise NotImplemented(f"{dapp} {to_type} not supported")
 
