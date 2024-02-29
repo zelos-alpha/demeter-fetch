@@ -25,25 +25,22 @@ class UniUserLP(Node):
     def _get_file_name(self, param: namedtuple) -> str:
         return (
             f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-"
-            f"{self.from_config.start.strftime('%Y-%m-%d')}-{self.from_config.end.strftime('%Y-%m-%d')}.user_lp.csv"
+            f"{self.from_config.start.strftime('%Y-%m-%d')}-{self.from_config.end.strftime('%Y-%m-%d')}.user_lp"
+            + self._get_file_ext()
         )
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "liquidity": to_decimal,
         }
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["start_time", "end_time"]
 
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
-        position_df = pd.read_csv(
-            data[UniNodesNames.positions][0],
-            converters=self.get_depend_by_name(UniNodesNames.positions).load_csv_converter,
-            parse_dates=self.get_depend_by_name(UniNodesNames.positions).parse_date_column,
-        )
+        position_df = self.get_depend_by_name(UniNodesNames.positions).read_file(data[UniNodesNames.positions][0])
         position_df = position_df[position_df["tx_type"].isin(["MINT", "BURN"])]
         position_df["liq_delta"] = position_df.apply(
             lambda r: -r["liquidity"] if r["tx_type"] == "BURN" else r["liquidity"], axis=1
@@ -113,11 +110,11 @@ class UniPositions(Node):
         return (
             f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-"
             f"{self.from_config.start.strftime('%Y-%m-%d')}-{self.from_config.end.strftime('%Y-%m-%d')}"
-            f".positions.csv"
+            f".positions" + self._get_file_ext()
         )
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "amount0": to_decimal,
             "amount1": to_decimal,
@@ -139,7 +136,7 @@ class UniPositions(Node):
             return tx["to"]
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
@@ -151,16 +148,8 @@ class UniPositions(Node):
         set_global_pbar(pbar)
         total_df = pd.DataFrame()
         for i in range(len(tick_csv_paths)):
-            daily_tick_df = pd.read_csv(
-                tick_csv_paths[i],
-                converters=self.get_depend_by_name(UniNodesNames.tick).load_csv_converter,
-                parse_dates=self.get_depend_by_name(UniNodesNames.tick).parse_date_column,
-            )
-            daily_tx_df = pd.read_csv(
-                log_csv_paths[i],
-                converters=self.get_depend_by_name(UniNodesNames.tx).load_csv_converter,
-                parse_dates=self.get_depend_by_name(UniNodesNames.tx).parse_date_column,
-            )
+            daily_tick_df = self.get_depend_by_name(UniNodesNames.tick).read_file(tick_csv_paths[i])
+            daily_tx_df = self.get_depend_by_name(UniNodesNames.tx).read_file(log_csv_paths[i])
             daily_tick_df = daily_tick_df[daily_tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
             tx_hashes = daily_tick_df["transaction_hash"].drop_duplicates()
             owners = {

@@ -15,7 +15,10 @@ class AaveMinute(AaveDailyNode):
         self.name = AaveNodesNames.minute
 
     def _get_file_name(self, param: AaveDailyParam) -> str:
-        return f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.minute.csv"
+        return (
+            f"{self.from_config.chain.name}-aave_v3-{param.token}-{param.day.strftime('%Y-%m-%d')}.minute"
+            + self._get_file_ext()
+        )
 
     def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date, tokens) -> Dict[str, pd.DataFrame]:
         ret: Dict[str, pd.DataFrame] = {}
@@ -27,7 +30,7 @@ class AaveMinute(AaveDailyNode):
         return ret
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
 

@@ -9,27 +9,6 @@ import requests
 from demeter_fetch.common._typing import *
 
 
-def get_file_name(chain: ChainType, pool_address, day: date | str):
-    if isinstance(day, date):
-        return f"{chain.name}-{pool_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
-    else:
-        return f"{chain.name}-{pool_address}-{day}.raw.csv"
-
-
-def get_aave_file_name(chain: ChainType, token_address, day: date):
-    return f"{chain.name}-aave_v3-{token_address}-{day.strftime('%Y-%m-%d')}.raw.csv"
-
-
-def convert_raw_file_name(file: str, to_config: ToConfig) -> str:
-    file_name = os.path.basename(file)
-    file_name_and_ext = os.path.splitext(file_name)
-
-    return os.path.join(
-        to_config.save_path,
-        f"{file_name_and_ext[0].replace('.raw', '')}.{to_config.type.name}{file_name_and_ext[1]}",
-    )
-
-
 global_pbar = None
 
 

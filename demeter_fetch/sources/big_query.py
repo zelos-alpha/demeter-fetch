@@ -41,7 +41,7 @@ def bigquery_proxy_lp(config: FromConfig, day: date):
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
         FROM {BigQueryChain[config.chain.value].value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in {KECCAK.UNI_PROXY_INCREASE.value, KECCAK.UNI_PROXY_DECREASE.value, KECCAK.UNI_PROXY_COLLECT.value}
-            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uni_proxy_addr"]}"
+            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uniswap_proxy_addr"]}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
     df = _update_df(df)
@@ -54,7 +54,7 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
         FROM {BigQueryChain[config.chain.value].value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in ('{KECCAK.TRANSFER.value}')
-            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uni_proxy_addr"]}"
+            AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uniswap_proxy_addr"]}"
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
     df["topics"] = df["topics"].apply(lambda x: x.tolist())

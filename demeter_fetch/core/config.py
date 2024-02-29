@@ -50,7 +50,8 @@ def convert_to_config(conf_file: dict) -> Config:
     multi_process = get_item_with_default_2(conf_file, "to", "multi_process", False)
     skip_existed = get_item_with_default_2(conf_file, "to", "skip_existed", False)
     keep_raw = get_item_with_default_2(conf_file, "to", "keep_raw", False)
-    to_config = ToConfig(to_type, save_path, multi_process, skip_existed, keep_raw)
+    to_file_type = get_item_with_default_2(conf_file, "to", "file_type", ToFileType.csv, lambda x: ToFileType[x])
+    to_config = ToConfig(to_type, save_path, multi_process, skip_existed, keep_raw, to_file_type)
 
     chain = ChainType[conf_file["from"]["chain"]]
     data_source = DataSource[conf_file["from"]["datasource"]]

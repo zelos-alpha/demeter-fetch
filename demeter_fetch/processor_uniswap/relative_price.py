@@ -21,10 +21,13 @@ class UniRelativePrice(DailyNode):
         self.name = UniNodesNames.relative_price
 
     def _get_file_name(self, param: DailyParam) -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.rel-price.csv"
+        return (
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.rel-price"
+            + self._get_file_ext()
+        )
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
     def set_config(self, config: Config):
@@ -37,7 +40,7 @@ class UniRelativePrice(DailyNode):
             raise RuntimeError("should set uniswap_config.token1")
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "token0": to_decimal,
             "token1": to_decimal,

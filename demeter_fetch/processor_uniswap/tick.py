@@ -100,10 +100,13 @@ class UniTick(DailyNode):
         self.name = UniNodesNames.tick
 
     def _get_file_name(self, param: DailyParam) -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.tick.csv"
+        return (
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.tick"
+            + self._get_file_ext()
+        )
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "amount0": to_decimal,
             "amount1": to_decimal,
@@ -114,7 +117,7 @@ class UniTick(DailyNode):
         }
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
@@ -161,10 +164,13 @@ class UniTickNoPos(DailyNode):
         self.name = UniNodesNames.tick_without_pos
 
     def _get_file_name(self, param: DailyParam) -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.pool.tick.csv"
+        return (
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.pool.tick"
+            + self._get_file_ext()
+        )
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "amount0": to_decimal,
             "amount1": to_decimal,
@@ -174,7 +180,7 @@ class UniTickNoPos(DailyNode):
         }
 
     @property
-    def parse_date_column(self) -> List[str]:
+    def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:

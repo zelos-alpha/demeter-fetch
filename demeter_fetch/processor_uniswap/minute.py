@@ -41,10 +41,13 @@ class UniMinute(DailyNode):
         self.name = UniNodesNames.minute
 
     def _get_file_name(self, param: DailyParam) -> str:
-        return f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.minute.csv"
+        return (
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.minute"
+            + self._get_file_ext()
+        )
 
     @property
-    def load_csv_converter(self) -> Dict[str, Callable]:
+    def _load_csv_converter(self) -> Dict[str, Callable]:
         return {
             "inAmount0": to_decimal,
             "inAmount1": to_decimal,
@@ -54,7 +57,7 @@ class UniMinute(DailyNode):
         }
 
     @property
-    def parse_date_column(self) -> List[int]:
+    def _parse_date_column(self) -> List[int]:
         return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):

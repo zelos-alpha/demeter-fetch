@@ -71,6 +71,11 @@ class ToType(str, Enum):
     price = "price"
 
 
+class ToFileType(str, Enum):
+    csv = "csv"
+    feather = "feather"
+
+
 class DappType(str, Enum):
     uniswap = "uniswap"
     aave = "aave"
@@ -143,6 +148,7 @@ class ToConfig:
     multi_process: bool
     skip_existed: bool
     keep_raw: bool
+    to_file_type: ToFileType
 
 
 class KECCAK(str, Enum):
