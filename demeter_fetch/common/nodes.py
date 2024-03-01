@@ -78,6 +78,10 @@ class Node:
         """
         return {}
 
+    @property
+    def _parse_date_column(self) -> List[str]:
+        return []
+
     def _get_file_ext(self):
         match self.config.to_config.to_file_type:
             case ToFileType.csv:
@@ -104,10 +108,6 @@ class Node:
                 return pd.read_feather(path)
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
-
-    @property
-    def _parse_date_column(self) -> List[str]:
-        return []
 
     def get_depend_by_name(self, name: str):
         return self.depends_dict[name]

@@ -76,10 +76,6 @@ class UniSourceProxyLp(DailyNode):
             + self._get_file_ext()
         )
 
-    @property
-    def _parse_date_column(self) -> List[str]:
-        return ["block_timestamp"]
-
 
 class UniSourceProxyTransfer(DailyNode):
     def __init__(self, depends):
@@ -131,10 +127,6 @@ class UniTransaction(DailyNode):
         return (
             f"{self.from_config.chain.name}-uniswap-pool-tx-{param.day.strftime('%Y-%m-%d')}.raw" + self._get_file_ext()
         )
-
-    @property
-    def _parse_date_column(self) -> List[str]:
-        return ["block_timestamp"]
 
 
 class AaveSource(AaveDailyNode):
