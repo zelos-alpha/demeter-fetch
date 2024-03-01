@@ -1,3 +1,8 @@
+# v1.0.2
+
+* Support feather file format, now you can save file as csv or feather
+* fix bug in generate user_lp file
+
 # v1.0.1
 
 * fix bug in querying block range tool.

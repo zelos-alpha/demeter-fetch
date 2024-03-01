@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='demeter-fetch',
-    version='1.0.1',
+    version='1.0.2',
     packages=find_packages(exclude=["tests", "tests.*", "samples", "samples.*"]),
     url='',
     license='MIT',
@@ -11,11 +11,11 @@ setup(
     description='demeter fetch tool',
     python_requires='>=3.10',
     install_requires=[
-        "pandas>=1.4.4",
-        "protobuf>=4.21.9",
-        "Requests>=2.28.0",
+        "pandas>=2.0.0",
+        "protobuf>=4.25.2",
+        "Requests>=2.31.0",
         "toml>=0.10.2",
-        "tqdm>=4.65.0",
+        "tqdm>=4.66.1",
         "google-cloud-bigquery>=3.11",
         "db-dtypes>=1.1.1",
         "argparse>=1.4.0",
