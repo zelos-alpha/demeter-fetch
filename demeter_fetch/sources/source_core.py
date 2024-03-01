@@ -125,7 +125,8 @@ class UniTransaction(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
-            f"{self.from_config.chain.name}-uniswap-pool-tx-{param.day.strftime('%Y-%m-%d')}.raw" + self._get_file_ext()
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.tx.raw"
+            + self._get_file_ext()
         )
 
 

@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pandas as pd
 import requests
+import numpy as np
 
 from demeter_fetch.common._typing import *
 
@@ -129,6 +130,8 @@ def hex_to_length(hex_str: str, new_length: int):
 def split_topic(value: str | list) -> List[str]:
     if isinstance(value, list):
         return value
+    elif isinstance(value, np.ndarray):
+        return list(value)
     elif isinstance(value, str):
         value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
         return value.split(",")
@@ -137,7 +140,7 @@ def split_topic(value: str | list) -> List[str]:
 
 
 def get_tx_type(topics_str):
-    if not isinstance(topics_str, list) and pd.isna(topics_str):
+    if not isinstance(topics_str, list) and not isinstance(topics_str, np.ndarray) and pd.isna(topics_str):
         return topics_str
     topic_list = split_topic(topics_str)
     type_topic = topic_list[0]

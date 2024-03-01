@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 
 import demeter_fetch.common._typing as TYPE
+from demeter_fetch.common import split_topic
 
 RAY = 10**27
 
@@ -16,11 +17,6 @@ def decode_event_ReserveDataUpdated(row):
         Decimal(int(row["DATA"][(2 + 64 * 3) : (2 + 64 * 4)], 16)) / RAY,
         Decimal(int(row["DATA"][(2 + 64 * 4) :], 16)) / RAY,
     )
-
-
-def split_topic(value: str) -> List[str]:
-    value = value.strip("[]").replace('"', "").replace("'", "").replace(" ", "").replace("\n", ",")
-    return value.split(",")
 
 
 def hex_to_address(topic_str):
