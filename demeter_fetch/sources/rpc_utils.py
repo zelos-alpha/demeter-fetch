@@ -5,7 +5,7 @@ import random
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC, timezone
 from operator import itemgetter
 from typing import List, Dict
 
@@ -76,7 +76,7 @@ class EthRpcClient:
         resp = self.get_block(height)
         if resp:
             timestamp = int(resp["timestamp"], 16)
-            return datetime.utcfromtimestamp(timestamp)
+            return datetime.fromtimestamp(timestamp, UTC)
         else:
             return None
 
@@ -297,7 +297,7 @@ def query_event_by_height(
                             "transaction_index": log["transactionIndex"],
                             "log_index": log["logIndex"],
                             "data": log["data"],
-                            "topics": json.dumps(log["topics"]),
+                            "topics": log["topics"],
                         }
                     )
             for log in log_list:
@@ -362,7 +362,7 @@ def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
     if not block_dict.has(height):
         block_dt = client.get_block_timestamp(height)
         block_dict.set(height, block_dt)
-    log["block_timestamp"] = block_dict.get(height).isoformat()
+    log["block_timestamp"] = block_dict.get(height).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     log["block_dt"] = block_dict.get(height)
 
     return log

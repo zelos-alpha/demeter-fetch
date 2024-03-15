@@ -1,3 +1,11 @@
+# v1.0.3
+
+* remove datetime.utcfromtimestamp
+* add download entry with instance of Config class
+* update requirement
+* unify csv format from BigQuery and RPC
+* unify csv format in linux and windows
+
 # v1.0.2
 
 * Support feather file format, now you can save file as csv or feather

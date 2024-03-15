@@ -6,15 +6,9 @@ import pandas as pd
 import toml
 
 import demeter_fetch.common._typing as typing
-from demeter_fetch.common import utils
-from demeter_fetch.source_rpc.eth_rpc_client import (
-    EthRpcClient,
-    HeightCacheManager,
-    ContractConfig,
-    query_event_by_height,
-)
-from demeter_fetch.source_rpc.uniswap import query_uniswap_pool_logs, append_proxy_log
 import demeter_fetch.sources.rpc_utils as rpc
+from demeter_fetch.common import utils
+from demeter_fetch.sources.source_utils import ContractConfig
 
 
 class UniLpDataTest(unittest.TestCase):
@@ -38,9 +32,9 @@ class UniLpDataTest(unittest.TestCase):
     def test_query_event_by_height(self):
         self.remove_tmp_file(["polygon-0x45dda9cb7c25131df268515131f647d726f50608-42447801-42448800.tmp.pkl"])
 
-        client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
-        height_cache = HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
-        files = query_event_by_height(
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        height_cache = rpc.HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
+        files = rpc.query_event_by_height(
             chain=typing.ChainType.polygon,
             client=client,
             contract_config=ContractConfig(
@@ -71,7 +65,7 @@ class UniLpDataTest(unittest.TestCase):
             ]
         )
 
-        client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
         files = self.query_3_save_2(client)
         print(files)
         self.assertTrue(len(files) == 2)
@@ -84,7 +78,7 @@ class UniLpDataTest(unittest.TestCase):
             ]
         )
 
-        client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
         files = self.query_3_save_2(client)
         print(files)
         self.assertTrue(len(files) == 2)
@@ -94,7 +88,7 @@ class UniLpDataTest(unittest.TestCase):
         self.assertTrue(len(files) == 2)
 
     def query_3_save_2(self, client):
-        return query_event_by_height(
+        return rpc.query_event_by_height(
             chain=typing.ChainType.polygon,
             client=client,
             contract_config=ContractConfig(
@@ -115,7 +109,7 @@ class UniLpDataTest(unittest.TestCase):
         )
 
     def test_query_event_by_height_save_rest_remove_last(self):
-        client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
         files = self.query_3_save_2(client)
         # just remove the last file.
         self.remove_tmp_file(["polygon-0x45dda9cb7c25131df268515131f647d726f50608-42448301-42448799.tmp.pkl"])
@@ -124,40 +118,13 @@ class UniLpDataTest(unittest.TestCase):
         self.assertTrue(len(files) == 2)
 
     def test_query_event_by_height_save_rest_remove_first(self):
-        client = EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
         files = self.query_3_save_2(client)
         # just remove the first file.
         self.remove_tmp_file(["polygon-0x45dda9cb7c25131df268515131f647d726f50608-42447301-42448300.tmp.pkl"])
         files = self.query_3_save_2(client)
         print(files)
         self.assertTrue(len(files) == 2)
-
-    def test_query_uniswap_pool_logs(self):
-        files = query_uniswap_pool_logs(
-            chain=typing.ChainType.polygon,
-            pool_addr="0x45dda9cb7c25131df268515131f647d726f50608",
-            end_point=self.config["end_point"],
-            # start=date(2023, 5, 6),
-            # end=date(2023, 5, 6),
-            start_height=42353301,
-            end_height=42393181,  # diff=39880
-            save_path=self.config["to_path"],
-            http_proxy="127.0.0.1:7890",
-        )
-        print(files)
-
-    def test_append_proxy_file(self):
-        append_proxy_log(
-            raw_file_list=["../sample-data/polygon-0x45dda9cb7c25131df268515131f647d726f50608-2023-05-06.raw.csv"],
-            start_height=42353301,
-            end_height=42393181,
-            chain=typing.ChainType.polygon,
-            end_point=self.config["end_point"],
-            save_path=self.config["to_path"],
-            batch_size=500,
-            http_proxy="127.0.0.1:7890",
-            keep_tmp_files=True,
-        )
 
     def test_query_tx_receipt(self):
         df = rpc.query_event_by_tx(

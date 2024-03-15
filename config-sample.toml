@@ -9,11 +9,11 @@ end = "2022-3-17"
 [from.uniswap]
 pool_address = "0x45dda9cb7c25131df268515131f647d726f50608"
 ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
-is_token0_base = true # 0 or 1
-[from.uniswap.token0]
+is_token0_base = true # 0 or 1,  # only necessary for ToType==price
+[from.uniswap.token0] # only necessary for ToType==price
 name = "usdc"
 decimal = 6
-[from.uniswap.token1]
+[from.uniswap.token1] # only necessary for ToType==price
 name = "eth"
 decimal = 18
 
@@ -39,7 +39,7 @@ force_no_proxy = false # if force_no_proxy==true, will query ethereum rpc withou
 etherscan_api_key = "" # If this is set, query from etherscan will be faster.
 
 [to] # output config
-# for uniswap:  raw/minute/tick/position/user_lp
+# for uniswap:  raw/minute/tick/position/user_lp/price
 # for aave: raw/minute/tick
 type = "tick"
 #file_type = "csv" # csv or feather, default is csv

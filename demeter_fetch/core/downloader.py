@@ -14,7 +14,36 @@ import toml
 import demeter_fetch.common as utils
 from . import engine
 from .config import convert_to_config
+from .. import Config
 from ..common import print_log, set_global_pbar, Node
+
+
+def download_by_config(config: Config) -> List[str]:
+    ignore_pos = False
+    if config.from_config.uniswap_config is not None:
+        ignore_pos = config.from_config.uniswap_config.ignore_position_id
+
+    root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
+    steps: List[Node] = engine.get_relative_nodes(root_step)
+    utils.print_log("Will execute the following steps: ", steps)
+    [step.set_config(config) for step in steps]
+
+    for step in steps:
+        set_global_pbar(None)
+        print_log(f"Current step: {step.name}")
+        step.work()
+    if config.to_config.keep_raw:
+        generated_files = []
+        for step in steps:
+            generated_files.extend(list(step.get_file_paths.values()))
+        return generated_files
+    else:
+        # remove raw files
+        for step in steps:
+            if step != root_step:
+                for param, sf in step.get_file_paths.items():
+                    os.remove(sf)
+        return list(root_step.get_file_paths.values())
 
 
 def download(cfg_path):
@@ -32,22 +61,4 @@ def download(cfg_path):
         json.dumps(dataclasses.asdict(config), cls=utils.ComplexEncoder, indent=4),
     )
 
-    ignore_pos = False
-    if config.from_config.uniswap_config is not None:
-        ignore_pos = config.from_config.uniswap_config.ignore_position_id
-
-    root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
-    steps: List[Node] = engine.get_relative_nodes(root_step)
-    utils.print_log("Will execute the following steps: ", steps)
-    [step.set_config(config) for step in steps]
-
-    for step in steps:
-        set_global_pbar(None)
-        print_log(f"Current step: {step.name}")
-        step.work()
-    # remove raw files
-    if not config.to_config.keep_raw:
-        for step in steps:
-            if step != root_step:
-                for param, sf in step.get_file_paths.items():
-                    os.remove(sf)
+    download_by_config(config)

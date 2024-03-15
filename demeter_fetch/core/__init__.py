@@ -5,5 +5,5 @@
 # @Description:
 
 from .commands import get_commend_args
-from .downloader import download
+from .downloader import download,download_by_config
 from .engine import get_relative_nodes

@@ -18,7 +18,7 @@ def date_to_height(args):
     )
     sleep_time = 8
     if args.key is not None and args.key != "":
-        sleep_time = 1
+        sleep_time = 0.5
     utils.print_log(f"Querying end timestamp, wait for {sleep_time} seconds to prevent max rate limit")
     time.sleep(sleep_time)  # to prevent request limit
     end_height = utils.ApiUtil.query_blockno_from_time(

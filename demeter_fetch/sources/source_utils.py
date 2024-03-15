@@ -17,7 +17,7 @@ height_cache: Dict[date, Tuple[int, int]] = {}
 
 
 def get_height_from_date(
-    day: date, chain: ChainType, http_proxy, etherscan_api_key, sleep_seconds=1, sleep_seconds_without_key=8
+    day: date, chain: ChainType, http_proxy, etherscan_api_key, sleep_seconds=0.5, sleep_seconds_without_key=8
 ) -> (int, int):
     if day in height_cache.keys():
         return height_cache[day]
