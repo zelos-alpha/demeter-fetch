@@ -19,7 +19,7 @@ from demeter_fetch import (
     RpcConfig,
 )
 from demeter_fetch.core import download_by_config
-from tests.test_full import FullDownloadTest
+from tests.test_uni_full import FullDownloadTest
 from tests.utils import validate_files_by_md5
 
 

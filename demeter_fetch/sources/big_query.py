@@ -14,6 +14,8 @@ from ..common import FromConfig, utils, KECCAK
 
 
 def _update_df(df: pd.DataFrame) -> pd.DataFrame:
+    if len(df.index) < 1:
+        return df
     df["topics"] = df["topics"].apply(lambda x: x.tolist())
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     df["block_timestamp"] = df["block_timestamp"].dt.tz_localize(None)

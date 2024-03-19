@@ -1,9 +1,4 @@
-import unittest
 from datetime import date
-import os
-import toml
-import hashlib
-import pandas as pd
 
 from demeter_fetch import (
     Config,
@@ -16,11 +11,8 @@ from demeter_fetch import (
     BigQueryConfig,
     ToType,
     ToFileType,
-    TokenConfig,
 )
-from demeter_fetch.core import download_by_config
-from tests.test_full import FullDownloadTest
-from utils import validate_files_by_md5
+from tests.test_uni_full import FullDownloadTest
 
 
 class FullDownloadBigQueryTest(FullDownloadTest):
