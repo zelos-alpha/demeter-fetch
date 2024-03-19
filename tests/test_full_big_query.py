@@ -26,6 +26,11 @@ class FullDownloadBigQueryTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(FullDownloadBigQueryTest, self).__init__(*args, **kwargs)
         self.config = toml.load("config.toml")
+        if len(os.listdir(self.config["to_path"])) > 0:
+            is_del = input("Old result detects, delete them? y/n")
+            if is_del == "y":
+                os.remove(self.config["to_path"])
+                os.mkdir(self.config["to_path"])
         self.existing_files = []
         self.base_config = Config(
             FromConfig(
