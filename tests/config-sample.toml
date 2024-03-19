@@ -1,2 +1,11 @@
 end_point = ""
-to_path="../sample-data"
+
+to_path="result"
+
+auth=""
+
+etherscan_api_key = ""
+
+big_query_auth = "*.json"
+
+http_proxy = ""

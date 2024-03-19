@@ -5,6 +5,7 @@
 * update requirement
 * unify csv format from BigQuery and RPC
 * unify csv format in linux and windows
+* fix bugs
 
 # v1.0.2
 
