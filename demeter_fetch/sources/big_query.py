@@ -71,6 +71,7 @@ def bigquery_transaction(config: FromConfig, day: date, tx: List[str]):
         and  `hash` in ({tx_str})
     """
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
+    df["value"] = df["value"].apply(lambda x: int(x))
     return df
 
 

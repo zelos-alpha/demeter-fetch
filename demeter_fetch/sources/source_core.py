@@ -121,6 +121,7 @@ class UniTransaction(DailyNode):
                 df = rpc_uni_tx(self.from_config, tx)
             case DataSource.chifra:
                 raise NotImplementedError()
+        df.sort_values(by=["block_number", "transaction_index"], ascending=True, inplace=True)
         return df
 
     def _get_file_name(self, param: DailyParam) -> str:

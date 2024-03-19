@@ -104,7 +104,7 @@ class ChifraConfig:
 @dataclass
 class TokenConfig:
     name: str
-    decimal: str
+    decimal: int
 
 
 @dataclass

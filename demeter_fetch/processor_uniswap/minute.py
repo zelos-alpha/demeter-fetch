@@ -13,7 +13,7 @@ from demeter_fetch.common import TextUtil, to_decimal
 class ModuleUtils(object):
     @staticmethod
     def get_datetime(date_str: str) -> datetime:
-        if type(date_str) == pd.Timestamp:
+        if isinstance(date_str, pd.Timestamp):
             return date_str.to_pydatetime()
         else:
             return datetime.datetime.strptime(

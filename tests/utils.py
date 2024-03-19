@@ -19,7 +19,8 @@ def validate_files_by_md5(file_pathes):
             while chunk := f.read(8192):
                 file_hash_sample.update(chunk)
         sample_hash = file_hash_sample.hexdigest()
-        assert test_hash == sample_hash
+        if test_hash != sample_hash:
+            raise RuntimeError(f"{os.path.basename(path)} not same")
     pass
 
 
