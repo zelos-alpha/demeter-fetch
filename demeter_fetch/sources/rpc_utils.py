@@ -109,6 +109,8 @@ class EthRpcClient:
 
     def send(self, commend: str, params: List):
         response = self.do_post(EthRpcClient.__encode_json_rpc(commend, params))
+        if response.status_code!=200:
+            raise RuntimeError("Request rpc return error with code {}".format(response.status_code))
         return EthRpcClient.__decode_json_rpc(response)
 
 

@@ -19,16 +19,15 @@ from demeter_fetch import (
     RpcConfig,
 )
 from demeter_fetch.core import download_by_config
+from tests.test_full import FullDownloadTest
 from tests.utils import validate_files_by_md5
 
 
-class FullDownloadRPCTest(unittest.TestCase):
+class FullDownloadRPCTest(FullDownloadTest):
+
     def __init__(self, *args, **kwargs):
         super(FullDownloadRPCTest, self).__init__(*args, **kwargs)
-        self.config = toml.load("./config.toml")
-
-    def test_raw(self):
-        config = Config(
+        self.base_config = Config(
             FromConfig(
                 chain=ChainType.ethereum,
                 data_source=DataSource.rpc,
@@ -41,7 +40,7 @@ class FullDownloadRPCTest(unittest.TestCase):
                 ),
                 rpc=RpcConfig(
                     end_point=self.config["end_point"],
-                    auth_string=self.config["auth"],
+                    auth_string=self.config["auth"] if "auth" in self.config else None,
                     keep_tmp_files=False,
                     etherscan_api_key=self.config["etherscan_api_key"],
                     force_no_proxy=True,  # if set to true, will ignore proxy setting
@@ -57,5 +56,24 @@ class FullDownloadRPCTest(unittest.TestCase):
                 multi_process=False,
             ),
         )
-        generated_files = download_by_config(config)
-        validate_files_by_md5(generated_files)
+
+    def test_raw(self):
+        super().test_raw()
+
+    def test_minute(self):
+        super().test_minute()
+
+    def test_tick_no_pos(self):
+        super().test_tick_no_pos()
+
+    def test_tick(self):
+        super().test_tick()
+
+    def test_position(self):
+        super().test_position()
+
+    def test_user_lp(self):
+        super().test_user_lp()
+
+    def test_price(self):
+        super().test_price()

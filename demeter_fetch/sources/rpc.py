@@ -25,7 +25,16 @@ def _update_df(df: pd.DataFrame) -> pd.DataFrame:
             "topics",
             "data",
         ]
-        df = df[columns]
+    else:
+        columns = [
+            "block_number",
+            "transaction_hash",
+            "transaction_index",
+            "log_index",
+            "topics",
+            "data",
+        ]
+    df = df[columns]
     return df
 
 
@@ -140,7 +149,7 @@ def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         http_proxy=config.http_proxy if not config.rpc.force_no_proxy else None,
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=False,
-        skip_timestamp=True,
+        skip_timestamp=False,
     )
     daily_df = _update_df(daily_df)
     return daily_df
@@ -170,7 +179,8 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
 
 
 def rpc_uni_tx(config: FromConfig, tx_hashes: pd.Series) -> pd.DataFrame:
-    client = rpc_utils.EthRpcClient(config.rpc.end_point, config.http_proxy, config.rpc.auth_string)
+    http_proxy = config.http_proxy if not config.rpc.force_no_proxy else None
+    client = rpc_utils.EthRpcClient(config.rpc.end_point, http_proxy, config.rpc.auth_string)
     df = rpc_utils.query_tx(client, tx_hashes)
     # df = df.drop(columns=["from", "to"])
     return df
