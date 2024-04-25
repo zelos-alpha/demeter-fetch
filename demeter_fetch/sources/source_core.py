@@ -12,8 +12,7 @@ import pandas as pd
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth
-from .. import SqueethNodesNames
-from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode, utils
+from ..common import DataSource, NodeNames, DailyNode, DailyParam, AaveDailyNode, utils
 from ..common.nodes import AaveDailyParam
 
 
@@ -29,9 +28,7 @@ class EventLog:
 
 
 class UniSourcePool(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.pool
+    name = NodeNames.uni_pool
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         df: pd.DataFrame | None = None
@@ -56,9 +53,7 @@ class UniSourcePool(DailyNode):
 
 
 class UniSourceProxyLp(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.proxy_lp
+    name = NodeNames.uni_proxy_lp
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         df: pd.DataFrame | None = None
@@ -79,9 +74,7 @@ class UniSourceProxyLp(DailyNode):
 
 
 class UniSourceProxyTransfer(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.proxy_transfer
+    name = NodeNames.uni_proxy_transfer
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         df: pd.DataFrame | None = None
@@ -106,12 +99,10 @@ class UniSourceProxyTransfer(DailyNode):
 
 
 class UniTransaction(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.tx
+    name = NodeNames.uni_tx
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
-        tick_df = data[UniNodesNames.tick]
+        tick_df = data[NodeNames.uni_tick]
         tick_df = tick_df[tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
         tx = tick_df["transaction_hash"].drop_duplicates()
         df: pd.DataFrame | None = None
@@ -133,9 +124,7 @@ class UniTransaction(DailyNode):
 
 
 class AaveSource(AaveDailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = AaveNodesNames.raw
+    name = NodeNames.aave_raw
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date, tokens: List[str]) -> Dict[str, pd.DataFrame]:
         df: pd.DataFrame | None = None
@@ -165,9 +154,7 @@ class AaveSource(AaveDailyNode):
 
 
 class SqueethSource(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = SqueethNodesNames.raw
+    name = NodeNames.osqth_raw
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         df: pd.DataFrame | None = None

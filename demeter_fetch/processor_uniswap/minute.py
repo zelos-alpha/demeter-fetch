@@ -6,7 +6,7 @@ import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
 from demeter_fetch.common import DailyNode, DailyParam, get_tx_type
-from demeter_fetch.common import KECCAK, UniNodesNames
+from demeter_fetch.common import KECCAK, NodeNames
 from demeter_fetch.common import TextUtil, to_decimal
 
 
@@ -36,9 +36,7 @@ class MinuteData:
 
 
 class UniMinute(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.minute
+    name = NodeNames.uni_minute
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
@@ -61,7 +59,7 @@ class UniMinute(DailyNode):
         return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
-        df = data[UniNodesNames.pool]
+        df = data[NodeNames.uni_pool]
 
         df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
         df = df.set_index(keys=["block_timestamp"])

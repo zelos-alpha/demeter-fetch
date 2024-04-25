@@ -3,14 +3,13 @@ from typing import Dict, List
 
 import pandas as pd
 import demeter_fetch.processor_aave.aave_utils as aave_utils
-from demeter_fetch.common import AaveDailyNode, get_tx_type, AaveNodesNames, KECCAK
+from demeter_fetch import NodeNames
+from demeter_fetch.common import AaveDailyNode, get_tx_type, KECCAK
 from demeter_fetch.common.nodes import AaveDailyParam
 
 
 class AaveTick(AaveDailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = AaveNodesNames.tick
+    name = NodeNames.aave_tick
 
     def _get_file_name(self, param: AaveDailyParam) -> str:
         return (
@@ -20,7 +19,7 @@ class AaveTick(AaveDailyNode):
 
     def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date, tokens) -> Dict[str, pd.DataFrame]:
         ret: Dict[str, pd.DataFrame] = {}
-        df = data[AaveNodesNames.raw]
+        df = data[NodeNames.aave_raw]
         for token, token_df in df.items():
             token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics), axis=1)
             token_df = token_df[

@@ -4,52 +4,41 @@
 # @Author  : 32ethers
 # @Description:
 import unittest
+from typing import List
 
-import pandas as pd
-import numpy as np
-import os
-import sys
-
-from demeter_fetch.core import get_relative_nodes
+from demeter_fetch import DappType, ToType, Config, ToConfig
 from demeter_fetch.common import Node
+from demeter_fetch.core import get_relative_nodes
+from demeter_fetch.core.engine import get_root_node
+from demeter_fetch.processor_uniswap import UniTick, UniUserLP
+from demeter_fetch.processor_uniswap.relative_price import UniRelativePrice
 
 
 class TreeTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TreeTest, self).__init__(*args, **kwargs)
 
-    def test_find_rel_nodes(self):
-        t4: Node = Node([], "t4")
-        t5: Node = Node([], "t5")
-        t6: Node = Node([], "t6")
-        t7: Node = Node([], "t7")
-        t8: Node = Node([], "t8")
-        t3: Node = Node([t8], "t3")
-        t2: Node = Node([t5, t6, t7], "t2")
-        t1: Node = Node([t2, t3, t4], "t1")
-        result = get_relative_nodes(t1)
+    def check_sequence(self, dapp: DappType, to_type: ToType, root_node, squence: List[str]):
+        root: Node = get_root_node(dapp, to_type)
+        self.assertTrue(type(root) is root_node)
+        result = get_relative_nodes(root, config=Config(None, ToConfig(None, "", False, False, False, None)))
         result = [n.name for n in result]
-        self.assertEqual(result,["t4", "t8", "t3", "t7", "t6", "t5", "t2", "t1"])
         print(result)
+        self.assertEqual(result, squence)
 
-    def test_generate_loop_tree(self):
-        pool: Node = Node([], "pool")
-        proxy_lp: Node = Node([], "proxy_lp")
-        tick: Node = Node([pool, proxy_lp], "tick")
-        tx: Node = Node([tick], "tx")
-        user_tick: Node = Node([tx, tick], "user_tick")
-        position: Node = Node([user_tick], "position")
-        user_lp: Node = Node([position], "user_lp")
-        result1 = get_relative_nodes(user_lp)
-        result1 = [n.name for n in result1]
-        # different order
-        user_tick: Node = Node([tick, tx], "user_tick")
-        position: Node = Node([user_tick], "position")
-        user_lp: Node = Node([position], "user_lp")
-        result2 = get_relative_nodes(user_lp)
-        result2 = [n.name for n in result2]
+    def test_uni_tick(self):
+        self.check_sequence(DappType.uniswap, ToType.tick, UniTick, ["uni_pool", "uni_proxy_LP", "uni_tick"])
 
-        print(result1)
-        print(result2)
-        self.assertTrue(result2 == result1)
-        # [proxy_lp, pool, tick, proxy_lp, pool, tick, tx, user_tick, position, user_lp]
+    def test_price(self):
+        self.check_sequence(
+            DappType.uniswap, ToType.price, UniRelativePrice, ["uni_pool", "uni_tick_without_pos", "uni_rel_price"]
+        )
+
+    def test_user_lp(self):
+        self.check_sequence(
+            DappType.uniswap,
+            ToType.user_lp,
+            UniUserLP,
+            ["uni_pool", "uni_proxy_LP", "uni_tick", "uni_tx", "uni_positions", "uni_user_lp"],
+        )
+

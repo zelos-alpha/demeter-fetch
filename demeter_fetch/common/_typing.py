@@ -257,25 +257,21 @@ class EthError(Exception):
         self.message = message
 
 
-class UniNodesNames:
-    pool = "pool"
-    proxy_transfer = "proxy_transfer"
-    proxy_lp = "proxy_LP"
-    minute = "minute"
-    tick = "tick"
-    tx = "tx"
-    tick_without_pos = "tick_without_pos"
-    positions = "positions"
-    user_lp = "user_lp"
-    relative_price = "relative_price"
+class NodeNames:
+    uni_pool = "uni_pool"
+    uni_proxy_transfer = "uni_proxy_transfer"
+    uni_proxy_lp = "uni_proxy_LP"
+    uni_minute = "uni_minute"
+    uni_tick = "uni_tick"
+    uni_tx = "uni_tx"
+    uni_tick_without_pos = "uni_tick_without_pos"
+    uni_positions = "uni_positions"
+    uni_user_lp = "uni_user_lp"
+    uni_relative_price = "uni_rel_price"
 
+    aave_raw = "aave_raw"
+    aave_minute = "aave_minute"
+    aave_tick = "aave_tick"
 
-class AaveNodesNames:
-    raw = "raw"
-    minute = "minute"
-    tick = "tick"
-
-
-class SqueethNodesNames:
-    raw = "osqth_raw"
-    minute = "osqth_minute"
+    osqth_raw = "osqth_raw"
+    osqth_minute = "osqth_minute"

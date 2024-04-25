@@ -6,7 +6,7 @@ from typing import Dict, Callable, List
 import pandas as pd
 
 from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event
-from ..common import to_decimal, DailyNode, UniNodesNames, DailyParam, get_tx_type
+from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type
 
 
 @dataclass
@@ -95,9 +95,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
 
 
 class UniTick(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.tick
+    name = NodeNames.uni_tick
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
@@ -121,8 +119,8 @@ class UniTick(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        pool_df = data[UniNodesNames.pool]
-        proxy_df = data[UniNodesNames.proxy_lp]
+        pool_df = data[NodeNames.uni_pool]
+        proxy_df = data[NodeNames.uni_proxy_lp]
         match_proxy_log(pool_df, proxy_df)
         pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
 
@@ -159,9 +157,7 @@ class UniTick(DailyNode):
 
 
 class UniTickNoPos(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.tick_without_pos
+    name = NodeNames.uni_tick_without_pos
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
@@ -184,7 +180,7 @@ class UniTickNoPos(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        input_param = data[UniNodesNames.pool]
+        input_param = data[NodeNames.uni_pool]
         df = convert_pool_tick_df(input_param)
         return df
 

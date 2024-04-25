@@ -1,11 +1,9 @@
-from demeter_fetch import  SqueethNodesNames
+from demeter_fetch import NodeNames
 from demeter_fetch.common import DailyNode, DailyParam
 
 
 class SqueethMinute(DailyNode):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = SqueethNodesNames.minute
+    name = NodeNames.osqth_minute
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (

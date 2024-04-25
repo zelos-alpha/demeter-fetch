@@ -24,9 +24,10 @@ def download_by_config(config: Config) -> List[str]:
         ignore_pos = config.from_config.uniswap_config.ignore_position_id
 
     root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
-    steps: List[Node] = engine.get_relative_nodes(root_step)
+    root_step.set_config(config)
+    steps: List[Node] = engine.get_relative_nodes(root_step,config)
     utils.print_log("Will execute the following steps: ", steps)
-    [step.set_config(config) for step in steps]
+    # [step.set_config(config) for step in steps]
 
     for step in steps:
         set_global_pbar(None)

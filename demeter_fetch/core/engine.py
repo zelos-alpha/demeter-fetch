@@ -5,14 +5,13 @@
 # @Description:
 from typing import List
 
+from .. import DappType, ToType, Config
 from ..common import Node
 from ..processor_aave import AaveMinute, AaveTick
 from ..processor_squeeth import SqueethMinute
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
 from ..processor_uniswap.relative_price import UniRelativePrice
-
 from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction, SqueethSource
-from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 
 
 def _get_reversed_copy(list_to_reverse):
@@ -21,84 +20,85 @@ def _get_reversed_copy(list_to_reverse):
     return ret_list
 
 
-def get_relative_nodes(root: Node) -> List[Node]:
+def get_relative_nodes(root: Node, config: Config) -> List[Node]:
     depth_first_array = []
     stack = [root]
     while len(stack) > 0:
-        poped: Node = stack.pop()
-        depth_first_array.append(poped)
-        if len(poped.depends) > 0:
-            # if you want to use a list as a stack, you have to add elements in the tail
-            stack.extend(_get_reversed_copy(poped.depends))
+        current_node: Node = stack.pop()
+        depth_first_array.append(current_node)
+        current_node_depends = []
+        for depend_class in current_node.__class__.depend:
+            depend_configs: List = current_node.get_config_for_depend(depend_class.name, config)
+            for depend_config in depend_configs:
+                depend_instance = depend_class()
+                depend_instance.set_config(depend_config)
+                if depend_instance not in stack and depend_instance not in depth_first_array:
+                    stack.append(depend_instance)
+                current_node_depends.append(depend_instance)
+        current_node.set_depend(current_node_depends)
     depth_first_array.reverse()
-    no_dup_array = []
-    for n in depth_first_array:
-        if n not in no_dup_array:
-            no_dup_array.append(n)
-    return no_dup_array
+    return depth_first_array
 
 
-class UniNodes:
-    pool = UniSourcePool([])
-    proxy_transfer = UniSourceProxyTransfer([])
-    proxy_lp = UniSourceProxyLp([])
-    minute = UniMinute([pool])
-    tick = UniTick([pool, proxy_lp])
-    tick_without_pos = UniTickNoPos([pool])
-    tx = UniTransaction([tick])
-    position = UniPositions([tick, tx])
-    user_lp = UniUserLP([position])
-    rel_price = UniRelativePrice([tick_without_pos])
+# region depends
 
+# uniswap
+UniSourcePool.depend = []
+UniSourceProxyTransfer.depend = []
+UniSourceProxyLp.depend = []
+UniMinute.depend = [UniSourcePool]
+UniTick.depend = [UniSourcePool, UniSourceProxyLp]
+UniTickNoPos.depend = [UniSourcePool]
+UniTransaction.depend = [UniTick]
+UniPositions.depend = [UniTick, UniTransaction]
+UniUserLP.depend = [UniPositions]
+UniRelativePrice.depend = [UniTickNoPos]
+# AAVE
+AaveSource.depend = []
+AaveMinute.depend = [AaveSource]
+AaveTick.depend = [AaveSource]
 
-class AaveNodes:
-    raw = AaveSource([])
-
-    minute = AaveMinute([raw])
-    tick = AaveTick([raw])
-
-
-class SqueethNodes:
-    osqth_raw = SqueethSource([])
-    osqth_minute = SqueethMinute([osqth_raw, UniNodes.rel_price])
+# SQUEETH
+SqueethSource.depend = []
+SqueethMinute.depend = [SqueethSource, UniRelativePrice]
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
     if dapp == DappType.uniswap:
         match to_type:
             case ToType.raw:
-                return UniNodes.pool
+                return UniSourcePool()
             case ToType.tick:
                 if ignore_pos_id:
-                    return UniNodes.tick_without_pos
+                    return UniTickNoPos()
                 else:
-                    return UniNodes.tick
+                    return UniTick()
             case ToType.position:
-                return UniNodes.position
+                return UniPositions()
             case ToType.minute:
-                return UniNodes.minute
+                return UniMinute()
             case ToType.user_lp:
-                return UniNodes.user_lp
+                return UniUserLP()
             case ToType.price:
-                return UniNodes.rel_price
+                return UniRelativePrice()
             case _:
                 raise NotImplemented(f"{dapp} {to_type} not supported")
 
     elif dapp == DappType.aave:
         match to_type:
             case ToType.raw:
-                return AaveNodes.raw
+                return AaveSource()
             case ToType.minute:
-                return AaveNodes.minute
+                return AaveMinute()
             case ToType.tick:
-                return AaveNodes.tick
+                return AaveTick()
             case _:
                 raise NotImplemented(f"{dapp} {to_type} not supported")
     elif dapp == DappType.squeeth:
         match to_type:
             case ToType.raw:
-                return SqueethNodes.osqth_raw
+                return SqueethSource()
             case ToType.minute:
-                return SqueethNodes.osqth_minute
+                return SqueethMinute()
     else:
         raise NotImplemented(f"{dapp} not supported")

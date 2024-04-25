@@ -19,13 +19,37 @@ EmptyNamedTuple = namedtuple("EmptyNamedTuple", [])
 
 
 class Node:
-    def __init__(self, depends: List, name=""):
-        self.name = name
-        self.depends: List[Node] = depends
-        self.depends_dict: Dict[str, Node] = {d.name: d for d in self.depends}
+
+    name = "ParentNode"
+
+    def __init__(self):  # depends: List,
+        self.depend_instance: List[Node] = []
+        self.depends_dict: Dict[str, Node] = {}
         self.config: Config | None = None
         self.from_config: FromConfig | None = None
         self.to_path: str | None = None
+
+    depend = []
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        if type(self) is not type(other):
+            return False
+        # !!! actually, instead of compare reference, i should compare property
+        if self.config != other.config:
+            return False
+        return True
+
+    def set_depend_instance(self, depends: List):
+        self.depend_instance = depends
+        self.depends_dict = {d.name: d for d in self.depend_instance}
+
+    def get_config_for_depend(self, depend_name: str, original_config: Config) -> List[Config]:
+        return [original_config]
+
+    def set_depend(self, depends: List):
+        self.depend_instance = depends
 
     def set_config(self, config: Config):
         self.config = config
@@ -44,7 +68,7 @@ class Node:
             if len(missing_params) < 1:
                 return
         data = {}
-        for depend in self.depends:
+        for depend in self.depend_instance:
             data[depend.name] = list(depend.get_file_paths.values())
         pbar = tqdm(total=len(missing_params), ncols=80, position=0, leave=False)
         set_global_pbar(pbar)
@@ -94,7 +118,7 @@ class Node:
     def save_file(self, df: pd.DataFrame, path: str):
         match self.config.to_config.to_file_type:
             case ToFileType.csv:
-                df.to_csv(path, index=False,lineterminator="\n")
+                df.to_csv(path, index=False, lineterminator="\n")
             case ToFileType.feather:
                 df.to_feather(path)
             case _:
@@ -129,8 +153,8 @@ class DailyNode(Node):
     Node whose input and output and dependings are daily, and generate only one file per day.
     """
 
-    def __init__(self, depends: List):
-        super().__init__(depends)
+    def __init__(self):
+        super().__init__()
 
     def work(self):
         set_global_pbar(None)
@@ -146,7 +170,7 @@ class DailyNode(Node):
                 day_idx += timedelta(days=1)
                 continue
             param = {}
-            for depend in self.depends:
+            for depend in self.depend_instance:
                 depend_file_path = depend.get_file_path(day_param)
                 param[depend.name] = depend.read_file(depend_file_path)
             df = self._process_one_day(param, day_idx)
@@ -173,8 +197,10 @@ class AaveDailyNode(Node):
     Node whose input and output and dependings are daily, and generate multiple files per day.
     """
 
-    def __init__(self, depends: List):
-        super().__init__(depends)
+    def __init__(
+        self,
+    ):
+        super().__init__()
 
     @property
     def get_file_paths(self) -> Dict[namedtuple, str]:
@@ -206,7 +232,7 @@ class AaveDailyNode(Node):
                     continue
 
             data_depends = {}
-            for depend in self.depends:
+            for depend in self.depend_instance:
                 token_data = {}
                 for token in self.from_config.aave_config.tokens:
                     path = depend.get_file_path(AaveDailyParam(day_idx, token))

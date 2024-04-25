@@ -8,7 +8,7 @@ from tqdm import tqdm
 from .. import ChainType
 from ..common import (
     ChainTypeConfig,
-    UniNodesNames,
+    NodeNames,
     Node,
     set_global_pbar,
     EmptyNamedTuple,
@@ -18,9 +18,7 @@ from ..sources.rpc_utils import set_position_id
 
 
 class UniUserLP(Node):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.user_lp
+    name = NodeNames.uni_user_lp
 
     def _get_file_name(self, param: namedtuple) -> str:
         return (
@@ -40,7 +38,7 @@ class UniUserLP(Node):
         return ["start_time", "end_time"]
 
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
-        position_df = self.get_depend_by_name(UniNodesNames.positions).read_file(data[UniNodesNames.positions][0])
+        position_df = self.get_depend_by_name(NodeNames.uni_positions).read_file(data[NodeNames.uni_positions][0])
         position_df = position_df[position_df["tx_type"].isin(["MINT", "BURN"])]
         position_df["liq_delta"] = position_df.apply(
             lambda r: -r["liquidity"] if r["tx_type"] == "BURN" else r["liquidity"], axis=1
@@ -102,9 +100,7 @@ class UniUserLP(Node):
 
 
 class UniPositions(Node):
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.positions
+    name = NodeNames.uni_positions
 
     def _get_file_name(self, param: namedtuple) -> str:
         return (
@@ -140,16 +136,16 @@ class UniPositions(Node):
         return ["block_timestamp"]
 
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
-        tick_csv_paths = data[UniNodesNames.tick]
-        log_csv_paths = data[UniNodesNames.tx]
+        tick_csv_paths = data[NodeNames.uni_tick]
+        log_csv_paths = data[NodeNames.uni_tx]
         tick_csv_paths.sort()
         log_csv_paths.sort()
         pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)
         set_global_pbar(pbar)
         total_df = pd.DataFrame()
         for i in range(len(tick_csv_paths)):
-            daily_tick_df = self.get_depend_by_name(UniNodesNames.tick).read_file(tick_csv_paths[i])
-            daily_tx_df = self.get_depend_by_name(UniNodesNames.tx).read_file(log_csv_paths[i])
+            daily_tick_df = self.get_depend_by_name(NodeNames.uni_tick).read_file(tick_csv_paths[i])
+            daily_tx_df = self.get_depend_by_name(NodeNames.uni_tx).read_file(log_csv_paths[i])
             daily_tick_df = daily_tick_df[daily_tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
             tx_hashes = daily_tick_df["transaction_hash"].drop_duplicates()
             owners = {

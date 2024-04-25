@@ -5,7 +5,7 @@ import pandas as pd
 
 from demeter_fetch import Config
 from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, to_decimal, to_int
-from demeter_fetch.common import KECCAK, UniNodesNames
+from demeter_fetch.common import KECCAK, NodeNames
 from .uniswap_utils import x96_sqrt_to_decimal
 
 
@@ -16,9 +16,7 @@ class UniRelativePrice(DailyNode):
     column is token
     """
 
-    def __init__(self, depends):
-        super().__init__(depends)
-        self.name = UniNodesNames.relative_price
+    name = NodeNames.uni_relative_price
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
@@ -49,7 +47,7 @@ class UniRelativePrice(DailyNode):
         }
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
-        df = data[UniNodesNames.tick_without_pos]
+        df = data[NodeNames.uni_tick_without_pos]
         price_df = df[df["tx_type"] == "SWAP"].copy()
         price_df.set_index("block_timestamp", inplace=True)
         price_df["price"] = price_df["sqrtPriceX96"].apply(
