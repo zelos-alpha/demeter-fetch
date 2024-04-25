@@ -7,10 +7,11 @@ from typing import List
 
 from ..common import Node
 from ..processor_aave import AaveMinute, AaveTick
+from ..processor_squeeth import SqueethMinute
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
 from ..processor_uniswap.relative_price import UniRelativePrice
 
-from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction
+from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction, SqueethSource
 from .. import DappType, ToType, UniNodesNames, AaveNodesNames
 
 
@@ -57,6 +58,11 @@ class AaveNodes:
     tick = AaveTick([raw])
 
 
+class SqueethNodes:
+    osqth_raw = SqueethSource([])
+    osqth_minute = SqueethMinute([osqth_raw, UniNodes.rel_price])
+
+
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
     if dapp == DappType.uniswap:
         match to_type:
@@ -88,5 +94,11 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return AaveNodes.tick
             case _:
                 raise NotImplemented(f"{dapp} {to_type} not supported")
+    elif dapp == DappType.squeeth:
+        match to_type:
+            case ToType.raw:
+                return SqueethNodes.osqth_raw
+            case ToType.minute:
+                return SqueethNodes.osqth_minute
     else:
         raise NotImplemented(f"{dapp} not supported")

@@ -27,6 +27,7 @@ ChainTypeConfig = {
         "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+        "squeeth_controller": "0x64187ae08781b09368e6253f9e94951243a493d5",
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
@@ -79,6 +80,7 @@ class ToFileType(str, Enum):
 class DappType(str, Enum):
     uniswap = "uniswap"
     aave = "aave"
+    squeeth = "squeeth"
 
 
 @dataclass
@@ -166,6 +168,7 @@ class KECCAK(str, Enum):
     AAVE_LIQUIDATION = "0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286"
     AAVE_UPDATED = "0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a"
     TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    SQUEETH_NORM_FACTOR_UPDATED = "0x339e53729b0447795ff69e70a74fed98fc7fef6fe94b7521099b32f0f8de4822"
 
 
 uni_topic_mapping = {
@@ -271,3 +274,8 @@ class AaveNodesNames:
     raw = "raw"
     minute = "minute"
     tick = "tick"
+
+
+class SqueethNodesNames:
+    raw = "osqth_raw"
+    minute = "osqth_minute"

@@ -1,9 +1,8 @@
 import os
-from datetime import date
+from datetime import date, timezone, datetime
 from typing import List, Dict
 
 import pandas as pd
-
 
 import demeter_fetch.sources.rpc_utils as rpc_utils
 from .source_utils import get_height_from_date
@@ -216,4 +215,33 @@ def rpc_aave(config: FromConfig, save_path: str, day: date, tokens):
     daily_df["topics"] = daily_df["topics"].apply(lambda x: split_topic(x))
     daily_df["token"] = daily_df["topics"].apply(lambda r: hex_to_length(r[1], 40))
     daily_df = daily_df[daily_df["token"].isin(tokens)]
+    return daily_df
+
+
+def rpc_squeeth(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
+    if "squeeth_controller" not in ChainTypeConfig[config.chain]:
+        raise RuntimeError(f"Squeeth does not exist in chain {config.chain.name}")
+    start_height, end_height = get_height_from_date(day, config.chain, config.http_proxy, config.rpc.etherscan_api_key)
+    daily_df = query_logs(
+        chain=config.chain,
+        end_point=config.rpc.end_point,
+        save_path=save_path,
+        start_height=start_height,
+        end_height=end_height,
+        contract=ContractConfig(
+            ChainTypeConfig[config.chain]["squeeth_controller"],
+            [KECCAK.SQUEETH_NORM_FACTOR_UPDATED.value],
+        ),
+        batch_size=config.rpc.batch_size,
+        auth_string=config.rpc.auth_string,
+        http_proxy=config.http_proxy if not config.rpc.force_no_proxy else None,
+        keep_tmp_files=config.rpc.keep_tmp_files,
+        one_by_one=True,
+        skip_timestamp=True,
+    )
+    daily_df = _update_df(daily_df)
+    daily_df["block_timestamp"] = daily_df["data"].apply(
+        lambda x: datetime.fromtimestamp(int(x[64 * 3 + 2 :], 16), tz=timezone.utc)
+    )
+
     return daily_df

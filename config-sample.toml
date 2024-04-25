@@ -1,7 +1,7 @@
 [from]
 chain = "polygon"
 datasource = "rpc" # big_query or rpc or chifra
-dapp_type = "uniswap" # uniswap or aave
+dapp_type = "uniswap" # uniswap or aave or squeeth
 #http_proxy = "http://localhost:5555" # if network is bad, try use proxy
 start = "2022-3-16"
 end = "2022-3-17"

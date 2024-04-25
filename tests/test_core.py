@@ -28,6 +28,8 @@ class TreeTest(unittest.TestCase):
         t2: Node = Node([t5, t6, t7], "t2")
         t1: Node = Node([t2, t3, t4], "t1")
         result = get_relative_nodes(t1)
+        result = [n.name for n in result]
+        self.assertEqual(result,["t4", "t8", "t3", "t7", "t6", "t5", "t2", "t1"])
         print(result)
 
     def test_generate_loop_tree(self):
@@ -40,6 +42,7 @@ class TreeTest(unittest.TestCase):
         user_lp: Node = Node([position], "user_lp")
         result1 = get_relative_nodes(user_lp)
         result1 = [n.name for n in result1]
+        # different order
         user_tick: Node = Node([tick, tx], "user_tick")
         position: Node = Node([user_tick], "position")
         user_lp: Node = Node([position], "user_lp")

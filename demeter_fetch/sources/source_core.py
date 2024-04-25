@@ -11,7 +11,8 @@ import pandas as pd
 
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
-from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave
+from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth
+from .. import SqueethNodesNames
 from ..common import DataSource, UniNodesNames, AaveNodesNames, DailyNode, Node, DailyParam, AaveDailyNode, utils
 from ..common.nodes import AaveDailyParam
 
@@ -161,3 +162,29 @@ class AaveSource(AaveDailyNode):
     @property
     def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
+
+
+class SqueethSource(DailyNode):
+    def __init__(self, depends):
+        super().__init__(depends)
+        self.name = SqueethNodesNames.raw
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
+        df: pd.DataFrame | None = None
+        match self.from_config.data_source:
+            case DataSource.big_query:
+                # df = bigquery_pool(self.from_config, day)
+                raise NotImplementedError()
+            case DataSource.rpc:
+                df = rpc_squeeth(self.from_config, self.to_path, day)
+            case DataSource.chifra:
+                # df = chifra_pool(self.from_config, self.to_path, day)
+                raise NotImplementedError()
+
+        return df
+
+    def _get_file_name(self, param: DailyParam) -> str:
+        return (
+            f"{self.from_config.chain.name}-squeeth-controller-{param.day.strftime('%Y-%m-%d')}.raw"
+            + self._get_file_ext()
+        )
