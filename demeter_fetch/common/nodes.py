@@ -45,8 +45,8 @@ class Node:
         self.depend_instance = depends
         self.depends_dict = {d.name: d for d in self.depend_instance}
 
-    def get_config_for_depend(self, depend_name: str, original_config: Config) -> List[Config]:
-        return [original_config]
+    def get_config_for_depend(self, depend_name: str) -> List[Config]:
+        return [self.config]
 
     def set_depend(self, depends: List):
         self.depend_instance = depends

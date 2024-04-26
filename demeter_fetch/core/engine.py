@@ -20,7 +20,7 @@ def _get_reversed_copy(list_to_reverse):
     return ret_list
 
 
-def get_relative_nodes(root: Node, config: Config) -> List[Node]:
+def get_relative_nodes(root: Node) -> List[Node]:
     depth_first_array = []
     stack = [root]
     while len(stack) > 0:
@@ -28,7 +28,7 @@ def get_relative_nodes(root: Node, config: Config) -> List[Node]:
         depth_first_array.append(current_node)
         current_node_depends = []
         for depend_class in current_node.__class__.depend:
-            depend_configs: List = current_node.get_config_for_depend(depend_class.name, config)
+            depend_configs: List = current_node.get_config_for_depend(depend_class.name)
             for depend_config in depend_configs:
                 depend_instance = depend_class()
                 depend_instance.set_config(depend_config)
