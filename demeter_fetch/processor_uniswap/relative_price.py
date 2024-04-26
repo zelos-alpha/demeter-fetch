@@ -4,7 +4,7 @@ from typing import Callable, Dict, List
 import pandas as pd
 
 from demeter_fetch import Config
-from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, to_decimal, to_int
+from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, to_decimal, to_int, get_depend_name
 from demeter_fetch.common import KECCAK, NodeNames
 from .uniswap_utils import x96_sqrt_to_decimal
 
@@ -47,7 +47,7 @@ class UniRelativePrice(DailyNode):
         }
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
-        df = data[NodeNames.uni_tick_without_pos]
+        df = data[get_depend_name(NodeNames.uni_tick_without_pos, self.id)]
         price_df = df[df["tx_type"] == "SWAP"].copy()
         price_df.set_index("block_timestamp", inplace=True)
         price_df["price"] = price_df["sqrtPriceX96"].apply(
@@ -61,12 +61,30 @@ class UniRelativePrice(DailyNode):
 
         price_df = price_df[["price", "total_liquidity", "sqrtPriceX96"]]
         if self.from_config.uniswap_config.is_token0_base:
-            price_df.rename(columns={"price": "token0"}, inplace=True)
-            price_df["token1"] = 1
-        else:
             price_df.rename(columns={"price": "token1"}, inplace=True)
             price_df["token0"] = 1
-        price_df = price_df.resample("1min").last().bfill()
+        else:
+            price_df.rename(columns={"price": "token0"}, inplace=True)
+            price_df["token1"] = 1
+
+        new_index = pd.date_range(
+            start=price_df.index[0].floor("D"),
+            end=price_df.index[0].floor("D") + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
+            freq="T",
+        )
+        price_df = price_df[~price_df.index.duplicated(keep="last")]
+        price_df = price_df.resample("1min").last().ffill()  # resample to 1 min
+        price_df = (
+            price_df.reindex(new_index).ffill().bfill()
+        )  # expend to whole day, and fill tail and head empty minutes
         price_df["block_timestamp"] = price_df.index
         price_df = price_df[["block_timestamp", "token0", "token1", "total_liquidity", "sqrtPriceX96"]]
+        price_df.rename(
+            columns={
+                "token0": self.from_config.uniswap_config.token0.name,
+                "token1": self.from_config.uniswap_config.token1.name,
+            },
+            inplace=True,
+        )
+
         return price_df

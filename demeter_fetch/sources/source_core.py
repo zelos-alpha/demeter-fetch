@@ -12,7 +12,7 @@ import pandas as pd
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
 from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth
-from ..common import DataSource, NodeNames, DailyNode, DailyParam, AaveDailyNode, utils
+from ..common import DataSource, NodeNames, DailyNode, DailyParam, AaveDailyNode, utils, get_depend_name
 from ..common.nodes import AaveDailyParam
 
 
@@ -102,7 +102,7 @@ class UniTransaction(DailyNode):
     name = NodeNames.uni_tx
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
-        tick_df = data[NodeNames.uni_tick]
+        tick_df = data[get_depend_name(NodeNames.uni_tick, self.id)]
         tick_df = tick_df[tick_df["tx_type"].isin(["MINT", "BURN", "COLLECT"])]
         tx = tick_df["transaction_hash"].drop_duplicates()
         df: pd.DataFrame | None = None

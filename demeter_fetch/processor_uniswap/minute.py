@@ -5,7 +5,7 @@ from typing import Dict, Callable, List
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import DailyNode, DailyParam, get_tx_type
+from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, get_depend_name
 from demeter_fetch.common import KECCAK, NodeNames
 from demeter_fetch.common import TextUtil, to_decimal
 
@@ -58,8 +58,8 @@ class UniMinute(DailyNode):
     def _parse_date_column(self) -> List[int]:
         return ["timestamp"]
 
-    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
-        df = data[NodeNames.uni_pool]
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
+        df = data[get_depend_name(NodeNames.uni_pool, self.id)]
 
         df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
         df = df.set_index(keys=["block_timestamp"])

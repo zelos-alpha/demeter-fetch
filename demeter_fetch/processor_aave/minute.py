@@ -3,7 +3,7 @@ from typing import Dict, List
 import pandas as pd
 
 from demeter_fetch import KECCAK, NodeNames
-from demeter_fetch.common import AaveDailyNode, get_tx_type
+from demeter_fetch.common import AaveDailyNode, get_tx_type, get_depend_name
 from demeter_fetch.common.nodes import AaveDailyParam
 from demeter_fetch.processor_aave.aave_utils import decode_event_ReserveDataUpdated
 from datetime import datetime, date
@@ -20,7 +20,7 @@ class AaveMinute(AaveDailyNode):
 
     def _process_one_day(self, data: Dict[str, Dict[str, pd.DataFrame]], day: date, tokens) -> Dict[str, pd.DataFrame]:
         ret: Dict[str, pd.DataFrame] = {}
-        df = data[NodeNames.aave_raw]
+        df = data[get_depend_name(NodeNames.aave_raw, self.id)]
         for token, token_df in df.items():
             token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics), axis=1)
             token_df = token_df[token_df["tx_type"] == KECCAK.AAVE_UPDATED]

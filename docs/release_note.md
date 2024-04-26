@@ -1,3 +1,9 @@
+# v1.1.0
+
+* update core to support more complex struct(same node with different config, generate uni node from squeeth minute node)
+* support squeeth 
+* fix price time range
+
 # v1.0.3
 
 * remove datetime.utcfromtimestamp

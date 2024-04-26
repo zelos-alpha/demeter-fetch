@@ -13,6 +13,7 @@ from ..common import (
     set_global_pbar,
     EmptyNamedTuple,
     to_decimal,
+    get_depend_name,
 )
 from ..sources.rpc_utils import set_position_id
 
@@ -38,7 +39,9 @@ class UniUserLP(Node):
         return ["start_time", "end_time"]
 
     def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
-        position_df = self.get_depend_by_name(NodeNames.uni_positions).read_file(data[NodeNames.uni_positions][0])
+        position_df = self.get_depend_by_name(NodeNames.uni_positions, self.id).read_file(
+            data[get_depend_name(NodeNames.uni_positions, self.id)][0]
+        )
         position_df = position_df[position_df["tx_type"].isin(["MINT", "BURN"])]
         position_df["liq_delta"] = position_df.apply(
             lambda r: -r["liquidity"] if r["tx_type"] == "BURN" else r["liquidity"], axis=1
@@ -135,9 +138,9 @@ class UniPositions(Node):
     def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
-    def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame():
-        tick_csv_paths = data[NodeNames.uni_tick]
-        log_csv_paths = data[NodeNames.uni_tx]
+    def _process_one(self, data: Dict[str, List[str]], param: EmptyNamedTuple) -> pd.DataFrame:
+        tick_csv_paths = data[get_depend_name(NodeNames.uni_tick, self.id)]
+        log_csv_paths = data[get_depend_name(NodeNames.uni_tx, self.id)]
         tick_csv_paths.sort()
         log_csv_paths.sort()
         pbar = tqdm(total=(self.from_config.end - self.from_config.start).days + 1, ncols=80, position=0, leave=False)

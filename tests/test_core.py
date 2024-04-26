@@ -76,7 +76,7 @@ class TreeTest(unittest.TestCase):
         )
 
     def test_osqth_minute(self):
-        # requires two extra token price
+        # requires two extra token price node
         self.check_sequence(
             DappType.squeeth,
             ToType.minute,

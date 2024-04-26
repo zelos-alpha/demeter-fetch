@@ -183,6 +183,7 @@ uni_topic_mapping = {
 class Config:
     from_config: FromConfig
     to_config: ToConfig
+    id: str = ""
 
 
 class MinuteData(object):

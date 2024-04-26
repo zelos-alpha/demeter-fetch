@@ -32,10 +32,11 @@ def get_relative_nodes(root: Node) -> List[Node]:
             for depend_config in depend_configs:
                 depend_instance = depend_class()
                 depend_instance.set_config(depend_config)
+                depend_instance.id = depend_config.id
                 if depend_instance not in stack and depend_instance not in depth_first_array:
                     stack.append(depend_instance)
                 current_node_depends.append(depend_instance)
-        current_node.set_depend(current_node_depends)
+        current_node.set_depend_instance(current_node_depends)
     depth_first_array.reverse()
     return depth_first_array
 

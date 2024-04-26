@@ -87,3 +87,4 @@ class FullDownloadTest(unittest.TestCase):
         config.to_config.type = ToType.price
         generated_files = download_by_config(config)
         validate_files_by_md5(generated_files)
+

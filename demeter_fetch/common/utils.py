@@ -18,6 +18,13 @@ def set_global_pbar(pbar):
     global_pbar = pbar
 
 
+def get_depend_name(depend_name, id):
+    if id == "":
+        return depend_name
+    else:
+        return f"{depend_name}:{id}"
+
+
 def print_log(*args, tqdm_bar=None):
     if global_pbar is not None:
         tqdm_bar = global_pbar

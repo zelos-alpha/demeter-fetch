@@ -13,7 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from ._typing import Config, FromConfig, ToFileType
-from .utils import TimeUtil, set_global_pbar
+from .utils import TimeUtil, set_global_pbar, get_depend_name
 
 EmptyNamedTuple = namedtuple("EmptyNamedTuple", [])
 
@@ -23,6 +23,7 @@ class Node:
     name = "ParentNode"
 
     def __init__(self):  # depends: List,
+        self.id = ""
         self.depend_instance: List[Node] = []
         self.depends_dict: Dict[str, Node] = {}
         self.config: Config | None = None
@@ -43,13 +44,10 @@ class Node:
 
     def set_depend_instance(self, depends: List):
         self.depend_instance = depends
-        self.depends_dict = {d.name: d for d in self.depend_instance}
+        self.depends_dict = {get_depend_name(d.name, d.id): d for d in self.depend_instance}
 
     def get_config_for_depend(self, depend_name: str) -> List[Config]:
         return [self.config]
-
-    def set_depend(self, depends: List):
-        self.depend_instance = depends
 
     def set_config(self, config: Config):
         self.config = config
@@ -69,7 +67,7 @@ class Node:
                 return
         data = {}
         for depend in self.depend_instance:
-            data[depend.name] = list(depend.get_file_paths.values())
+            data[get_depend_name(depend.name, depend.id)] = list(depend.get_file_paths.values())
         pbar = tqdm(total=len(missing_params), ncols=80, position=0, leave=False)
         set_global_pbar(pbar)
         for param in missing_params:
@@ -133,8 +131,8 @@ class Node:
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 
-    def get_depend_by_name(self, name: str):
-        return self.depends_dict[name]
+    def get_depend_by_name(self, depend_name: str, depend_id=""):
+        return self.depends_dict[get_depend_name(depend_name, depend_id)]
 
     # endregion
 
@@ -172,7 +170,7 @@ class DailyNode(Node):
             param = {}
             for depend in self.depend_instance:
                 depend_file_path = depend.get_file_path(day_param)
-                param[depend.name] = depend.read_file(depend_file_path)
+                param[get_depend_name(depend.name, depend.id)] = depend.read_file(depend_file_path)
             df = self._process_one_day(param, day_idx)
             self.save_file(df, self.get_file_path(day_param))
             day_idx += timedelta(days=1)
@@ -237,7 +235,7 @@ class AaveDailyNode(Node):
                 for token in self.from_config.aave_config.tokens:
                     path = depend.get_file_path(AaveDailyParam(day_idx, token))
                     token_data[token] = depend.read_file(path)
-                data_depends[depend.name] = token_data
+                data_depends[get_depend_name(depend.name, depend.id)] = token_data
 
             token_dfs = self._process_one_day(data_depends, day_idx, self.from_config.aave_config.tokens)
             for token, df in token_dfs.items():

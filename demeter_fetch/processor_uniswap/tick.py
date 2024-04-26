@@ -6,7 +6,7 @@ from typing import Dict, Callable, List
 import pandas as pd
 
 from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event
-from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type
+from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type, get_depend_name
 
 
 @dataclass
@@ -119,8 +119,8 @@ class UniTick(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        pool_df = data[NodeNames.uni_pool]
-        proxy_df = data[NodeNames.uni_proxy_lp]
+        pool_df = data[get_depend_name(NodeNames.uni_pool, id)]
+        proxy_df = data[get_depend_name(NodeNames.uni_proxy_lp, id)]
         match_proxy_log(pool_df, proxy_df)
         pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
 
@@ -180,7 +180,7 @@ class UniTickNoPos(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        input_param = data[NodeNames.uni_pool]
+        input_param = data[get_depend_name(NodeNames.uni_pool, self.id)]
         df = convert_pool_tick_df(input_param)
         return df
 
