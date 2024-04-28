@@ -70,7 +70,7 @@ class UniRelativePrice(DailyNode):
         new_index = pd.date_range(
             start=price_df.index[0].floor("D"),
             end=price_df.index[0].floor("D") + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
-            freq="T",
+            freq="min",
         )
         price_df = price_df[~price_df.index.duplicated(keep="last")]
         price_df = price_df.resample("1min").last().ffill()  # resample to 1 min

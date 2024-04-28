@@ -31,7 +31,7 @@ class SqueethMinute(DailyNode):
             new_index = pd.date_range(
                 start=pd.to_datetime(day).floor("D"),
                 end=pd.to_datetime(day) + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
-                freq="T",
+                freq="min",
             )
             df = pd.DataFrame(
                 index=new_index,
@@ -51,7 +51,7 @@ class SqueethMinute(DailyNode):
         new_index = pd.date_range(
             start=raw_df.index[0].floor("D"),
             end=raw_df.index[0].floor("D") + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
-            freq="T",
+            freq="min",
         )
         raw_df.drop(
             columns=[
