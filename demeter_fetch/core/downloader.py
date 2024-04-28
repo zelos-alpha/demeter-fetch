@@ -26,7 +26,7 @@ def download_by_config(config: Config) -> List[str]:
     root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
     root_step.set_config(config)
     steps: List[Node] = engine.get_relative_nodes(root_step)
-    utils.print_log("Will execute the following steps: ", steps)
+    utils.print_log("Will execute the following steps: " + str(steps))
     # [step.set_config(config) for step in steps]
 
     for step in steps:

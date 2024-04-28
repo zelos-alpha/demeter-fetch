@@ -119,8 +119,8 @@ class UniTick(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        pool_df = data[get_depend_name(NodeNames.uni_pool, id)]
-        proxy_df = data[get_depend_name(NodeNames.uni_proxy_lp, id)]
+        pool_df = data[get_depend_name(NodeNames.uni_pool, self.id)]
+        proxy_df = data[get_depend_name(NodeNames.uni_proxy_lp, self.id)]
         match_proxy_log(pool_df, proxy_df)
         pool_df = pool_df.sort_values(["block_number", "log_index"], ascending=[True, True])
 

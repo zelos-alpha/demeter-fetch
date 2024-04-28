@@ -32,4 +32,4 @@ class FullDownloadTest(unittest.TestCase):
         config = self.base_config
         config.to_config.type = ToType.minute
         generated_files = download_by_config(config)
-        # validate_files_by_md5(generated_files)
+        validate_files_by_md5(generated_files)
