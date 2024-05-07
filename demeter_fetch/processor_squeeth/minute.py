@@ -35,11 +35,11 @@ class SqueethMinute(DailyNode):
             )
             df = pd.DataFrame(
                 index=new_index,
-                columns=["norm_factor", "eth", "osqth"],
+                columns=["norm_factor", "WETH", "OSQTH"],
                 data=np.nan,
             )
-            df["eth"] = eth_price_df["weth"]
-            df["osqth"] = squeeth_price_df["osqth"]
+            df["WETH"] = eth_price_df["weth"]
+            df["OSQTH"] = squeeth_price_df["osqth"]
             return df
         raw_df["block_timestamp"] = pd.to_datetime(raw_df["block_timestamp"].apply(lambda x: x[0:19]))
         raw_df = raw_df.set_index(["block_timestamp"])
@@ -69,11 +69,11 @@ class SqueethMinute(DailyNode):
         raw_df = raw_df.resample("1min").last().ffill()  # resample to 1 min
         raw_df = raw_df.reindex(new_index).ffill()
         raw_df["newNormFactor"] = raw_df["newNormFactor"].fillna(value=first_old_norm_factor)
-        raw_df["eth"] = eth_price_df["weth"]
-        raw_df["osqth"] = squeeth_price_df["osqth"]
+        raw_df["WETH"] = eth_price_df["weth"]
+        raw_df["OSQTH"] = squeeth_price_df["osqth"]
         raw_df = raw_df.rename(columns={"newNormFactor": "norm_factor"})
         raw_df["block_timestamp"] = raw_df.index
-        raw_df = raw_df[["block_timestamp", "norm_factor", "eth", "osqth"]]
+        raw_df = raw_df[["block_timestamp", "norm_factor", "WETH", "OSQTH"]]
         return raw_df
 
     def get_config_for_depend(self, depend_name: str) -> List[Config]:
