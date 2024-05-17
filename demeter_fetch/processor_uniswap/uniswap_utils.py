@@ -38,7 +38,7 @@ def handle_proxy_event(topic_str):
 def x96_sqrt_to_decimal(sqrt_priceX96, decimal0, decimal1, is_0_base):
     price = int(sqrt_priceX96) / 2**96
     tmp = (price**2) * (10 ** (decimal0 - decimal1))
-    return 1 / tmp if is_0_base else tmp
+    return tmp if is_0_base else 1 / tmp
 
 
 def handle_event(tx_type, topics_str, data_hex):

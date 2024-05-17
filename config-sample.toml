@@ -9,7 +9,7 @@ end = "2022-3-17"
 [from.uniswap]
 pool_address = "0x45dda9cb7c25131df268515131f647d726f50608"
 ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
-is_token0_base = true # 0 or 1,  # only necessary for ToType==price
+is_token0_base = false # true of false,  # only necessary for ToType==price, e.g. token0 is usdc, token1 is weth, you want value like weth/usdc=3000, then you should set false
 [from.uniswap.token0] # only necessary for ToType==price
 name = "usdc"
 decimal = 6

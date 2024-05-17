@@ -1,3 +1,7 @@
+# v1.1.1
+
+* fix bug(Breaking change): Base and quote was reversed in uniswap price. You have to toggle from.uniswap.is_token0_base in config file   
+
 # v1.1.0
 
 * update core to support more complex struct(same node with different config, generate uni node from squeeth minute node)
