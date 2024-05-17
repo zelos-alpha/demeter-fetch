@@ -1,3 +1,8 @@
+# v1.0.4
+
+* fix bug:
+  * [Breaking change]Base and quote token in uniswap price is reversed, you have to toggle the value in from.uniswap.is_token0_base in config file.  
+
 # v1.0.3
 
 * remove datetime.utcfromtimestamp
