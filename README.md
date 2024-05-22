@@ -28,6 +28,8 @@ Demeter-fetch supports export formats such as:
 * **AAVE**:
 	* ✔️ **minutely OHLC**
 	* ✔️ **tick** 
+* **Squeeth**:
+	* ✔️ **minutely data**
 
 The minutely OHLC is mainly used in Demeter, while tick data is used in research, where being transformed into many forms.
 
@@ -40,6 +42,7 @@ flowchart TB;
    Chifra:::done --cli export--> raw;
    raw --OHLC--> minute:::done;
    raw --formatted transaction--> tick:::done;
+   raw --> Squeeth:::done;
    tick --> Uniswap;
    tick --> AAVE;
    tick --> other_defi;

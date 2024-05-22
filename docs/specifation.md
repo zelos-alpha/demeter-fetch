@@ -100,6 +100,25 @@ is [here](https://docs.aave.com/risk/liquidity-risk/borrow-interest-rate)
 | 2024/1/6 0:00   | 0.003796       | 0.074471           | 0.019464             | 1.008158        | 1.034414              |
 | 2024/1/6 0:01   | 0.003796       | 0.074471           | 0.019464             | 1.008158        | 1.034414              |
 
+### Squeeth
+
+**Data definition**
+
+| field           | definition                                                    |
+|-----------------|---------------------------------------------------------------|
+| block_timestamp | minutely timestamp                                            | 
+| norm_factor     | current normalized factor                                     | 
+| WETH            | current weth price in weth/usdc, extracted from uniswap pool  | 
+| OSQTH           | current oSQTH price in oSQTH/usdc,extracted from uniswap pool |
+
+Sample
+
+| block_timestamp     | norm_factor         | eth                | osqth              |
+|---------------------|---------------------|--------------------|--------------------|
+| 2024-01-05 00:00:00 | 0.24838421244630335 | 2272.7319494521357 | 0.0581737742469884 |
+| 2024-01-05 00:01:00 | 0.24838421244630335 | 2272.7319494521357 | 0.0581737742469884 |
+| 2024-01-05 00:02:00 | 0.24838421244630335 | 2272.7319494521357 | 0.0581737742469884 |
+
 ## Tick
 
 In the tick file, each line is an event log. The tick file focuses more on transaction actions. e.g. for uniswap, it

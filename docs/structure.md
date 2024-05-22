@@ -20,6 +20,9 @@ demeter_fetch
 |   |-- aave_utils.py
 |   |-- minute.py
 |   `-- tick.py
+|-- processor_squeeth
+|   |-- __init__.py
+|   |-- minute.py
 |-- processor_uniswap
 |   |-- __init__.py
 |   |-- minute.py
