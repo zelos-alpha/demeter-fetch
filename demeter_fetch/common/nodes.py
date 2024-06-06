@@ -166,6 +166,7 @@ class DailyNode(Node):
             step_file_name = self.get_file_path(day_param)
             if self.config.to_config.skip_existed and os.path.exists(step_file_name):
                 day_idx += timedelta(days=1)
+                pbar.update()
                 continue
             param = {}
             for depend in self.depend_instance:
@@ -227,6 +228,7 @@ class AaveDailyNode(Node):
                         break
                 if all_exist:
                     day_idx += timedelta(days=1)
+                    pbar.update()
                     continue
 
             data_depends = {}
