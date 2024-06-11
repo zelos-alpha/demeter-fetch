@@ -61,11 +61,11 @@ class UniRelativePrice(DailyNode):
 
         price_df = price_df[["price", "total_liquidity", "sqrtPriceX96"]]
         if self.from_config.uniswap_config.is_token0_base:
-            price_df.rename(columns={"price": "token1"}, inplace=True)
-            price_df["token0"] = 1
-        else:
             price_df.rename(columns={"price": "token0"}, inplace=True)
             price_df["token1"] = 1
+        else:
+            price_df.rename(columns={"price": "token1"}, inplace=True)
+            price_df["token0"] = 1
 
         new_index = pd.date_range(
             start=price_df.index[0].floor("D"),
