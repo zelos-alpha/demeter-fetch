@@ -95,7 +95,20 @@ def query_logs(
     df = pd.DataFrame(current_day_logs)
     if "block_dt" in df.columns:
         df = df.drop(columns=["block_dt"])
-    df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
+    if len(df.index) < 1:
+        df = pd.DataFrame(
+            columns=[
+                "block_number",
+                "block_timestamp",
+                "transaction_hash",
+                "transaction_index",
+                "log_index",
+                "topics",
+                "data",
+            ]
+        )
+    else:
+        df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     # remove tmp files
     if not keep_tmp_files:
         for f in tmp_files_paths:

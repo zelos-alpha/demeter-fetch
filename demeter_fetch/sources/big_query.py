@@ -17,10 +17,23 @@ def _update_df(df: pd.DataFrame) -> pd.DataFrame:
     if len(df.index) < 1:
         return df
     df["topics"] = df["topics"].apply(lambda x: x.tolist())
-    df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
-    df["block_timestamp"] = df["block_timestamp"].dt.tz_localize(None)
-    # pd.Series(df["block_timestamp"].dt.to_pydatetime(), index=df.index, dtype=object)
-    df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
+    if len(df.index) < 1:
+        df = pd.DataFrame(
+            columns=[
+                "block_number",
+                "block_timestamp",
+                "transaction_hash",
+                "transaction_index",
+                "log_index",
+                "topics",
+                "data",
+            ]
+        )
+    else:
+        df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
+        df["block_timestamp"] = df["block_timestamp"].dt.tz_localize(None)
+        # pd.Series(df["block_timestamp"].dt.to_pydatetime(), index=df.index, dtype=object)
+        df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
     return df
 
 

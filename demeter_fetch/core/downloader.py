@@ -22,7 +22,9 @@ def download_by_config(config: Config) -> List[str]:
     ignore_pos = False
     if config.from_config.uniswap_config is not None:
         ignore_pos = config.from_config.uniswap_config.ignore_position_id
-
+    if not os.path.exists(config.to_config.save_path):
+        print_log(f"Creating path {config.to_config.save_path}")
+        os.mkdir(config.to_config.save_path)
     root_step = engine.get_root_node(config.from_config.dapp_type, config.to_config.type, ignore_pos)
     root_step.set_config(config)
     steps: List[Node] = engine.get_relative_nodes(root_step)
