@@ -8,6 +8,8 @@ from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, to_decimal,
 from demeter_fetch.common import KECCAK, NodeNames
 from .uniswap_utils import x96_sqrt_to_decimal
 
+price_df_columns = ["block_timestamp", "token0", "token1", "total_liquidity", "sqrtPriceX96"]
+
 
 class UniRelativePrice(DailyNode):
     """
@@ -49,6 +51,8 @@ class UniRelativePrice(DailyNode):
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date):
         df = data[get_depend_name(NodeNames.uni_tick_without_pos, self.id)]
         price_df = df[df["tx_type"] == "SWAP"].copy()
+        if len(price_df.index) < 1:
+            return pd.DataFrame(columns=price_df_columns)
         price_df.set_index("block_timestamp", inplace=True)
         price_df["price"] = price_df["sqrtPriceX96"].apply(
             lambda a: x96_sqrt_to_decimal(
@@ -78,7 +82,7 @@ class UniRelativePrice(DailyNode):
             price_df.reindex(new_index).ffill().bfill()
         )  # expend to whole day, and fill tail and head empty minutes
         price_df["block_timestamp"] = price_df.index
-        price_df = price_df[["block_timestamp", "token0", "token1", "total_liquidity", "sqrtPriceX96"]]
+        price_df = price_df[price_df_columns]
         price_df.rename(
             columns={
                 "token0": self.from_config.uniswap_config.token0.name,

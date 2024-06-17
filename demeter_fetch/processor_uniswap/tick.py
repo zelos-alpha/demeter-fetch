@@ -8,6 +8,26 @@ import pandas as pd
 from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event
 from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type, get_depend_name
 
+tick_file_columns = [
+    "block_number",
+    "block_timestamp",
+    "tx_type",
+    "transaction_hash",
+    "tx_index",
+    "log_index",
+    "sender",
+    "receipt",
+    "amount0",
+    "amount1",
+    "total_liquidity",
+    "total_liquidity_delta",
+    "sqrtPriceX96",
+    "current_tick",
+    "tick_lower",
+    "tick_upper",
+    "liquidity",
+]
+
 
 @dataclass
 class PoolTick:
@@ -33,8 +53,12 @@ class PoolTick:
 
 
 def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
+    if len(input_df.index) < 1:
+        return pd.DataFrame(columns=tick_file_columns)
+
     df = input_df.copy()
     df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+
     df[
         [
             "sender",
@@ -55,8 +79,8 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
         ["sqrtPriceX96", "total_liquidity", "current_tick"]
     ].ffill()
-
-    df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0)
+    with pd.option_context("future.no_silent_downcasting", True):
+        df["total_liquidity_delta"] = df["total_liquidity_delta"].fillna(0).infer_objects(copy=False)
     # convert type to keep decimal
     df["sqrtPriceX96"] = df.apply(lambda x: convert_to_decimal(x.sqrtPriceX96), axis=1)
     df["total_liquidity_delta"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity_delta), axis=1)
@@ -70,26 +94,8 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
     df["tx_type"] = df.apply(lambda x: x.tx_type.name, axis=1)
     df = df.rename(columns={"transaction_index": "tx_index"})
-    order = [
-        "block_number",
-        "block_timestamp",
-        "tx_type",
-        "transaction_hash",
-        "tx_index",
-        "log_index",
-        "sender",
-        "receipt",
-        "amount0",
-        "amount1",
-        "total_liquidity",
-        "total_liquidity_delta",
-        "sqrtPriceX96",
-        "current_tick",
-        "tick_lower",
-        "tick_upper",
-        "liquidity",
-    ]
-    df = df[order]
+
+    df = df[tick_file_columns]
 
     return df
 
