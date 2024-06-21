@@ -9,6 +9,19 @@ from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, get_depend_
 from demeter_fetch.common import KECCAK, NodeNames
 from demeter_fetch.common import TextUtil, to_decimal
 
+columns = [
+    "timestamp",
+    "netAmount0",
+    "netAmount1",
+    "closeTick",
+    "openTick",
+    "lowestTick",
+    "highestTick",
+    "inAmount0",
+    "inAmount1",
+    "currentLiquidity",
+]
+
 
 class ModuleUtils(object):
     @staticmethod
@@ -60,7 +73,8 @@ class UniMinute(DailyNode):
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         df = data[get_depend_name(NodeNames.uni_pool, self.id)]
-
+        if len(df.index) < 1:
+            return pd.DataFrame(columns=columns)
         df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
         df = df.set_index(keys=["block_timestamp"])
         df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
@@ -107,20 +121,7 @@ class UniMinute(DailyNode):
         )
         minute_df["timestamp"] = minute_df.index
 
-        minute_df = minute_df[
-            [
-                "timestamp",
-                "netAmount0",
-                "netAmount1",
-                "closeTick",
-                "openTick",
-                "lowestTick",
-                "highestTick",
-                "inAmount0",
-                "inAmount1",
-                "currentLiquidity",
-            ]
-        ]
+        minute_df = minute_df[columns]
         minute_df[["closeTick", "currentLiquidity"]] = minute_df[["closeTick", "currentLiquidity"]].ffill()
         minute_df[["netAmount0", "netAmount1", "inAmount0", "inAmount1"]] = minute_df[
             ["netAmount0", "netAmount1", "inAmount0", "inAmount1"]

@@ -147,10 +147,10 @@ class FromConfig:
 class ToConfig:
     type: ToType  # minute or tick
     save_path: str
-    multi_process: bool
-    skip_existed: bool
-    keep_raw: bool
-    to_file_type: ToFileType
+    multi_process: bool = False
+    skip_existed: bool = False
+    keep_raw: bool = False
+    to_file_type: ToFileType = ToFileType.csv
 
 
 class KECCAK(str, Enum):
