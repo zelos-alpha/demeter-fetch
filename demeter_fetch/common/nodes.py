@@ -116,7 +116,7 @@ class Node:
     def save_file(self, df: pd.DataFrame, path: str):
         match self.config.to_config.to_file_type:
             case ToFileType.csv:
-                df.to_csv(path, index=False, lineterminator="\n")
+                df.to_csv(path, index=False, lineterminator="\n",date_format='%Y-%m-%d %H:%M:%S')
             case ToFileType.feather:
                 df.to_feather(path)
             case _:

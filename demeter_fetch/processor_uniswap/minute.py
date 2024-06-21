@@ -68,7 +68,7 @@ class UniMinute(DailyNode):
         }
 
     @property
-    def _parse_date_column(self) -> List[int]:
+    def _parse_date_column(self) -> List[str]:
         return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
