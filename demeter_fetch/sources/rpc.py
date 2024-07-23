@@ -88,7 +88,7 @@ def query_logs(
     current_day_logs = []
     # Load temporary files based on height, then reorganize into raw files by day
     # Note: The logs in the tmp file have been sorted
-    utils.print_log("Generating daily files")
+    # utils.print_log("Generating daily files")
     for tmp_file in tmp_files_paths:
         logs: List[Dict] = rpc_utils.load_tmp_file(tmp_file)
         current_day_logs.extend(logs)

@@ -146,7 +146,7 @@ class HeightCacheManager:
     def save(self):
         with open(self.height_cache_path, "wb") as f:
             pickle.dump(self.block_dict, f)
-        utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
+        # utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
 
 
 def _query_tx_receipt(param):
