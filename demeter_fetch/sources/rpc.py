@@ -63,6 +63,7 @@ def query_logs(
     keep_tmp_files: bool = False,
     one_by_one: bool = False,
     skip_timestamp: bool = False,
+    height_cache_path: str = None,
 ) -> pd.DataFrame:
     client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
     utils.print_log(f"Will download from height {start_height} to {end_height}")
@@ -77,6 +78,7 @@ def query_logs(
             batch_size=batch_size,
             one_by_one=one_by_one,
             skip_timestamp=skip_timestamp,
+            height_cache_path=height_cache_path,
         )
     except Exception as e:
         print(e)
@@ -135,6 +137,7 @@ def rpc_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=False,
         skip_timestamp=False,
+        height_cache_path=config.rpc.height_cache_path,
     )
     daily_df = _update_df(daily_df)
     return daily_df
@@ -162,6 +165,7 @@ def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=False,
         skip_timestamp=False,
+        height_cache_path=config.rpc.height_cache_path,
     )
     daily_df = _update_df(daily_df)
     return daily_df
@@ -185,6 +189,7 @@ def rpc_proxy_transfer(config: FromConfig, save_path: str, day: date) -> pd.Data
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=True,
         skip_timestamp=True,
+        height_cache_path=config.rpc.height_cache_path,
     )
     daily_df = _update_df(daily_df)
     return daily_df
@@ -223,6 +228,7 @@ def rpc_aave(config: FromConfig, save_path: str, day: date, tokens):
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=False,
         skip_timestamp=False,
+        height_cache_path=config.rpc.height_cache_path,
     )
     daily_df = _update_df(daily_df)
     daily_df["topics"] = daily_df["topics"].apply(lambda x: split_topic(x))
@@ -251,6 +257,7 @@ def rpc_squeeth(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
         keep_tmp_files=config.rpc.keep_tmp_files,
         one_by_one=True,
         skip_timestamp=True,
+        height_cache_path=config.rpc.height_cache_path,
     )
     daily_df = _update_df(daily_df)
     daily_df["block_timestamp"] = daily_df["data"].apply(

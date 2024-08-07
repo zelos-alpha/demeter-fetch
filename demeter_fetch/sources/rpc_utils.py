@@ -109,7 +109,7 @@ class EthRpcClient:
 
     def send(self, commend: str, params: List):
         response = self.do_post(EthRpcClient.__encode_json_rpc(commend, params))
-        if response.status_code!=200:
+        if response.status_code != 200:
             raise RuntimeError("Request rpc return error with code {}".format(response.status_code))
         return EthRpcClient.__decode_json_rpc(response)
 
@@ -223,6 +223,7 @@ def query_event_by_height(
     start_height: int,
     end_height: int,
     height_cache: HeightCacheManager = None,
+    height_cache_path: str = None,
     save_path: str = "./",
     save_every_query: int = 10,
     batch_size: int = 500,
@@ -251,7 +252,7 @@ def query_event_by_height(
     collect_dt, logs_to_save, collect_start = None, [], None  # collect date, date log by day，collect start time
     tmp_file_full_path_list = []
     if not height_cache:
-        height_cache = HeightCacheManager(chain, save_path)
+        height_cache = HeightCacheManager(chain, save_path if height_cache_path is None else height_cache_path)
     batch_count = start_blk = end_blk = 0
     skip_until = -1
     utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")

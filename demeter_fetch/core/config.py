@@ -103,6 +103,7 @@ def convert_to_config(conf_file: dict) -> Config:
             end_point = conf_file["from"]["rpc"]["end_point"]
             batch_size = get_item_with_default_3(conf_file, "from", "rpc", "batch_size", 500)
             force_no_proxy = get_item_with_default_3(conf_file, "from", "rpc", "force_no_proxy", False)
+            height_cache_path = get_item_with_default_3(conf_file, "from", "rpc", "height_cache_path", None)
             from_config.rpc = RpcConfig(
                 end_point=end_point,
                 batch_size=batch_size,
@@ -110,6 +111,7 @@ def convert_to_config(conf_file: dict) -> Config:
                 keep_tmp_files=keep_tmp_files,
                 etherscan_api_key=etherscan_api_key,
                 force_no_proxy=force_no_proxy,
+                height_cache_path = height_cache_path,
             )
         case DataSource.big_query:
             if "big_query" not in conf_file["from"]:

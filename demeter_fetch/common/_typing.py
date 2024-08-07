@@ -96,6 +96,7 @@ class RpcConfig:
     keep_tmp_files: bool = False
     etherscan_api_key: str = None
     force_no_proxy: bool = False  # if set to true, will ignore proxy setting
+    height_cache_path: str = None
 
 
 @dataclass
