@@ -15,6 +15,7 @@ class ChainType(str, Enum):
     polygon = "polygon"
     optimism = "optimism"
     arbitrum = "arbitrum"
+    avalanche = "avalanche"
     celo = "celo"
     bsc = "bsc"
     base = "base"
