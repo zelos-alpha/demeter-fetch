@@ -1,3 +1,7 @@
+# v1.1.3
+
+* you can specify location of height cache now.
+
 # v1.1.2
 
 * fix bug: price is reversed
