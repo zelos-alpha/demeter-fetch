@@ -19,6 +19,18 @@ class BigQueryChain(Enum):
         "table_name": "public-data-finance.crypto_polygon.logs",
         "tx_table_name": "public-data-finance.crypto_polygon.transactions",
     }
+    arbitrum = {
+        "table_name": "bigquery-public-data.goog_blockchain_arbitrum_one_us.logs",
+        "tx_table_name": "bigquery-public-data.goog_blockchain_arbitrum_one_us.transactions",
+    }
+    optimism = {
+        "table_name": "bigquery-public-data.goog_blockchain_optimism_mainnet_us.logs",
+        "tx_table_name": "bigquery-public-data.goog_blockchain_optimism_mainnet_us.transactions",
+    }
+    avalanche = {
+        "table_name": "bigquery-public-data.goog_blockchain_avalanche_contract_chain_us.logs",
+        "tx_table_name": "bigquery-public-data.goog_blockchain_avalanche_contract_chain_us.transactions",
+    }
 
 
 def _set_environment(auth_file: str, http_proxy: str = None):

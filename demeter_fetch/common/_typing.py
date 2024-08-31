@@ -37,12 +37,12 @@ ChainTypeConfig = {
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
     },
     ChainType.optimism: {
-        "allow": [DataSource.rpc, DataSource.chifra],
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
     ChainType.arbitrum: {
-        "allow": [DataSource.rpc, DataSource.chifra],
+        "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     },
