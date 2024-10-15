@@ -41,7 +41,7 @@ def bigquery_pool(config: FromConfig, day: date):
     day_str = day.strftime("%Y-%m-%d")
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
-        FROM {BigQueryChain[config.chain.value].value["table_name"]}
+        FROM {BigQueryChain[config.chain.name].value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in {KECCAK.SWAP.value, KECCAK.BURN.value, KECCAK.COLLECT.value, KECCAK.MINT.value}
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{config.uniswap_config.pool_address}"
     """
@@ -54,7 +54,7 @@ def bigquery_proxy_lp(config: FromConfig, day: date):
     day_str = day.strftime("%Y-%m-%d")
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
-        FROM {BigQueryChain[config.chain.value].value["table_name"]}
+        FROM {BigQueryChain[config.chain.name].value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in {KECCAK.UNI_PROXY_INCREASE.value, KECCAK.UNI_PROXY_DECREASE.value, KECCAK.UNI_PROXY_COLLECT.value}
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uniswap_proxy_addr"]}"
     """
@@ -67,7 +67,7 @@ def bigquery_proxy_transfer(config: FromConfig, day: date):
     day_str = day.strftime("%Y-%m-%d")
     sql = f"""
     SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
-        FROM {BigQueryChain[config.chain.value].value["table_name"]}
+        FROM {BigQueryChain[config.chain.name].value["table_name"]}
         WHERE  topics[SAFE_OFFSET(0)] in ('{KECCAK.TRANSFER.value}')
             AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uniswap_proxy_addr"]}"
     """
@@ -81,7 +81,7 @@ def bigquery_transaction(config: FromConfig, day: date, tx: List[str]):
     tx_str = ",".join(['"' + utils.hex_to_length(x, 64) + '"' for x in tx])
     sql = f"""
     select `hash` as transaction_hash ,block_number,transaction_index,from_address as `from`,to_address as `to`,value
-    from {BigQueryChain[config.chain.value].value["tx_table_name"]}
+    from {BigQueryChain[config.chain.name].value["tx_table_name"]}
     where DATE(block_timestamp) = DATE("{day_str}")
         and  `hash` in ({tx_str})
     """
@@ -108,7 +108,7 @@ def bigquery_aave(config: FromConfig, day: date, tokens: List[str]):
     )
     sql = f"""
             SELECT block_number,block_timestamp,transaction_hash,transaction_index,log_index,topics,DATA as data
-            FROM {BigQueryChain[config.chain.value].value["table_name"]}
+            FROM {BigQueryChain[config.chain.name].value["table_name"]}
             WHERE
               topics[SAFE_OFFSET(0)] IN ({keccak_str})
               AND topics[SAFE_OFFSET(1)] IN ({token_str})

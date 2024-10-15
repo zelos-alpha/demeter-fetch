@@ -1,3 +1,8 @@
+# v1.1.4
+
+* add file type: parquest
+* [Breaking change]Value of ChainType enum has changed to chain id. 
+
 # v1.1.3
 
 * you can specify location of height cache now.

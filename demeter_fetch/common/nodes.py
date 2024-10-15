@@ -19,7 +19,6 @@ EmptyNamedTuple = namedtuple("EmptyNamedTuple", [])
 
 
 class Node:
-
     name = "ParentNode"
 
     def __init__(self):  # depends: List,
@@ -116,9 +115,11 @@ class Node:
     def save_file(self, df: pd.DataFrame, path: str):
         match self.config.to_config.to_file_type:
             case ToFileType.csv:
-                df.to_csv(path, index=False, lineterminator="\n",date_format='%Y-%m-%d %H:%M:%S')
+                df.to_csv(path, index=False, lineterminator="\n", date_format="%Y-%m-%d %H:%M:%S")
             case ToFileType.feather:
                 df.to_feather(path)
+            case ToFileType.parquet:
+                df.to_parquet(path, engine="pyarrow", index=False)
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 
@@ -128,6 +129,8 @@ class Node:
                 return pd.read_csv(path, converters=self._load_csv_converter, parse_dates=self._parse_date_column)
             case ToFileType.feather:
                 return pd.read_feather(path)
+            case ToFileType.parquet:
+                return pd.read_parquet(path, engine="pyarrow")
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 

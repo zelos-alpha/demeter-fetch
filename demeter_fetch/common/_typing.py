@@ -1,24 +1,24 @@
-from dataclasses import dataclass, field
+import enum
+from dataclasses import dataclass
 from datetime import date
-from enum import Enum
-from typing import List, Dict, NamedTuple
+from typing import List, NamedTuple
 
 
-class DataSource(str, Enum):
+class DataSource(enum.StrEnum):
     big_query = "big_query"
     rpc = "rpc"
     chifra = "chifra"
 
 
-class ChainType(str, Enum):
-    ethereum = "ethereum"
-    polygon = "polygon"
-    optimism = "optimism"
-    arbitrum = "arbitrum"
-    avalanche = "avalanche"
-    celo = "celo"
-    bsc = "bsc"
-    base = "base"
+class ChainType(enum.IntEnum):
+    ethereum = 1
+    polygon = 137
+    optimism = 69
+    arbitrum = 42161
+    celo = 42220
+    bsc = 56
+    base = 8453
+    avalanche = 43114
 
 
 # closest: 'before' or 'after'
@@ -64,7 +64,7 @@ ChainTypeConfig = {
 }
 
 
-class ToType(str, Enum):
+class ToType(enum.StrEnum):
     minute = "minute"
     tick = "tick"
     raw = "raw"
@@ -73,12 +73,13 @@ class ToType(str, Enum):
     price = "price"
 
 
-class ToFileType(str, Enum):
+class ToFileType(enum.StrEnum):
     csv = "csv"
     feather = "feather"
+    parquet = "parquet"
 
 
-class DappType(str, Enum):
+class DappType(enum.StrEnum):
     uniswap = "uniswap"
     aave = "aave"
     squeeth = "squeeth"
@@ -155,7 +156,7 @@ class ToConfig:
     to_file_type: ToFileType = ToFileType.csv
 
 
-class KECCAK(str, Enum):
+class KECCAK(enum.StrEnum):
     MINT = "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde"
     SWAP = "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"
     BURN = "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c"

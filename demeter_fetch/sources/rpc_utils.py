@@ -122,7 +122,7 @@ class HeightCacheManager:
     height_cache_file_name = "_height_timestamp.pkl"
 
     def __init__(self, chain: ChainType, save_path: str):
-        self.height_cache_path = os.path.join(save_path, chain.value + HeightCacheManager.height_cache_file_name)
+        self.height_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.height_cache_file_name)
         if os.path.exists(self.height_cache_path):
             with open(self.height_cache_path, "rb") as f:
                 self.block_dict = pickle.load(f)
