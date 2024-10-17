@@ -12,9 +12,9 @@ graph TD;
 
 Demeter-fetch can fetch chain event logs of DEFI projects from various sources and convert them into a unified format. In the project dimension, it supports Uniswap and AAVE. In the data source dimension, the supported data sources include:
 
-* **RPC**: Standard RPC interface of evm chains.
-* **Google BigQuery**: A fully managed enterprise that allows you to query on-chain data with SQL queries. 
-* **chifra**: This is an on-chain data indexing tool from Trueblocks, which scrape and reorganize on-chain data, and export them in various formats. 
+* [RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/): Standard RPC interface of evm chains.
+* [Google BigQuery](https://goo.gl/oY5BCQ): A fully managed enterprise that allows you to query on-chain data with SQL queries. 
+* [Trueblocks Chifra](https://trueblocks.io/): This is an on-chain data indexing tool from Trueblocks, which scrape and reorganize on-chain data, and export them in various formats. 
 
 Demeter-fetch supports export formats such as:
 
