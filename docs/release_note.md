@@ -1,3 +1,7 @@
+# v1.1.6
+
+* fix setup.py
+
 # v1.1.5
 
 * fix bugs
