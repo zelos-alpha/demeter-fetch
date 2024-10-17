@@ -109,6 +109,8 @@ class Node:
                 return ".csv"
             case ToFileType.feather:
                 return ".feather"
+            case ToFileType.parquet:
+                return ".parquet"
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 

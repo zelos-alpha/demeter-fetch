@@ -216,6 +216,86 @@ def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> p
     return df
 
 
+def get_event_slice(client, contract_config, start, end, one_by_one):
+    if one_by_one:
+        logs = []
+        for topic_hex in contract_config.topics:
+            tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
+            logs.extend(tmp_logs)
+    else:
+        logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
+    return logs
+
+
+def query_event_by_height_concurrent(
+    chain: ChainType,
+    client: EthRpcClient,
+    contract_config: ContractConfig,
+    start_height: int,
+    end_height: int,
+    height_cache: HeightCacheManager = None,
+    height_cache_path: str = None,
+    save_path: str = "./",
+    batch_size: int = 500,
+    one_by_one: bool = False,
+    skip_timestamp: bool = False,
+) -> List[str]:
+    tmp_file_path = get_tmp_file_path(save_path, start_height, end_height, chain, contract_config.address)
+    if os.path.exists(tmp_file_path):
+        return [tmp_file_path]
+    if not height_cache:
+        height_cache = HeightCacheManager(chain, save_path if height_cache_path is None else height_cache_path)
+    utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
+    task_list = [start_height + i * batch_size for i in range((end_height - start_height) // batch_size + 1)]
+    raw_log_list = []
+    with ThreadPoolExecutor(max_workers=10) as t:
+        async_list = []
+        for start in task_list:
+            end = start + batch_size - 1
+            if end > end_height:
+                end = end_height
+            obj = t.submit(get_event_slice, client, contract_config, start, end, one_by_one)
+            async_list.append(obj)
+        for future in tqdm(
+            as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Loading logs"
+        ):
+            data = future.result()
+            raw_log_list.extend(data)
+    log_list = []
+    for log in raw_log_list:
+        log["blockNumber"] = int(log["blockNumber"], 16)
+        if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics):
+            if log["removed"]:
+                continue
+            # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data
+            log_list.append(
+                {
+                    "block_number": log["blockNumber"],
+                    "transaction_hash": log["transactionHash"],
+                    "transaction_index": log["transactionIndex"],
+                    "log_index": log["logIndex"],
+                    "data": log["data"],
+                    "topics": log["topics"],
+                }
+            )
+    for log in log_list:
+        log["log_index"] = int(log["log_index"], 16)
+        log["transaction_index"] = int(log["transaction_index"], 16)
+
+    if not skip_timestamp:
+        with ThreadPoolExecutor(max_workers=10) as t:
+            async_list = []
+            for data in log_list:
+                obj = t.submit(_fill_block_info, data, client, height_cache)
+                async_list.append(obj)
+            for future in tqdm(
+                as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Appending timestamp"
+            ):
+                future.result()
+    height_cache.save()
+    return [save_tmp_file(save_path, log_list, start_height, end_height, chain, contract_config.address)]
+
+
 def query_event_by_height(
     chain: ChainType,
     client: EthRpcClient,
@@ -367,8 +447,6 @@ def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
         block_dict.set(height, block_dt)
     log["block_timestamp"] = block_dict.get(height).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     log["block_dt"] = block_dict.get(height)
-
-    return log
 
 
 def set_position_id(row: pd.Series) -> str:

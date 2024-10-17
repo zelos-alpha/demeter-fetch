@@ -43,7 +43,7 @@ etherscan_api_key = "" # If this is set, query from etherscan will be faster.
 # for uniswap:  raw/minute/tick/position/user_lp/price
 # for aave: raw/minute/tick
 type = "tick"
-#file_type = "csv" # csv or feather, default is csv
+#file_type = "csv" # csv or feather or parquet, default is csv
 save_path = "./sample-data"
 keep_raw = true # Keep original files for each step, default is false
 skip_existed = true # Skip if the file has existed. default is false

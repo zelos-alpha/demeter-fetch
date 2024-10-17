@@ -68,7 +68,7 @@ def query_logs(
     client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
     utils.print_log(f"Will download from height {start_height} to {end_height}")
     try:
-        tmp_files_paths: List[str] = rpc_utils.query_event_by_height(
+        tmp_files_paths: List[str] = rpc_utils.query_event_by_height_concurrent(
             chain,
             client,
             contract,

@@ -3,6 +3,7 @@
 # @Time    : 2024-01-08 16:37
 # @Author  : 32ethers
 # @Description:
+from typing import Dict
 
 from demeter_fetch.common import *
 

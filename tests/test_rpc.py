@@ -29,9 +29,47 @@ class UniLpDataTest(unittest.TestCase):
             if os.path.exists(os.path.join(self.config["to_path"], p)):
                 os.remove(os.path.join(self.config["to_path"], p))
 
-    def test_query_event_by_height(self):
-        self.remove_tmp_file(["polygon-0x45dda9cb7c25131df268515131f647d726f50608-42447801-42448800.tmp.pkl"])
+    def test_query_event_by_height_concurrent(self):
+        self.remove_tmp_file(
+            [
+                os.path.join(
+                    self.config["to_path"],
+                    "polygon-0x45dda9cb7c25131df268515131f647d726f50608-42447801-42448800.tmp.pkl",
+                )
+            ]
+        )
+        client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
+        height_cache = rpc.HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
+        files = rpc.query_event_by_height_concurrent(
+            chain=typing.ChainType.polygon,
+            client=client,
+            contract_config=ContractConfig(
+                "0x45dda9cb7c25131df268515131f647d726f50608",
+                [
+                    typing.KECCAK.SWAP.value,
+                    typing.KECCAK.BURN.value,
+                    typing.KECCAK.COLLECT.value,
+                    typing.KECCAK.MINT.value,
+                ],
+            ),
+            start_height=42447801,
+            end_height=42448800,  # diff = 999, will save in one batch
+            height_cache=height_cache,
+            save_path=self.config["to_path"],
+            batch_size=500,
+            skip_timestamp=False,
+        )
+        print(files)
 
+    def test_query_event_by_height(self):
+        self.remove_tmp_file(
+            [
+                os.path.join(
+                    self.config["to_path"],
+                    "polygon-0x45dda9cb7c25131df268515131f647d726f50608-42447801-42448800.tmp.pkl",
+                )
+            ]
+        )
         client = rpc.EthRpcClient(self.config["end_point"], "127.0.0.1:7890")
         height_cache = rpc.HeightCacheManager(typing.ChainType.polygon, self.config["to_path"])
         files = rpc.query_event_by_height(
