@@ -239,6 +239,7 @@ def query_event_by_height_concurrent(
     batch_size: int = 500,
     one_by_one: bool = False,
     skip_timestamp: bool = False,
+    thread:int=10,
 ) -> List[str]:
     tmp_file_path = get_tmp_file_path(save_path, start_height, end_height, chain, contract_config.address)
     if os.path.exists(tmp_file_path):
@@ -248,7 +249,7 @@ def query_event_by_height_concurrent(
     utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
     task_list = [start_height + i * batch_size for i in range((end_height - start_height) // batch_size + 1)]
     raw_log_list = []
-    with ThreadPoolExecutor(max_workers=10) as t:
+    with ThreadPoolExecutor(max_workers=thread) as t:
         async_list = []
         for start in task_list:
             end = start + batch_size - 1
@@ -283,7 +284,7 @@ def query_event_by_height_concurrent(
         log["transaction_index"] = int(log["transaction_index"], 16)
 
     if not skip_timestamp:
-        with ThreadPoolExecutor(max_workers=10) as t:
+        with ThreadPoolExecutor(max_workers=thread) as t:
             async_list = []
             for data in log_list:
                 obj = t.submit(_fill_block_info, data, client, height_cache)

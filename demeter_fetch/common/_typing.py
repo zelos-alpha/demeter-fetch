@@ -99,6 +99,7 @@ class RpcConfig:
     etherscan_api_key: str = None
     force_no_proxy: bool = False  # if set to true, will ignore proxy setting
     height_cache_path: str = None
+    thread: int = 10
 
 
 @dataclass
