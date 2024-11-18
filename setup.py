@@ -20,6 +20,7 @@ setup(
         "google-cloud-bigquery>=3.19.0",
         "db-dtypes>=1.2.0",
         "argparse>=1.4.0",
+        "sqlitedict>=2.1.0",
     ],
     entry_points={
         'console_scripts': [

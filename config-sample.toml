@@ -35,6 +35,7 @@ end_point = "https://localhost:8545"
 etherscan_api_key = "some_api_key" #
 force_no_proxy = false # if force_no_proxy==true, will query ethereum rpc without proxy.
 # height_cache_path = "" # path of height cache file, if leave to none, height cache will be saved in to path
+thread=5
 
 [from.chifra]
 etherscan_api_key = "" # If this is set, query from etherscan will be faster.

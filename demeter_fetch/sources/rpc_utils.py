@@ -1,22 +1,20 @@
-import json
 import os.path
-import pickle
-import random
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
-from datetime import datetime, UTC, timezone
-from operator import itemgetter
-from typing import List, Dict
 
 import numpy as np
 import pandas as pd
+import pickle
+import random
 import requests
+from dataclasses import dataclass
+from datetime import datetime, UTC, timezone
+from operator import itemgetter
+from sqlitedict import SqliteDict
 from tqdm import tqdm  # process bar
+from typing import List
 
 import demeter_fetch.common.utils as utils
-from demeter_fetch.common._typing import ChainType
-from demeter_fetch.common._typing import EthError
+from demeter_fetch import ChainType, EthError
 from .source_utils import ContractConfig
 
 
@@ -116,37 +114,44 @@ class EthRpcClient:
 
 class HeightCacheManager:
     """
-    高度缓存
+    height => block_timestamp cache
     """
 
-    height_cache_file_name = "_height_timestamp.pkl"
+    height_cache_file_name = "_height_timestamp.sqlite"
 
     def __init__(self, chain: ChainType, save_path: str):
         self.height_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.height_cache_file_name)
-        if os.path.exists(self.height_cache_path):
-            with open(self.height_cache_path, "rb") as f:
-                self.block_dict = pickle.load(f)
-                utils.print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
-        else:
-            self.block_dict: Dict[int, datetime] = {}
-            utils.print_log("Can not find a height cache, will generate one")
+        self._block_dict = SqliteDict(self.height_cache_path, outer_stack=False)  # True is the default
+        utils.print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
+        self.in_mem_count = 0
 
-    def has(self, height: int):
-        return height in self.block_dict
+    def __contains__(self, item):
+        return item in self._block_dict
 
     def get(self, height: int):
-        if height in self.block_dict:
-            return self.block_dict[height]
+        if height in self._block_dict:
+            return self._block_dict[height]
         else:
             return None
 
     def set(self, height: int, timestamp: datetime):
-        self.block_dict[height] = timestamp
+        self._block_dict[height] = timestamp
+        self.in_mem_count += 1
+        if self.in_mem_count >= 1000:
+            self._block_dict.commit()
+            self.in_mem_count = 0
 
     def save(self):
-        with open(self.height_cache_path, "wb") as f:
-            pickle.dump(self.block_dict, f)
-        # utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self.block_dict)}")
+        self._block_dict.commit()
+        self.in_mem_count = 0
+
+        # utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self._block_dict)}")
+
+    def __del__(self):
+        self._block_dict.close()
+
+    def __len__(self):
+        return len(self._block_dict)
 
 
 def _query_tx_receipt(param):
@@ -239,7 +244,7 @@ def query_event_by_height_concurrent(
     batch_size: int = 500,
     one_by_one: bool = False,
     skip_timestamp: bool = False,
-    thread:int=10,
+    thread: int = 10,
 ) -> List[str]:
     tmp_file_path = get_tmp_file_path(save_path, start_height, end_height, chain, contract_config.address)
     if os.path.exists(tmp_file_path):
@@ -441,13 +446,13 @@ def _cut(obj, sec):
     return [obj[i : i + sec] for i in range(0, len(obj), sec)]
 
 
-def _fill_block_info(log, client: EthRpcClient, block_dict: HeightCacheManager):
+def _fill_block_info(log, client: EthRpcClient, cache_manager: HeightCacheManager):
     height = log["block_number"]
-    if not block_dict.has(height):
+    if height not in cache_manager:
         block_dt = client.get_block_timestamp(height)
-        block_dict.set(height, block_dt)
-    log["block_timestamp"] = block_dict.get(height).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    log["block_dt"] = block_dict.get(height)
+        cache_manager.set(height, block_dt)
+    log["block_timestamp"] = cache_manager.get(height).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    log["block_dt"] = cache_manager.get(height)
 
 
 def set_position_id(row: pd.Series) -> str:

@@ -37,17 +37,17 @@ def _update_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def query_tx_logs(
-    chain: ChainType,
-    end_point: str,
-    save_path: str,
-    auth_string: str | None = None,
-    http_proxy: str | None = None,
-) -> pd.DataFrame:
-    client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
-    utils.print_log(f"Will download transaction logs of uniswap")
-
-    pass
+# def query_tx_logs(
+#     chain: ChainType,
+#     end_point: str,
+#     save_path: str,
+#     auth_string: str | None = None,
+#     http_proxy: str | None = None,
+# ) -> pd.DataFrame:
+#     client = rpc_utils.EthRpcClient(end_point, http_proxy, auth_string)
+#     utils.print_log(f"Will download transaction logs of uniswap")
+#
+#     pass
 
 
 def query_logs(
