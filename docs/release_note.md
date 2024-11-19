@@ -1,3 +1,8 @@
+# v1.1.7
+
+* block height to timestamp cache in rpc querying has 3 storage engine now, which is pickle, sqlite, and leveldb
+* Add a commend line tool to generate block height to timestamp cache
+
 # v1.1.6
 
 * fix setup.py
