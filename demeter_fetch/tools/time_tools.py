@@ -3,6 +3,7 @@ from datetime import datetime
 
 import demeter_fetch.common.utils as utils
 from demeter_fetch import ChainType
+from demeter_fetch.tools import bigquery_tools
 
 
 def date_to_height(args):
@@ -29,3 +30,14 @@ def date_to_height(args):
         args.key,
     )
     print(f"Height range, start: {start_height}, end: {end_height}")
+
+
+def block_timestamp_cache(args):
+    chain = ChainType[args.chain]
+    start_date = datetime.strptime(args.start, "%Y-%m-%d").date()
+    end_date = datetime.strptime(args.end, "%Y-%m-%d").date()
+    to_path = args.to
+    proxy = args.http_proxy
+    auth_path = args.key
+    engine = args.engine
+    bigquery_tools.get_block_and_timestamp_cache(auth_path, chain, to_path, start_date, end_date, proxy, engine)

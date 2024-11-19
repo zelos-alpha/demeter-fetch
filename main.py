@@ -2,7 +2,7 @@ import sys
 
 import demeter_fetch.common.utils as utils
 from demeter_fetch.core import get_commend_args, download
-from demeter_fetch.tools import date_to_height
+from demeter_fetch.tools import date_to_height, block_timestamp_cache
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -18,4 +18,6 @@ if __name__ == "__main__":
     elif args.tools is not None:
         if args.tools == "date_to_height":
             date_to_height(args)
+        elif args.tools == "block_timestamp":
+            block_timestamp_cache(args)
         pass

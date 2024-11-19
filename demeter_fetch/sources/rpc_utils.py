@@ -121,10 +121,18 @@ class CacheEngineType:
 class HeightCacheManager:
     """
     height => block_timestamp cache
+
+    There are 3 storage engine:
+
+    pkl: old format.
+
+    sqlitedict: default format
+
+    levelDB: fast and take less storage. But it's difficult to install in windows
     """
 
     sqlite_file_name = "_height_timestamp.sqlite"
-    leveldb_file_name = "_height_timestamp_leveldb"
+    leveldb_file_name = "_height_timestamp_levelDB"
     pkl_file_name = "_height_timestamp.pkl"
 
     def __init__(self, chain: ChainType, save_path: str):
@@ -149,14 +157,14 @@ class HeightCacheManager:
             self.height_cache_path = sqlite_cache_path
             self._block_dict = SqliteDict(self.height_cache_path, outer_stack=False)  # True is the default
             utils.print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
-        utils.print_log("Height cache path: " + str(self.height_cache_path))
+        print("Height cache path: " + str(self.height_cache_path))
         self.in_mem_count = 0
 
     def __contains__(self, item) -> bool:
         if self.cache_engine == CacheEngineType.sqlite:
             return item in self._block_dict
         elif self.cache_engine == CacheEngineType.leveldb:
-            return self._block_dict.get(item) is None
+            return self._block_dict.get(item.to_bytes(4)) is None
         elif self.cache_engine == CacheEngineType.dict_pickle:
             return item in self.block_dict
         else:
