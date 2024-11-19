@@ -112,46 +112,103 @@ class EthRpcClient:
         return EthRpcClient.__decode_json_rpc(response)
 
 
+class CacheEngineType:
+    sqlite = 1
+    leveldb = 2
+    dict_pickle = 3
+
+
 class HeightCacheManager:
     """
     height => block_timestamp cache
     """
 
-    height_cache_file_name = "_height_timestamp.sqlite"
+    sqlite_file_name = "_height_timestamp.sqlite"
+    leveldb_file_name = "_height_timestamp_leveldb"
+    pkl_file_name = "_height_timestamp.pkl"
 
     def __init__(self, chain: ChainType, save_path: str):
-        self.height_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.height_cache_file_name)
-        self._block_dict = SqliteDict(self.height_cache_path, outer_stack=False)  # True is the default
-        utils.print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
+        sqlite_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.sqlite_file_name)
+        level_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.leveldb_file_name)
+        pkl_cache_path = os.path.join(save_path, chain.name + HeightCacheManager.pkl_file_name)
+        if os.path.exists(level_cache_path):
+            self.cache_engine = CacheEngineType.leveldb
+            self.height_cache_path = level_cache_path
+            # do not import plyvel unless required. in windows install plyvel is too complex(need visual studio c++)
+            import plyvel
+
+            self._block_dict = plyvel.DB(self.height_cache_path, create_if_missing=True)
+        elif os.path.exists(pkl_cache_path):
+            self.height_cache_path = pkl_cache_path
+            self.cache_engine = CacheEngineType.dict_pickle
+            with open(self.height_cache_path, "rb") as f:
+                self.block_dict = pickle.load(f)
+                utils.print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
+        else:  # will use and create a sqlite instance by default
+            self.cache_engine = CacheEngineType.sqlite
+            self.height_cache_path = sqlite_cache_path
+            self._block_dict = SqliteDict(self.height_cache_path, outer_stack=False)  # True is the default
+            utils.print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
+        utils.print_log("Height cache path: " + str(self.height_cache_path))
         self.in_mem_count = 0
 
-    def __contains__(self, item):
-        return item in self._block_dict
+    def __contains__(self, item) -> bool:
+        if self.cache_engine == CacheEngineType.sqlite:
+            return item in self._block_dict
+        elif self.cache_engine == CacheEngineType.leveldb:
+            return self._block_dict.get(item) is None
+        elif self.cache_engine == CacheEngineType.dict_pickle:
+            return item in self.block_dict
+        else:
+            return False
 
-    def get(self, height: int):
-        if height in self._block_dict:
-            return self._block_dict[height]
+    def get(self, height: int) -> datetime | None:
+        if self.cache_engine == CacheEngineType.sqlite:
+            return self._block_dict[height] if height in self._block_dict else None
+        elif self.cache_engine == CacheEngineType.leveldb:
+            cache_val = self._block_dict.get(height.to_bytes(4))
+            return (
+                None if cache_val is None else datetime.fromtimestamp(int.from_bytes(cache_val) / 1000, tz=timezone.utc)
+            )
+        elif self.cache_engine == CacheEngineType.dict_pickle:
+            return self.block_dict[height] if height in self.block_dict else None
         else:
             return None
 
     def set(self, height: int, timestamp: datetime):
-        self._block_dict[height] = timestamp
-        self.in_mem_count += 1
-        if self.in_mem_count >= 1000:
-            self._block_dict.commit()
-            self.in_mem_count = 0
+        if self.cache_engine == CacheEngineType.sqlite:
+            self._block_dict[height] = timestamp
+            self.in_mem_count += 1
+            if self.in_mem_count >= 1000:
+                self._block_dict.commit()
+                self.in_mem_count = 0
+        elif self.cache_engine == CacheEngineType.leveldb:
+            self._block_dict.put(height.to_bytes(4), int(timestamp.timestamp() * 1000).to_bytes(6))
+        elif self.cache_engine == CacheEngineType.dict_pickle:
+            self.block_dict[height] = timestamp
 
     def save(self):
-        self._block_dict.commit()
-        self.in_mem_count = 0
-
-        # utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self._block_dict)}")
+        if self.cache_engine == CacheEngineType.sqlite:
+            self._block_dict.commit()
+            self.in_mem_count = 0
+        elif self.cache_engine == CacheEngineType.leveldb:
+            pass
+        elif self.cache_engine == CacheEngineType.dict_pickle:
+            with open(self.height_cache_path, "wb") as f:
+                pickle.dump(self.block_dict, f)
+            utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self._block_dict)}")
 
     def __del__(self):
-        self._block_dict.close()
+        if self.cache_engine == CacheEngineType.sqlite or self.cache_engine == CacheEngineType.leveldb:
+            self._block_dict.close()
 
     def __len__(self):
-        return len(self._block_dict)
+        if self.cache_engine == CacheEngineType.sqlite:
+            return len(self._block_dict)
+        elif self.cache_engine == CacheEngineType.dict_pickle:
+            return len(self._block_dict)
+        else:
+            return -1
 
 
 def _query_tx_receipt(param):
