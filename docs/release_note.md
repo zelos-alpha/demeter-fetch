@@ -1,3 +1,7 @@
+# v1.1.8
+
+# update resample in minute files
+
 # v1.1.7
 
 * block height to timestamp cache in rpc querying has 3 storage engine now, which is pickle, sqlite, and leveldb

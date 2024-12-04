@@ -66,7 +66,14 @@ class SqueethMinute(DailyNode):
             inplace=True,
         )
         raw_df = raw_df[~raw_df.index.duplicated(keep="last")]
-        raw_df = raw_df.resample("1min").last().ffill()  # resample to 1 min
+        # resample to 1 min
+        # 1. in every minute, use the last value of the minute
+        # 2. fill empty minute with previous minute
+        # 3. shift one minute, this will ensure value in 0 second is the right value
+        #    (no transactions so it will be the same to the last minute, e.g. if tx at 8:00:15 make price to 1000,
+        #    at 8:01:00 price should be 1000, regardless any transaction happens during 8:01)
+        # 4. fill the first minute with the value of second minute
+        raw_df = raw_df.resample("1min").last().ffill().shift(1).bfill()
         raw_df = raw_df.reindex(new_index).ffill()
         raw_df["newNormFactor"] = raw_df["newNormFactor"].fillna(value=first_old_norm_factor)
         raw_df["WETH"] = eth_price_df["weth"]

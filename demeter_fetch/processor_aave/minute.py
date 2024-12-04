@@ -55,7 +55,8 @@ def preprocess_one(raw_df: pd.DataFrame):
     day_start = datetime.combine(result_df.index[0].date(), datetime.min.time(), result_df.index[0].tzinfo)
     if day_start not in result_df.index:
         result_df.loc[day_start] = result_df.head(1).iloc[0]
-    result_df = result_df.resample("1min").last().ffill()
+    result_df = result_df.resample("1min").last().ffill().shift(1).bfill()
+
     result_df.insert(loc=0, column="block_timestamp", value=result_df.index)
 
     return result_df
