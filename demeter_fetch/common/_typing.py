@@ -63,7 +63,8 @@ ChainTypeConfig = {
     },
     ChainType.avalanche: {
         "allow": [DataSource.big_query],
-        "aave_v3_pool_addr": "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+        "aave_v3_pool_addr": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+        "uniswap_proxy_addr": "0x655C406EBFa14EE2006250925e54ec43AD184f8B",
     },
 }
 
