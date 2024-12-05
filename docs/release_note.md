@@ -1,6 +1,7 @@
 # v1.1.8
 
-# update resample in minute files
+* update resample in minute files
+* add avalanche 
 
 # v1.1.7
 
