@@ -61,6 +61,10 @@ ChainTypeConfig = {
         "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
     },
+    ChainType.avalanche: {
+        "allow": [DataSource.big_query],
+        "aave_v3_pool_addr": "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+    },
 }
 
 
