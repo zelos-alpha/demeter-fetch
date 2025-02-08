@@ -70,7 +70,7 @@ def convert_to_config(conf_file: dict) -> Config:
 
     if start_time is None or end_time is None:
         raise RuntimeError("start time and end time must be set")
-    if dapp_type == DappType.uniswap:
+    if dapp_type in [DappType.uniswap, DappType.uniswap_v4]:
         pool_address = conf_file["from"]["uniswap"]["pool_address"].lower()
         ignore_position_id = get_item_with_default_3(conf_file, "from", "uniswap", "ignore_position_id", False)
         from_config.uniswap_config = UniswapConfig(pool_address, ignore_position_id)

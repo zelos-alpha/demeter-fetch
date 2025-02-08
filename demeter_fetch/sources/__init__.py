@@ -5,4 +5,5 @@ from .source_core import (
     AaveSource,
     UniTransaction,
     SqueethSource,
+    UniV4SourcePool,
 )

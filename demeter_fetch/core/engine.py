@@ -11,7 +11,7 @@ from ..processor_aave import AaveMinute, AaveTick
 from ..processor_squeeth import SqueethMinute
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute
 from ..processor_uniswap.relative_price import UniRelativePrice
-from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction, SqueethSource
+from ..sources import UniSourcePool, UniSourceProxyTransfer, UniSourceProxyLp, AaveSource, UniTransaction, SqueethSource, UniV4SourcePool
 
 
 def _get_reversed_copy(list_to_reverse):
@@ -63,6 +63,9 @@ AaveTick.depend = [AaveSource]
 SqueethSource.depend = []
 SqueethMinute.depend = [SqueethSource, UniRelativePrice]
 
+# Uniswap V4
+UniV4SourcePool.depend=[]
+# UniV4Minute.depend = [UniV4SourcePool]
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
     if dapp == DappType.uniswap:
@@ -101,5 +104,11 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return SqueethSource()
             case ToType.minute:
                 return SqueethMinute()
+    elif dapp == DappType.uniswap_v4:
+        match to_type:
+            case ToType.raw:
+                return UniV4SourcePool()
+            # case ToType.minute:
+            #     return SqueethMinute()
     else:
         raise NotImplemented(f"{dapp} not supported")

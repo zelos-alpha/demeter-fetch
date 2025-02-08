@@ -21,7 +21,7 @@ class AaveTick(AaveDailyNode):
         ret: Dict[str, pd.DataFrame] = {}
         df = data[get_depend_name(NodeNames.aave_raw, self.id)]
         for token, token_df in df.items():
-            token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics), axis=1)
+            token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics0), axis=1)
             token_df = token_df[
                 token_df["tx_type"].isin(
                     [
@@ -49,7 +49,7 @@ def preprocess_one(df: pd.DataFrame):
             ret_df[column] = None
         return ret_df
     ret_df[append_columns] = df.apply(
-        lambda x: aave_utils.handle_event(x.tx_type, x.topics, x.data),
+        lambda x: aave_utils.handle_event(x.tx_type, x.topics0, x.data),
         axis=1,
         result_type="expand",
     )

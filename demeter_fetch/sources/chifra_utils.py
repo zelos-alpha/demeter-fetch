@@ -64,8 +64,8 @@ def query_log_by_chifra(
     check_chifra()
     print_log(f"Exporting logs in {day} from chifra")
     topic0 = ""
-    if len(contract.topics) == 1:
-        topic0 = contract.topics[0]
+    if len(contract.topics0) == 1:
+        topic0 = contract.topics0[0]
     tmp_file_name = os.path.join(
         to_path, f"{contract.address}-{topic0}-{day}.chifra.csv"
     )
@@ -87,7 +87,7 @@ def query_log_by_chifra(
 def chifra_csv_to_raw_df(path, contract: ContractConfig) -> pd.DataFrame:
     chifra_df = pd.read_csv(path)
     chifra_df = chifra_df[chifra_df["address"] == contract.address.lower()]
-    chifra_df = chifra_df[chifra_df["topic0"].isin(contract.topics)]
+    chifra_df = chifra_df[chifra_df["topic0"].isin(contract.topics0)]
 
     chifra_df = chifra_df.rename(
         columns={

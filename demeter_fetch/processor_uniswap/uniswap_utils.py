@@ -109,7 +109,7 @@ def handle_event(tx_type, topics_str, data_hex):
 
 def add_proxy_log(df, index, proxy_row):
     df.loc[index, "proxy_data"] = proxy_row.data
-    df.at[index, "proxy_topics"] = proxy_row.topics
+    df.at[index, "proxy_topics"] = proxy_row.topics0
     df.loc[index, "proxy_log_index"] = proxy_row.log_index
 
 
@@ -120,7 +120,7 @@ def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
     :param proxy_logs:
     :return:
     """
-    pool_logs["tx_type"] = pool_logs.apply(lambda x: get_tx_type(x.topics), axis=1)
+    pool_logs["tx_type"] = pool_logs.apply(lambda x: get_tx_type(x.topics0), axis=1)
     proxy_logs = proxy_logs.set_index(keys="transaction_hash")
     pool_logs["topics"] = pool_logs["topics"].apply(lambda x: split_topic(x))
     proxy_logs["topics"] = proxy_logs["topics"].apply(lambda x: split_topic(x))

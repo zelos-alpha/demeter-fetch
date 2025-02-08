@@ -289,9 +289,10 @@ def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> p
 def get_event_slice(client, contract_config, start, end, one_by_one):
     if one_by_one:
         logs = []
-        for topic_hex in contract_config.topics:
-            tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
-            logs.extend(tmp_logs)
+        for topic_hex in contract_config.topics0:
+            for topic1_hex in contract_config.topics1:
+                tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex]))
+                logs.extend(tmp_logs)
     else:
         logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
     return logs
@@ -335,7 +336,9 @@ def query_event_by_height_concurrent(
     log_list = []
     for log in raw_log_list:
         log["blockNumber"] = int(log["blockNumber"], 16)
-        if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics):
+        if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics0):
+            if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
+                continue
             if log["removed"]:
                 continue
             # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data
@@ -432,15 +435,18 @@ def query_event_by_height(
 
             if one_by_one:
                 logs = []
-                for topic_hex in contract_config.topics:
-                    tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
+                for topic_hex in contract_config.topics0:
+                    for topic1_hex in contract_config.topics1:
+                        tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex,topic1_hex]))
                     logs.extend(tmp_logs)
             else:
                 logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
             log_list = []
             for log in logs:
                 log["blockNumber"] = int(log["blockNumber"], 16)
-                if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics):
+                if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics0):
+                    if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
+                        continue
                     if log["removed"]:
                         continue
                     # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data

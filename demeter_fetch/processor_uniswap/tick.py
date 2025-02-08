@@ -57,7 +57,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=tick_file_columns)
 
     df = input_df.copy()
-    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
 
     df[
         [
@@ -73,7 +73,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
             "liquidity",
             "total_liquidity_delta",
         ]
-    ] = df.apply(lambda r: handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
+    ] = df.apply(lambda r: handle_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand")
     df = df.drop(columns=["topics", "data"])
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[

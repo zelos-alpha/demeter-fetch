@@ -11,7 +11,7 @@ import pandas as pd
 
 from .big_query import bigquery_aave, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
-from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth
+from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth, rpc_uni_v4_pool
 from ..common import DataSource, NodeNames, DailyNode, DailyParam, AaveDailyNode, utils, get_depend_name
 from ..common.nodes import AaveDailyParam
 
@@ -51,6 +51,25 @@ class UniSourcePool(DailyNode):
     def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
+class UniV4SourcePool(DailyNode):
+    name = NodeNames.uni_v4_pool
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
+        df: pd.DataFrame | None = None
+        match self.from_config.data_source:
+            case DataSource.rpc:
+                df = rpc_uni_v4_pool(self.from_config, self.to_path, day)
+        return df
+
+    def _get_file_name(self, param: DailyParam) -> str:
+        return (
+            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.raw"
+            + self._get_file_ext()
+        )
+
+    @property
+    def _parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
 class UniSourceProxyLp(DailyNode):
     name = NodeNames.uni_proxy_lp

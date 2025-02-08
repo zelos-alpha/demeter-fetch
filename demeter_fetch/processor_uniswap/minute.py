@@ -77,7 +77,7 @@ class UniMinute(DailyNode):
             return pd.DataFrame(columns=columns)
         df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
         df = df.set_index(keys=["block_timestamp"])
-        df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+        df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
         df = df[df["tx_type"] == KECCAK.SWAP]
         decoded_df = pd.DataFrame()
         decoded_df[
@@ -94,7 +94,7 @@ class UniMinute(DailyNode):
                 "liquidity",
                 "delta_liquidity",
             ]
-        ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
+        ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand")
         decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
         decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
         minute_df = decoded_df.resample("1min").agg(

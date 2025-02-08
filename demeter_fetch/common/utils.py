@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -74,34 +73,34 @@ def to_int(value):
     return int(value) if value else int(0)
 
 
-class DataUtil(object):
-    @staticmethod
-    def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:
-        if len(data_list) < 1:
-            return data_list
-        # take the first minute in data. instead of 0:00:00
-        # so here will be a problem, if the first data is 0:03:00, the first 2 minutes will be blank
-        # that's because there is no previous data to follow
-        # those empty rows will be filled in loading stage
-        index_minute = data_list[0].timestamp
-        new_list = []
-        data_list_index = 0
-
-        start_day = data_list[0].timestamp.day
-        while index_minute.day == start_day:
-            if (data_list_index < len(data_list)) and (index_minute == data_list[data_list_index].timestamp):
-                item = data_list[data_list_index]
-                data_list_index += 1
-            else:
-                item = MinuteData()
-                item.timestamp = index_minute
-            prev_data = new_list[len(new_list) - 1] if len(new_list) - 1 >= 0 else None
-            # if no previous(this might happen in the first minutes) data, this row will be discarded
-            if item.fill_missing_field(prev_data):
-                new_list.append(item)
-            index_minute = index_minute + timedelta(minutes=1)
-
-        return new_list
+# class DataUtil(object):
+#     @staticmethod
+#     def fill_missing(data_list: List[MinuteData]) -> List[MinuteData]:
+#         if len(data_list) < 1:
+#             return data_list
+#         # take the first minute in data. instead of 0:00:00
+#         # so here will be a problem, if the first data is 0:03:00, the first 2 minutes will be blank
+#         # that's because there is no previous data to follow
+#         # those empty rows will be filled in loading stage
+#         index_minute = data_list[0].timestamp
+#         new_list = []
+#         data_list_index = 0
+#
+#         start_day = data_list[0].timestamp.day
+#         while index_minute.day == start_day:
+#             if (data_list_index < len(data_list)) and (index_minute == data_list[data_list_index].timestamp):
+#                 item = data_list[data_list_index]
+#                 data_list_index += 1
+#             else:
+#                 item = MinuteData()
+#                 item.timestamp = index_minute
+#             prev_data = new_list[len(new_list) - 1] if len(new_list) - 1 >= 0 else None
+#             # if no previous(this might happen in the first minutes) data, this row will be discarded
+#             if item.fill_missing_field(prev_data):
+#                 new_list.append(item)
+#             index_minute = index_minute + timedelta(minutes=1)
+#
+#         return new_list
 
 
 class ComplexEncoder(json.JSONEncoder):

@@ -1,5 +1,5 @@
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import List, Tuple, Dict
 
@@ -10,7 +10,8 @@ from .. import ChainType
 @dataclass
 class ContractConfig:
     address: str
-    topics: List[str]
+    topics0: List[str]
+    topics1: List[str]=field(default_factory=list)
 
 
 height_cache: Dict[date, Tuple[int, int]] = {}

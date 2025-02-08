@@ -146,6 +146,35 @@ def rpc_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
     return daily_df
 
 
+def rpc_uni_v4_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
+    start_height, end_height = get_height_from_date(day, config.chain, config.http_proxy, config.rpc.etherscan_api_key)
+    daily_df = query_logs(
+        chain=config.chain,
+        end_point=config.rpc.end_point,
+        save_path=save_path,
+        start_height=start_height,
+        end_height=end_height,
+        contract=ContractConfig(
+            ChainTypeConfig[config.chain]["uni_v4_pool_manager"],
+            [
+                KECCAK.UNI_V4_SWAP.value,
+                KECCAK.UNI_V4_MODIFY_LIQ.value,
+            ],
+            [config.uniswap_config.pool_address],
+        ),
+        batch_size=config.rpc.batch_size,
+        auth_string=config.rpc.auth_string,
+        http_proxy=config.http_proxy if not config.rpc.force_no_proxy else None,
+        keep_tmp_files=config.rpc.keep_tmp_files,
+        one_by_one=False,
+        skip_timestamp=False,
+        height_cache_path=config.rpc.height_cache_path,
+        thread=config.rpc.thread,
+    )
+    daily_df = _update_df(daily_df)
+    return daily_df
+
+
 def rpc_proxy_lp(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:
     start_height, end_height = get_height_from_date(day, config.chain, config.http_proxy, config.rpc.etherscan_api_key)
     daily_df = query_logs(

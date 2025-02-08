@@ -29,42 +29,57 @@ ChainTypeConfig = {
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
         "squeeth_controller": "0x64187ae08781b09368e6253f9e94951243a493d5",
+        "uni_v4_pool_manager": "0x000000000004444c5dc75cb358380d2e3de08a90",
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
+        "uni_v4_pool_manager": "0x67366782805870060151383f4bbff9dab53e5cd6",
+
     },
     ChainType.optimism: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+        "uni_v4_pool_manager": "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3",
+
     },
     ChainType.arbitrum: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+        "uni_v4_pool_manager": "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
+
     },
     ChainType.celo: {
         "allow": [DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
+        "uni_v4_pool_manager": "",
+
     },
     ChainType.bsc: {
         "allow": [DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
+        "uni_v4_pool_manager": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
+
     },
     ChainType.base: {
         "allow": [DataSource.rpc, DataSource.chifra],
         "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
+        "uni_v4_pool_manager": "0x498581ff718922c3f8e6a244956af099b2652b2b",
+
     },
     ChainType.avalanche: {
         "allow": [DataSource.big_query],
         "aave_v3_pool_addr": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
         "uniswap_proxy_addr": "0x655C406EBFa14EE2006250925e54ec43AD184f8B",
+        "uni_v4_pool_manager": "0x06380C0e0912312B5150364B9DC4542BA0DbBc85",
+
     },
 }
 
@@ -88,6 +103,7 @@ class DappType(enum.StrEnum):
     uniswap = "uniswap"
     aave = "aave"
     squeeth = "squeeth"
+    uniswap_v4 = "uniswap_v4"
 
 
 @dataclass
@@ -179,6 +195,9 @@ class KECCAK(enum.StrEnum):
     TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     SQUEETH_NORM_FACTOR_UPDATED = "0x339e53729b0447795ff69e70a74fed98fc7fef6fe94b7521099b32f0f8de4822"
 
+    UNI_V4_SWAP = "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f"
+    UNI_V4_MODIFY_LIQ = "0xf208f4912782fd25c7f114ca3723a2d5dd6f3bcc3ac8db5af63baa85f711d5ec"
+
 
 uni_topic_mapping = {
     KECCAK.MINT.value: KECCAK.UNI_PROXY_INCREASE.value,  # mint
@@ -195,70 +214,70 @@ class Config:
     id: str = ""
 
 
-class MinuteData(object):
-    def __init__(self):
-        self.timestamp = None
-        self.netAmount0 = 0
-        self.netAmount1 = 0
-        self.closeTick = None
-        self.openTick = None
-        self.lowestTick = None
-        self.highestTick = None
-        self.inAmount0 = 0
-        self.inAmount1 = 0
-        self.currentLiquidity = None
-
-    def to_array(self):
-        return [
-            self.timestamp,
-            self.netAmount0,
-            self.netAmount1,
-            self.closeTick,
-            self.openTick,
-            self.lowestTick,
-            self.highestTick,
-            self.inAmount0,
-            self.inAmount1,
-            self.currentLiquidity,
-        ]
-
-    def __repr__(self):
-        return str(self.timestamp)
-
-    def __str__(self):
-        return str(self.timestamp)
-
-    def fill_missing_field(self, prev_data) -> bool:
-        """
-        fill missing field with previous data
-        :param prev_data:
-        :return: data is available or not
-        """
-        if prev_data is None:
-            prev_data = MinuteData()
-        self.closeTick = self.closeTick if self.closeTick is not None else prev_data.closeTick
-        self.openTick = self.openTick if self.openTick is not None else prev_data.closeTick
-        self.lowestTick = self.lowestTick if self.lowestTick is not None else prev_data.closeTick
-        self.highestTick = self.highestTick if self.highestTick is not None else prev_data.closeTick
-        self.currentLiquidity = (
-            self.currentLiquidity if self.currentLiquidity is not None else prev_data.currentLiquidity
-        )
-
-        return False if (self.closeTick is None or self.currentLiquidity is None) else True
-
-
-MinuteDataNames = [
-    "timestamp",
-    "netAmount0",
-    "netAmount1",
-    "closeTick",
-    "openTick",
-    "lowestTick",
-    "highestTick",
-    "inAmount0",
-    "inAmount1",
-    "currentLiquidity",
-]
+# class MinuteData(object):
+#     def __init__(self):
+#         self.timestamp = None
+#         self.netAmount0 = 0
+#         self.netAmount1 = 0
+#         self.closeTick = None
+#         self.openTick = None
+#         self.lowestTick = None
+#         self.highestTick = None
+#         self.inAmount0 = 0
+#         self.inAmount1 = 0
+#         self.currentLiquidity = None
+#
+#     def to_array(self):
+#         return [
+#             self.timestamp,
+#             self.netAmount0,
+#             self.netAmount1,
+#             self.closeTick,
+#             self.openTick,
+#             self.lowestTick,
+#             self.highestTick,
+#             self.inAmount0,
+#             self.inAmount1,
+#             self.currentLiquidity,
+#         ]
+#
+#     def __repr__(self):
+#         return str(self.timestamp)
+#
+#     def __str__(self):
+#         return str(self.timestamp)
+#
+#     def fill_missing_field(self, prev_data) -> bool:
+#         """
+#         fill missing field with previous data
+#         :param prev_data:
+#         :return: data is available or not
+#         """
+#         if prev_data is None:
+#             prev_data = MinuteData()
+#         self.closeTick = self.closeTick if self.closeTick is not None else prev_data.closeTick
+#         self.openTick = self.openTick if self.openTick is not None else prev_data.closeTick
+#         self.lowestTick = self.lowestTick if self.lowestTick is not None else prev_data.closeTick
+#         self.highestTick = self.highestTick if self.highestTick is not None else prev_data.closeTick
+#         self.currentLiquidity = (
+#             self.currentLiquidity if self.currentLiquidity is not None else prev_data.currentLiquidity
+#         )
+#
+#         return False if (self.closeTick is None or self.currentLiquidity is None) else True
+#
+#
+# MinuteDataNames = [
+#     "timestamp",
+#     "netAmount0",
+#     "netAmount1",
+#     "closeTick",
+#     "openTick",
+#     "lowestTick",
+#     "highestTick",
+#     "inAmount0",
+#     "inAmount1",
+#     "currentLiquidity",
+# ]
 
 
 class EthError(Exception):
@@ -285,3 +304,6 @@ class NodeNames:
 
     osqth_raw = "osqth_raw"
     osqth_minute = "osqth_minute"
+
+    uni_v4_pool = "uni_v4_pool"
+    uni_v4_minute = "uni_v4_minute"
