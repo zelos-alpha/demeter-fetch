@@ -2,6 +2,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Dict, Callable, List
 
+import numpy as np
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
@@ -21,6 +22,7 @@ columns = [
     "inAmount1",
     "currentLiquidity",
 ]
+v4_columns = columns.append("fee_rate")
 
 
 class ModuleUtils(object):
@@ -46,6 +48,51 @@ class MinuteData:
     inAmount0 = 0
     inAmount1 = 0
     currentLiquidity = 0
+
+
+def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
+    df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
+    df = df.set_index(keys=["block_timestamp"])
+    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
+    return df
+
+
+def get_minute_df(decoded_df: pd.DataFrame) -> pd.DataFrame:
+    minute_df = decoded_df.resample("1min").agg(
+        {
+            "amount0": "sum",
+            "amount1": "sum",
+            "inAmount0": "sum",
+            "inAmount1": "sum",
+            "currentLiquidity": "last",
+        }
+    )
+    minute_df = minute_df.rename(columns={"amount0": "netAmount0", "amount1": "netAmount1"})
+    minute_df[["openTick", "highestTick", "lowestTick", "closeTick"]] = (
+        decoded_df["current_tick"]
+        .resample("1min")
+        .agg(
+            {
+                "openTick": "first",
+                "highestTick": "max",
+                "lowestTick": "min",
+                "closeTick": "last",
+            }
+        )
+    )
+    minute_df["timestamp"] = minute_df.index
+    return minute_df
+
+
+def fill_minute_file_na(minute_df: pd.DataFrame) -> pd.DataFrame:
+    minute_df[["closeTick", "currentLiquidity"]] = minute_df[["closeTick", "currentLiquidity"]].ffill()
+    minute_df[["netAmount0", "netAmount1", "inAmount0", "inAmount1"]] = minute_df[
+        ["netAmount0", "netAmount1", "inAmount0", "inAmount1"]
+    ].fillna(value=0)
+    minute_df["openTick"] = minute_df["openTick"].fillna(minute_df["closeTick"])
+    minute_df["highestTick"] = minute_df["highestTick"].fillna(minute_df["closeTick"])
+    minute_df["lowestTick"] = minute_df["lowestTick"].fillna(minute_df["closeTick"])
+    return minute_df
 
 
 class UniMinute(DailyNode):
@@ -75,9 +122,7 @@ class UniMinute(DailyNode):
         df = data[get_depend_name(NodeNames.uni_pool, self.id)]
         if len(df.index) < 1:
             return pd.DataFrame(columns=columns)
-        df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
-        df = df.set_index(keys=["block_timestamp"])
-        df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
+        df = preprocess_df(df)
         df = df[df["tx_type"] == KECCAK.SWAP]
         decoded_df = pd.DataFrame()
         decoded_df[
@@ -97,37 +142,59 @@ class UniMinute(DailyNode):
         ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand")
         decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
         decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
-        minute_df = decoded_df.resample("1min").agg(
-            {
-                "amount0": "sum",
-                "amount1": "sum",
-                "inAmount0": "sum",
-                "inAmount1": "sum",
-                "currentLiquidity": "last",
-            }
-        )
-        minute_df = minute_df.rename(columns={"amount0": "netAmount0", "amount1": "netAmount1"})
-        minute_df[["openTick", "highestTick", "lowestTick", "closeTick"]] = (
-            decoded_df["current_tick"]
-            .resample("1min")
-            .agg(
-                {
-                    "openTick": "first",
-                    "highestTick": "max",
-                    "lowestTick": "min",
-                    "closeTick": "last",
-                }
-            )
-        )
-        minute_df["timestamp"] = minute_df.index
-
+        minute_df = get_minute_df(decoded_df)
         minute_df = minute_df[columns]
-        minute_df[["closeTick", "currentLiquidity"]] = minute_df[["closeTick", "currentLiquidity"]].ffill()
-        minute_df[["netAmount0", "netAmount1", "inAmount0", "inAmount1"]] = minute_df[
-            ["netAmount0", "netAmount1", "inAmount0", "inAmount1"]
-        ].fillna(value=0)
-        minute_df["openTick"] = minute_df["openTick"].fillna(minute_df["closeTick"])
-        minute_df["highestTick"] = minute_df["highestTick"].fillna(minute_df["closeTick"])
-        minute_df["lowestTick"] = minute_df["lowestTick"].fillna(minute_df["closeTick"])
+        minute_df = fill_minute_file_na(minute_df)
+        return minute_df
 
+
+class UniV4Minute(UniMinute):
+    name = NodeNames.uni_v4_minute
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
+        df = data[get_depend_name(NodeNames.uni_pool, self.id)]
+        if len(df.index) < 1:
+            return pd.DataFrame(columns=columns)
+        df = preprocess_df(df)
+        df = df[df["tx_type"] == KECCAK.UNI_V4_SWAP]
+        decoded_df = pd.DataFrame()
+        decoded_df[
+            [
+                "pool_id",
+                "sender",
+                "amount0",
+                "amount1",
+                "sqrtPriceX96",
+                "currentLiquidity",
+                "current_tick",
+                "tick_lower",
+                "tick_upper",
+                "delta_liquidity",
+                "fee",
+                "salt",
+            ]
+        ] = df.apply(
+            lambda r: uniswap_utils.handle_v4_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand"
+        )
+        decoded_df = decoded_df.drop(columns=["pool_id", "salt", "tick_upper", "tick_lower", "delta_liquidity"])
+        decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
+        decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
+        decoded_df["swapAmount0"] = decoded_df.apply(
+            lambda x: x["amount0"] if x["amount0"] > 0 else x["amount0"] / (1 - x["fee"]), axis=1
+        )
+        decoded_df["swapFee"] = decoded_df["swapAmount0"] * decoded_df["fee"]
+
+        minute_df = get_minute_df(decoded_df)
+
+        def process_fee(row_in_minute):
+            sum_amount = row_in_minute["swapAmount0"].sum()
+            if sum_amount > 0:
+                return row_in_minute["swapFee"].sum() / sum_amount
+            else:
+                return np.nan
+
+        minute_df["fee_rate"] = decoded_df.resample("1min").agg(process_fee)
+
+        minute_df = minute_df[v4_columns]
+        minute_df = fill_minute_file_na(minute_df)
         return minute_df

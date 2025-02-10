@@ -107,6 +107,60 @@ def handle_event(tx_type, topics_str, data_hex):
     )
 
 
+def handle_v4_event(tx_type, topics_str, data_hex):
+    # proprocess topics string ->topic list
+    # topics_str = topics.values[0]
+    current_tick = tick_lower = tick_upper = salt = fee = None
+    delta_liquidity = Decimal(np.nan)
+    current_liquidity = Decimal(np.nan)
+    sqrt_price_x96 = Decimal(np.nan)
+    amount0 = amount1 = Decimal(np.nan)
+
+    topic_list = split_topic(topics_str)
+    # data_hex = data.values[0]
+    no_0x_data = data_hex[2:]
+    chunk_size = 64
+    chunks = len(no_0x_data)
+
+    match tx_type:
+        case _typing.KECCAK.UNI_V4_SWAP:
+            pool_id = "0x" + topic_list[1]
+            sender = hex_to_address(topic_list[2])
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
+            amount0, amount1, sqrt_price_x96, current_liquidity, current_tick, fee = [
+                signed_int(onedata) for onedata in split_data
+            ]
+
+        case _typing.KECCAK.UNI_V4_MODIFY_LIQ:
+            pool_id = "0x" + topic_list[1]
+            sender = hex_to_address(topic_list[2])
+            split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
+            tick_lower = signed_int(split_data[0])
+            tick_upper = signed_int(split_data[1])
+            delta_liquidity = signed_int(split_data[2])
+            salt = "0x" + split_data[3]
+
+        case _:
+            raise ValueError("not support tx type")
+    return (
+        pool_id,
+        sender,
+        # in v4, positive amount means user gets the amount, which is transfer from pool to user
+        # That is opposite from uniswap v3(positive means pool receive this amount)
+        # To compatible with old scripts, we convert amount to v3 way here
+        -Decimal(amount0),
+        -Decimal(amount1),
+        Decimal(sqrt_price_x96),
+        Decimal(current_liquidity),
+        current_tick,
+        tick_lower,
+        tick_upper,
+        Decimal(delta_liquidity),
+        fee,
+        salt,
+    )
+
+
 def add_proxy_log(df, index, proxy_row):
     df.loc[index, "proxy_data"] = proxy_row.data
     df.at[index, "proxy_topics"] = proxy_row.topics0
