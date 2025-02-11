@@ -6,9 +6,16 @@ import numpy as np
 import pandas as pd
 
 import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, get_depend_name
-from demeter_fetch.common import KECCAK, NodeNames
-from demeter_fetch.common import TextUtil, to_decimal
+from demeter_fetch.common import (
+    DailyNode,
+    DailyParam,
+    get_tx_type,
+    get_depend_name,
+    KECCAK,
+    NodeNames,
+    TextUtil,
+    to_decimal,
+)
 
 columns = [
     "timestamp",
@@ -22,7 +29,7 @@ columns = [
     "inAmount1",
     "currentLiquidity",
 ]
-v4_columns = columns.append("fee_rate")
+v4_columns = columns + ["fee_rate"]
 
 
 class ModuleUtils(object):
@@ -53,7 +60,8 @@ class MinuteData:
 def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
     df = df.set_index(keys=["block_timestamp"])
-    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
+    # df["topics0"] = df["topics"].apply(lambda x: split_topic(x)[0])
+    df["tx_type"] = df["topics"].apply(get_tx_type)
     return df
 
 
@@ -139,7 +147,7 @@ class UniMinute(DailyNode):
                 "liquidity",
                 "delta_liquidity",
             ]
-        ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand")
+        ] = df.apply(lambda r: uniswap_utils.handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
         decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
         decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
         minute_df = get_minute_df(decoded_df)
@@ -152,7 +160,7 @@ class UniV4Minute(UniMinute):
     name = NodeNames.uni_v4_minute
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        df = data[get_depend_name(NodeNames.uni_pool, self.id)]
+        df = data[get_depend_name(NodeNames.uni_v4_pool, self.id)]
         if len(df.index) < 1:
             return pd.DataFrame(columns=columns)
         df = preprocess_df(df)
@@ -173,28 +181,22 @@ class UniV4Minute(UniMinute):
                 "fee",
                 "salt",
             ]
-        ] = df.apply(
-            lambda r: uniswap_utils.handle_v4_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand"
-        )
+        ] = df.apply(lambda r: uniswap_utils.handle_v4_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
         decoded_df = decoded_df.drop(columns=["pool_id", "salt", "tick_upper", "tick_lower", "delta_liquidity"])
         decoded_df["inAmount0"] = decoded_df["amount0"].apply(lambda x: x if x > 0 else 0)
         decoded_df["inAmount1"] = decoded_df["amount1"].apply(lambda x: x if x > 0 else 0)
-        decoded_df["swapAmount0"] = decoded_df.apply(
-            lambda x: x["amount0"] if x["amount0"] > 0 else x["amount0"] / (1 - x["fee"]), axis=1
-        )
-        decoded_df["swapFee"] = decoded_df["swapAmount0"] * decoded_df["fee"]
 
         minute_df = get_minute_df(decoded_df)
 
-        def process_fee(row_in_minute):
-            sum_amount = row_in_minute["swapAmount0"].sum()
-            if sum_amount > 0:
-                return row_in_minute["swapFee"].sum() / sum_amount
-            else:
-                return np.nan
-
-        minute_df["fee_rate"] = decoded_df.resample("1min").agg(process_fee)
+        swap_amount0 = decoded_df.apply(
+            lambda x: x["amount0"] if x["amount0"] > 0 else x["amount0"] / (1 - x["fee"]), axis=1
+        )
+        swap_fee = swap_amount0 * decoded_df["fee"]
+        swap_amount0_minute = swap_amount0.resample("1min").sum().replace(0, np.nan)
+        swap_fee_minute = swap_fee.resample("1min").sum()
+        minute_df["fee_rate"] = swap_fee_minute / swap_amount0_minute
 
         minute_df = minute_df[v4_columns]
         minute_df = fill_minute_file_na(minute_df)
+        minute_df["fee_rate"] = minute_df["fee_rate"].ffill().bfill().apply(lambda x: round(x, 0))
         return minute_df
