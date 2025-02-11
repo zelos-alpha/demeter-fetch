@@ -124,7 +124,7 @@ def handle_v4_event(tx_type, topics_str, data_hex):
 
     match tx_type:
         case _typing.KECCAK.UNI_V4_SWAP:
-            pool_id = "0x" + topic_list[1]
+            pool_id = topic_list[1]
             sender = hex_to_address(topic_list[2])
             split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             amount0, amount1, sqrt_price_x96, current_liquidity, current_tick, fee = [
@@ -132,13 +132,13 @@ def handle_v4_event(tx_type, topics_str, data_hex):
             ]
 
         case _typing.KECCAK.UNI_V4_MODIFY_LIQ:
-            pool_id = "0x" + topic_list[1]
+            pool_id = topic_list[1]
             sender = hex_to_address(topic_list[2])
             split_data = ["0x" + no_0x_data[i : i + chunk_size] for i in range(0, chunks, chunk_size)]
             tick_lower = signed_int(split_data[0])
             tick_upper = signed_int(split_data[1])
             delta_liquidity = signed_int(split_data[2])
-            salt = "0x" + split_data[3]
+            salt = split_data[3]
 
         case _:
             raise ValueError("not support tx type")
@@ -163,7 +163,7 @@ def handle_v4_event(tx_type, topics_str, data_hex):
 
 def add_proxy_log(df, index, proxy_row):
     df.loc[index, "proxy_data"] = proxy_row.data
-    df.at[index, "proxy_topics"] = proxy_row.topics0
+    df.at[index, "proxy_topics"] = proxy_row.topics
     df.loc[index, "proxy_log_index"] = proxy_row.log_index
 
 
@@ -174,7 +174,7 @@ def match_proxy_log(pool_logs: pd.DataFrame, proxy_logs: pd.DataFrame):
     :param proxy_logs:
     :return:
     """
-    pool_logs["tx_type"] = pool_logs.apply(lambda x: get_tx_type(x.topics0), axis=1)
+    pool_logs["tx_type"] = pool_logs.apply(lambda x: get_tx_type(x.topics), axis=1)
     proxy_logs = proxy_logs.set_index(keys="transaction_hash")
     pool_logs["topics"] = pool_logs["topics"].apply(lambda x: split_topic(x))
     proxy_logs["topics"] = proxy_logs["topics"].apply(lambda x: split_topic(x))

@@ -60,7 +60,6 @@ class MinuteData:
 def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     df["block_timestamp"] = pd.to_datetime(df["block_timestamp"])
     df = df.set_index(keys=["block_timestamp"])
-    # df["topics0"] = df["topics"].apply(lambda x: split_topic(x)[0])
     df["tx_type"] = df["topics"].apply(get_tx_type)
     return df
 

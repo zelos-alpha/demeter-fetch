@@ -22,7 +22,7 @@ class AaveMinute(AaveDailyNode):
         ret: Dict[str, pd.DataFrame] = {}
         df = data[get_depend_name(NodeNames.aave_raw, self.id)]
         for token, token_df in df.items():
-            token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics0), axis=1)
+            token_df["tx_type"] = token_df.apply(lambda x: get_tx_type(x.topics), axis=1)
             token_df = token_df[token_df["tx_type"] == KECCAK.AAVE_UPDATED]
             ret[token] = preprocess_one(token_df)
         return ret

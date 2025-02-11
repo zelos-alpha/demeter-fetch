@@ -1,12 +1,13 @@
 import datetime
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Dict, Callable, List
 
 import pandas as pd
 
-from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event
-from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type, get_depend_name
+from .uniswap_utils import match_proxy_log, handle_event, handle_proxy_event, handle_v4_event
+from ..common import to_decimal, DailyNode, NodeNames, DailyParam, get_tx_type, get_depend_name, FriendFuncName
 
 tick_file_columns = [
     "block_number",
@@ -26,6 +27,27 @@ tick_file_columns = [
     "tick_lower",
     "tick_upper",
     "liquidity",
+]
+
+v4_tick_file_columns = [
+    "block_number",
+    "block_timestamp",
+    "tx_type",
+    "transaction_hash",
+    "tx_index",
+    "log_index",
+    "sender",
+    "amount0",
+    "amount1",
+    "current_tick",
+    "sqrtPriceX96",
+    "fee",
+    "total_liquidity",
+    "position_id",
+    "tick_lower",
+    "tick_upper",
+    "liquidity",
+    "total_liquidity_delta",
 ]
 
 
@@ -57,7 +79,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=tick_file_columns)
 
     df = input_df.copy()
-    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics0), axis=1)
+    df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
 
     df[
         [
@@ -73,7 +95,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
             "liquidity",
             "total_liquidity_delta",
         ]
-    ] = df.apply(lambda r: handle_event(r.tx_type, r.topics0, r.data), axis=1, result_type="expand")
+    ] = df.apply(lambda r: handle_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
     df = df.drop(columns=["topics", "data"])
     df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
@@ -88,7 +110,7 @@ def convert_pool_tick_df(input_df: pd.DataFrame) -> pd.DataFrame:
     df["total_liquidity"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity), axis=1)
 
     df["total_liquidity_delta"] = df.apply(
-        lambda x: handle_tick(x.tick_lower, x.tick_upper, x.current_tick, x.total_liquidity_delta),
+        lambda x: get_active_liquidity(x.tick_lower, x.tick_upper, x.current_tick, x.total_liquidity_delta),
         axis=1,
     )
     df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
@@ -195,10 +217,60 @@ def convert_to_decimal(value):
     return Decimal(value) if value else Decimal(0)
 
 
-def handle_tick(lower_tick, upper_tick, current_tick, delta):
+def get_active_liquidity(lower_tick, upper_tick, current_tick, delta):
     if lower_tick is None or upper_tick is None or current_tick is None:
         return 0
     if lower_tick < current_tick < upper_tick:
         return delta
     else:
         return 0
+
+
+class UniV4Tick(UniTick):
+    name = NodeNames.uni_v4_tick
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> pd.DataFrame:
+        input_df = data[get_depend_name(NodeNames.uni_v4_pool, self.id)]
+        if len(input_df.index) < 1:
+            return pd.DataFrame(columns=tick_file_columns)
+        df = input_df.copy()
+        df["tx_type"] = df.apply(lambda x: get_tx_type(x.topics), axis=1)
+
+        df[
+            [
+                "pool_id",
+                "sender",
+                "amount0",
+                "amount1",
+                "sqrtPriceX96",
+                "total_liquidity",
+                "current_tick",
+                "tick_lower",
+                "tick_upper",
+                "liquidity",
+                "fee",
+                "position_id",
+            ]
+        ] = df.apply(lambda r: handle_v4_event(r.tx_type, r.topics, r.data), axis=1, result_type="expand")
+        df = df.drop(columns=["topics", "data"])
+        df = df.sort_values(["block_number", "log_index"], ascending=[True, True])
+        df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
+            ["sqrtPriceX96", "total_liquidity", "current_tick"]
+        ].ffill()
+
+        # convert type to keep decimal
+        df["sqrtPriceX96"] = df.apply(lambda x: convert_to_decimal(x.sqrtPriceX96), axis=1)
+        df["liquidity"] = df.apply(lambda x: convert_to_decimal(x.liquidity), axis=1)
+        df["total_liquidity"] = df.apply(lambda x: convert_to_decimal(x.total_liquidity), axis=1)
+
+        df["total_liquidity_delta"] = df.apply(
+            lambda x: get_active_liquidity(x.tick_lower, x.tick_upper, x.current_tick, x.liquidity),
+            axis=1,
+        )
+        df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
+        df["tx_type"] = df.apply(lambda x: FriendFuncName[x.tx_type], axis=1)
+        df = df.rename(columns={"transaction_index": "tx_index"})
+
+        df = df[v4_tick_file_columns]
+
+        return df
