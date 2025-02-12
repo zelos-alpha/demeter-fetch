@@ -50,6 +50,20 @@ def bigquery_pool(config: FromConfig, day: date):
     return df
 
 
+def bigquery_v4_pool(config: FromConfig, day: date):
+    day_str = day.strftime("%Y-%m-%d")
+    sql = f"""
+    SELECT block_number,block_timestamp, transaction_hash , transaction_index , log_index, topics , DATA as data
+        FROM {BigQueryChain[config.chain.name].value["table_name"]}
+        WHERE topics[SAFE_OFFSET(0)] in {KECCAK.UNI_V4_SWAP.value, KECCAK.UNI_V4_MODIFY_LIQ.value}
+        AND topics[SAFE_OFFSET(1)] = "{config.uniswap_config.pool_address}"
+        AND DATE(block_timestamp) =  DATE("{day_str}") AND address = "{ChainTypeConfig[config.chain]["uni_v4_pool_manager"]}"
+    """
+    df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
+    df = _update_df(df)
+    return df
+
+
 def bigquery_proxy_lp(config: FromConfig, day: date):
     day_str = day.strftime("%Y-%m-%d")
     sql = f"""
