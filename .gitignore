@@ -9,3 +9,6 @@ sample-data
 *.pyc
 /.vscode
 venv
+/dist
+/demeter_fetch.egg-info
+how_to_deploy.md
