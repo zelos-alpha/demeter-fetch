@@ -3,10 +3,11 @@ auth
 sample-data
 /tests/config.toml
 /config.toml
-/config.aave.toml
+/config.*.toml
 /folder1
 /toys
 *.pyc
 /.vscode
-/config.uni.toml
 venv
+/dist
+/demeter_fetch.egg-info
