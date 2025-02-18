@@ -11,3 +11,4 @@ sample-data
 venv
 /dist
 /demeter_fetch.egg-info
+how_to_deploy.md
