@@ -49,6 +49,7 @@ ChainTypeConfig = {
         "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "uni_v4_pool_manager": "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
+        "gmx_event_emitter": "0xc8ee91a54287db53897056e12d9819156d3822fb",
     },
     ChainType.celo: {
         "allow": [DataSource.rpc, DataSource.chifra],
@@ -97,6 +98,7 @@ class DappType(enum.StrEnum):
     aave = "aave"
     squeeth = "squeeth"
     uniswap_v4 = "uniswap_v4"
+    gmx_v2 = "gmx_v2"
 
 
 @dataclass
@@ -125,6 +127,7 @@ class ChifraConfig:
 class TokenConfig:
     name: str
     decimal: int
+    address: str | None = None
 
 
 @dataclass
@@ -134,6 +137,13 @@ class UniswapConfig:
     token0: TokenConfig | None = None
     token1: TokenConfig | None = None
     is_token0_base: bool | None = None
+
+
+@dataclass
+class GmxV2Config:
+    GM_address: str
+    long_token: TokenConfig
+    short_token: TokenConfig
 
 
 class AaveKey(NamedTuple):
@@ -155,6 +165,7 @@ class FromConfig:
     end: date
     uniswap_config: UniswapConfig | None = None
     aave_config: AaveConfig | None = None
+    gmx_v2_config: GmxV2Config | None = None
     big_query: BigQueryConfig | None = None
     chifra_config: ChifraConfig | None = None
     rpc: RpcConfig | None = None
@@ -305,3 +316,5 @@ class NodeNames:
     uni_v4_pool = "uni_v4_pool"
     uni_v4_minute = "uni_v4_minute"
     uni_v4_tick = "uni_v4_tick"
+
+    gmx_v2_raw = "gmx_v2_raw"

@@ -9,9 +9,26 @@ from typing import Dict, List
 
 import pandas as pd
 
-from .big_query import bigquery_aave,bigquery_v4_pool, bigquery_pool, bigquery_proxy_lp, bigquery_proxy_transfer, bigquery_transaction
+from .big_query import (
+    bigquery_aave,
+    bigquery_v4_pool,
+    bigquery_pool,
+    bigquery_proxy_lp,
+    bigquery_proxy_transfer,
+    bigquery_transaction,
+)
 from .chifra import chifra_pool, chifra_proxy_lp, chifra_proxy_transfer, chifra_aave
-from .rpc import rpc_pool, rpc_proxy_lp, rpc_proxy_transfer, rpc_uni_tx, rpc_aave, rpc_squeeth, rpc_uni_v4_pool
+from .rpc import (
+    rpc_pool,
+    rpc_proxy_lp,
+    rpc_proxy_transfer,
+    rpc_uni_tx,
+    rpc_aave,
+    rpc_squeeth,
+    rpc_uni_v4_pool,
+    rpc_gmx_v2,
+)
+from .. import ToFileType
 from ..common import DataSource, NodeNames, DailyNode, DailyParam, AaveDailyNode, utils, get_depend_name
 from ..common.nodes import AaveDailyParam
 
@@ -51,6 +68,7 @@ class UniSourcePool(DailyNode):
     def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
 
+
 class UniV4SourcePool(DailyNode):
     name = NodeNames.uni_v4_pool
 
@@ -72,6 +90,7 @@ class UniV4SourcePool(DailyNode):
     @property
     def _parse_date_column(self) -> List[str]:
         return ["block_timestamp"]
+
 
 class UniSourceProxyLp(DailyNode):
     name = NodeNames.uni_proxy_lp
@@ -196,3 +215,24 @@ class SqueethSource(DailyNode):
             f"{self.from_config.chain.name}-squeeth-controller-{param.day.strftime('%Y-%m-%d')}.raw"
             + self._get_file_ext()
         )
+
+
+class GmxV2Source(DailyNode):
+    name = NodeNames.gmx_v2_raw
+
+    def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
+        if self.config.to_config.to_file_type == ToFileType.csv:
+            print(
+                "Gmx raw file in csv format will be very large, "
+                'please use feather or parquest. (set file_type = "feather"'
+            )
+        match self.from_config.data_source:
+            case DataSource.rpc:
+                df = rpc_gmx_v2(self.from_config, self.to_path, day)
+            case _:
+                raise NotImplementedError()
+
+        return df
+
+    def _get_file_name(self, param: DailyParam) -> str:
+        return f"{self.from_config.chain.name}-GmxV2-{param.day.strftime('%Y-%m-%d')}.raw" + self._get_file_ext()

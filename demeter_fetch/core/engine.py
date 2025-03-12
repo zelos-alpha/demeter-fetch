@@ -18,7 +18,7 @@ from ..sources import (
     AaveSource,
     UniTransaction,
     SqueethSource,
-    UniV4SourcePool,
+    UniV4SourcePool, GmxV2Source,
 )
 
 
@@ -122,5 +122,10 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return UniV4Minute()
             case ToType.tick:
                 return UniV4Tick()
+    elif dapp == DappType.gmx_v2:
+        match to_type:
+            case ToType.raw:
+                return GmxV2Source()
+
     else:
         raise NotImplemented(f"{dapp} not supported")

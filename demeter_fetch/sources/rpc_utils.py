@@ -335,23 +335,30 @@ def query_event_by_height_concurrent(
             raw_log_list.extend(data)
     log_list = []
     for log in raw_log_list:
-        log["blockNumber"] = int(log["blockNumber"], 16)
-        if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics0):
+        if log["removed"] or len(log["topics"]) < 1:
+            continue
+        if len(contract_config.topics0) > 0:
+            if log["topics"][0] not in contract_config.topics0:
+                continue
+            # match topic0 and topic1
             if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
                 continue
-            if log["removed"]:
-                continue
-            # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data
-            log_list.append(
-                {
-                    "block_number": log["blockNumber"],
-                    "transaction_hash": log["transactionHash"],
-                    "transaction_index": log["transactionIndex"],
-                    "log_index": log["logIndex"],
-                    "data": log["data"],
-                    "topics": log["topics"],
-                }
-            )
+        # allow topic[0] is empty but topic[1] has filter
+        if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
+            continue
+        log["blockNumber"] = int(log["blockNumber"], 16)
+
+        # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data
+        log_list.append(
+            {
+                "block_number": log["blockNumber"],
+                "transaction_hash": log["transactionHash"],
+                "transaction_index": log["transactionIndex"],
+                "log_index": log["logIndex"],
+                "data": log["data"],
+                "topics": log["topics"],
+            }
+        )
     for log in log_list:
         log["log_index"] = int(log["log_index"], 16)
         log["transaction_index"] = int(log["transaction_index"], 16)
@@ -437,7 +444,9 @@ def query_event_by_height(
                 logs = []
                 for topic_hex in contract_config.topics0:
                     for topic1_hex in contract_config.topics1:
-                        tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex,topic1_hex]))
+                        tmp_logs = client.get_logs(
+                            GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex])
+                        )
                     logs.extend(tmp_logs)
             else:
                 logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))

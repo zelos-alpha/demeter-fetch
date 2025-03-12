@@ -6,4 +6,5 @@ from .source_core import (
     UniTransaction,
     SqueethSource,
     UniV4SourcePool,
+    GmxV2Source,
 )
