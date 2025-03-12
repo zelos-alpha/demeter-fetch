@@ -1,3 +1,11 @@
+# v1.2.0
+
+* Add uniswap v4
+
+# v1.1.10
+
+* fix issue in main()
+
 # v1.1.8
 
 * update resample in minute files
