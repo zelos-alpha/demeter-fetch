@@ -313,8 +313,10 @@ class NodeNames:
     osqth_raw = "osqth_raw"
     osqth_minute = "osqth_minute"
 
-    uni_v4_pool = "uni_v4_pool"
-    uni_v4_minute = "uni_v4_minute"
-    uni_v4_tick = "uni_v4_tick"
+    uni4_pool = "uni4_pool"
+    uni4_minute = "uni4_minute"
+    uni4_tick = "uni4_tick"
 
-    gmx_v2_raw = "gmx_v2_raw"
+    gmx2_raw = "gmx2_raw"
+    gmx2_tick = "gmx2_tick"
+    gmx2_price = "gmx2_price"

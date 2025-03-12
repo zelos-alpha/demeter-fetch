@@ -227,10 +227,10 @@ def get_active_liquidity(lower_tick, upper_tick, current_tick, delta):
 
 
 class UniV4Tick(UniTick):
-    name = NodeNames.uni_v4_tick
+    name = NodeNames.uni4_tick
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> pd.DataFrame:
-        input_df = data[get_depend_name(NodeNames.uni_v4_pool, self.id)]
+        input_df = data[get_depend_name(NodeNames.uni4_pool, self.id)]
         if len(input_df.index) < 1:
             return pd.DataFrame(columns=tick_file_columns)
         df = input_df.copy()

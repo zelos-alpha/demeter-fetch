@@ -70,7 +70,7 @@ class UniSourcePool(DailyNode):
 
 
 class UniV4SourcePool(DailyNode):
-    name = NodeNames.uni_v4_pool
+    name = NodeNames.uni4_pool
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         df: pd.DataFrame | None = None
@@ -218,7 +218,7 @@ class SqueethSource(DailyNode):
 
 
 class GmxV2Source(DailyNode):
-    name = NodeNames.gmx_v2_raw
+    name = NodeNames.gmx2_raw
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         if self.config.to_config.to_file_type == ToFileType.csv:

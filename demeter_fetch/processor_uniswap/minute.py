@@ -156,10 +156,10 @@ class UniMinute(DailyNode):
 
 
 class UniV4Minute(UniMinute):
-    name = NodeNames.uni_v4_minute
+    name = NodeNames.uni4_minute
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
-        df = data[get_depend_name(NodeNames.uni_v4_pool, self.id)]
+        df = data[get_depend_name(NodeNames.uni4_pool, self.id)]
         if len(df.index) < 1:
             return pd.DataFrame(columns=columns)
         df = preprocess_df(df)

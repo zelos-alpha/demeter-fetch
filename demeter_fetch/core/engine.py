@@ -8,6 +8,7 @@ from typing import List
 from .. import DappType, ToType, Config
 from ..common import Node
 from ..processor_aave import AaveMinute, AaveTick
+from ..processor_gmx2 import GmxV2Tick, GmxV2Price
 from ..processor_squeeth import SqueethMinute
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute, UniV4Minute, UniV4Tick
 from ..processor_uniswap.relative_price import UniRelativePrice
@@ -18,7 +19,8 @@ from ..sources import (
     AaveSource,
     UniTransaction,
     SqueethSource,
-    UniV4SourcePool, GmxV2Source,
+    UniV4SourcePool,
+    GmxV2Source,
 )
 
 
@@ -76,6 +78,12 @@ UniV4SourcePool.depend = []
 UniV4Minute.depend = [UniV4SourcePool]
 UniV4Tick.depend = [UniV4SourcePool]
 
+# Gmx
+
+GmxV2Source.depend = []
+GmxV2Tick.depend = [GmxV2Source]
+GmxV2Price.depend = [GmxV2Source]
+
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
     if dapp == DappType.uniswap:
@@ -126,6 +134,10 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
         match to_type:
             case ToType.raw:
                 return GmxV2Source()
+            case ToType.tick:
+                return GmxV2Tick()
+            case ToType.price:
+                return GmxV2Price()
 
     else:
         raise NotImplemented(f"{dapp} not supported")
