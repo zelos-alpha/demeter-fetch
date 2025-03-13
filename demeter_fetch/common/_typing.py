@@ -85,6 +85,7 @@ class ToType(enum.StrEnum):
     position = "position"
     user_lp = "user_lp"
     price = "price"
+    pool = "pool"
 
 
 class ToFileType(enum.StrEnum):
@@ -144,6 +145,7 @@ class GmxV2Config:
     GM_address: str
     long_token: TokenConfig
     short_token: TokenConfig
+    index_token: TokenConfig
 
 
 class AaveKey(NamedTuple):
@@ -320,4 +322,5 @@ class NodeNames:
     gmx2_raw = "gmx2_raw"
     gmx2_tick = "gmx2_tick"
     gmx2_price = "gmx2_price"
-    gmx2_minute = "minute"
+    gmx2_pool = "gmx2_pool"
+    gmx2_minute = "gmx2_minute"

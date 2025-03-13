@@ -1,6 +1,7 @@
 import enum
 from typing import Tuple, Dict
 
+GMX_FLOAT_DECIMAL=10**30
 
 class GmxTopics(enum.StrEnum):
     EventLog = "0x7e3bde2ba7aca4a8499608ca57f3b0c1c1c93ace63ffd3741a9fab204146fc9a"

@@ -101,7 +101,12 @@ def convert_to_config(conf_file: dict) -> Config:
             conf_file["from"]["gmx_v2"]["short_token"]["decimal"],
             conf_file["from"]["gmx_v2"]["short_token"]["address"].lower(),
         )
-        from_config.gmx_v2_config = GmxV2Config(pool_address, long_token, short_token)
+        index_token = TokenConfig(
+            conf_file["from"]["gmx_v2"]["index_token"]["name"].lower(),
+            conf_file["from"]["gmx_v2"]["index_token"]["decimal"],
+            conf_file["from"]["gmx_v2"]["index_token"]["address"].lower(),
+        )
+        from_config.gmx_v2_config = GmxV2Config(pool_address, long_token, short_token, index_token)
 
     if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
         raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")

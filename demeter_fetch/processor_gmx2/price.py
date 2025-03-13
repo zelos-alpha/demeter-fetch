@@ -11,7 +11,7 @@ from .gmx2_utils import GmxTopics, data_type, data_decoder, arb_tokens
 
 
 class GmxV2Price(DailyNode):
-    name = NodeNames.gmx2_tick
+    name = NodeNames.gmx2_price
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-GmxV2-{param.day.strftime('%Y-%m-%d')}.price" + self._get_file_ext()

@@ -5,10 +5,10 @@
 # @Description:
 from typing import List
 
-from .. import DappType, ToType, Config
+from .. import DappType, ToType
 from ..common import Node
 from ..processor_aave import AaveMinute, AaveTick
-from ..processor_gmx2 import GmxV2Tick, GmxV2Price
+from ..processor_gmx2 import GmxV2Tick, GmxV2Price, GmxV2PoolTx, GmxV2Minute
 from ..processor_squeeth import SqueethMinute
 from ..processor_uniswap import UniUserLP, UniPositions, UniTick, UniTickNoPos, UniMinute, UniV4Minute, UniV4Tick
 from ..processor_uniswap.relative_price import UniRelativePrice
@@ -79,10 +79,11 @@ UniV4Minute.depend = [UniV4SourcePool]
 UniV4Tick.depend = [UniV4SourcePool]
 
 # Gmx
-
 GmxV2Source.depend = []
 GmxV2Tick.depend = [GmxV2Source]
 GmxV2Price.depend = [GmxV2Source]
+GmxV2PoolTx.depend = [GmxV2Tick]
+GmxV2Minute.depend = [GmxV2PoolTx, GmxV2Price]
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:
@@ -138,6 +139,9 @@ def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) 
                 return GmxV2Tick()
             case ToType.price:
                 return GmxV2Price()
-
+            case ToType.pool:
+                return GmxV2PoolTx()
+            case ToType.minute:
+                return GmxV2Minute()
     else:
         raise NotImplemented(f"{dapp} not supported")
