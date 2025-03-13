@@ -1,14 +1,13 @@
-from datetime import date, datetime, UTC
+from datetime import date, datetime, timezone
 from typing import Dict
 
 import pandas as pd
-from pyarrow import timestamp
+from eth_abi import decode
 from tqdm import tqdm
 
 from demeter_fetch import NodeNames, ChainType
 from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
 from .gmx2_utils import GmxTopics, data_type, data_decoder, arb_tokens
-from eth_abi import decode
 
 
 class GmxV2Price(DailyNode):
@@ -42,7 +41,7 @@ class GmxV2Price(DailyNode):
                 pbar.update()
 
         sorted_time = [k for k, v in sorted(time_idx.items(), key=lambda item: item[1])]
-        sorted_time = [datetime.fromtimestamp(i, tz=UTC) for i in sorted_time]
+        sorted_time = [datetime.fromtimestamp(i, tz=timezone.utc) for i in sorted_time]
         df = pd.DataFrame(time_list, index=sorted_time)
 
         for i in df.columns:
