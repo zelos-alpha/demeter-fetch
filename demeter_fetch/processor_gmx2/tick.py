@@ -1,6 +1,6 @@
 import datetime
 from datetime import date
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 from eth_abi import decode
@@ -32,6 +32,10 @@ class GmxV2Tick(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-GmxV2-{param.day.strftime('%Y-%m-%d')}.tick" + self._get_file_ext()
+
+    @property
+    def _parse_date_column(self) -> List[str]:
+        return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> pd.DataFrame:
         input_df = data[get_depend_name(NodeNames.gmx2_raw, self.id)]#.head(2000)

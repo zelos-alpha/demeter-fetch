@@ -1,5 +1,5 @@
 from datetime import date, datetime, timezone
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 from eth_abi import decode
@@ -15,6 +15,10 @@ class GmxV2Price(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-GmxV2-{param.day.strftime('%Y-%m-%d')}.price" + self._get_file_ext()
+
+    @property
+    def _parse_date_column(self) -> List[str]:
+        return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> pd.DataFrame:
         if self.from_config.chain == ChainType.arbitrum:

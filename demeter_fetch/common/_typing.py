@@ -320,3 +320,4 @@ class NodeNames:
     gmx2_raw = "gmx2_raw"
     gmx2_tick = "gmx2_tick"
     gmx2_price = "gmx2_price"
+    gmx2_minute = "minute"
