@@ -222,10 +222,7 @@ class GmxV2Source(DailyNode):
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date):
         if self.config.to_config.to_file_type == ToFileType.csv:
-            print(
-                "Gmx raw file in csv format will be very large, "
-                'please use feather or parquest. (set file_type = "feather"'
-            )
+            print("Gmx raw file will be very large in csv format, so it will be saved as feather")
         match self.from_config.data_source:
             case DataSource.rpc:
                 df = rpc_gmx_v2(self.from_config, self.to_path, day)
@@ -233,6 +230,9 @@ class GmxV2Source(DailyNode):
                 raise NotImplementedError()
 
         return df
+
+    def _get_file_ext(self):
+        return ".feather"
 
     def _get_file_name(self, param: DailyParam) -> str:
         return f"{self.from_config.chain.name}-GmxV2-{param.day.strftime('%Y-%m-%d')}.raw" + self._get_file_ext()

@@ -80,7 +80,7 @@ class Node:
     # region Function about files
 
     def _get_file_name(self, param: namedtuple) -> str:
-        return f"{self.name}-{str(param)}.csv"
+        return f"{self.name}-{str(param)}."+ self._get_file_ext()
 
     def get_file_path(self, param: namedtuple) -> str:
         return os.path.join(self.to_path, self._get_file_name(param))
@@ -115,23 +115,23 @@ class Node:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 
     def save_file(self, df: pd.DataFrame, path: str):
-        match self.config.to_config.to_file_type:
-            case ToFileType.csv:
+        match self._get_file_ext():
+            case ".csv":
                 df.to_csv(path, index=False, lineterminator="\n", date_format="%Y-%m-%d %H:%M:%S")
-            case ToFileType.feather:
+            case ".feather":
                 df.to_feather(path)
-            case ToFileType.parquet:
+            case ".parquet":
                 df.to_parquet(path, engine="pyarrow", index=False)
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
 
     def read_file(self, path: str):
-        match self.config.to_config.to_file_type:
-            case ToFileType.csv:
+        match self._get_file_ext():
+            case ".csv":
                 return pd.read_csv(path, converters=self._load_csv_converter, parse_dates=self._parse_date_column)
-            case ToFileType.feather:
+            case ".feather":
                 return pd.read_feather(path)
-            case ToFileType.parquet:
+            case ".parquet":
                 return pd.read_parquet(path, engine="pyarrow")
             case _:
                 raise RuntimeError(f"{self.config.to_config.to_file_type.name} not supported")
