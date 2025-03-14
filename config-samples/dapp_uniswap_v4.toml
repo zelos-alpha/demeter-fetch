@@ -1,0 +1,25 @@
+[from]
+chain = "ethereum"
+datasource = "big_query" # big_query or rpc or chifra
+dapp_type = "uniswap_v4" # uniswap or aave
+http_proxy = "http://localhost:7890"
+start = "2025-2-9"
+end = "2025-2-9"
+
+[from.uniswap]
+# id of uniswap v4 pool
+pool_address = "0x21c67e77068de97969ba93d4aab21826d33ca12bb9f565d8496e8fda8a82ca27"
+ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+is_token0_base = false
+
+[from.rpc]
+end_point = "http://localhost:8545"
+force_no_proxy = true
+thread = 5
+
+[to]
+type = "tick" # minute or tick or raw
+save_path = "/data/uniswap-v4/ethereum/eth-usdc-005"
+skip_existed = true # if file has existed, will skip download. default is false
+#keep_raw = true
+#file_type = "feather" # csv or feather, default is csv

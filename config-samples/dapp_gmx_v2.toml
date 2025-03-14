@@ -1,0 +1,37 @@
+[from]
+chain = "arbitrum"
+datasource = "rpc" # big_query or rpc or chifra
+dapp_type = "gmx_v2" # uniswap or aave
+http_proxy = "http://localhost:7890"
+start = "2025-1-8"
+end = "2025-1-8"
+
+[from.gmx_v2]
+gm_address = "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336"
+
+[from.gmx_v2.long_token]
+name = "weth"
+decimal = 18
+address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+
+[from.gmx_v2.short_token]
+name = "usdc"
+decimal = 6
+address = "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+[from.gmx_v2.index_token]
+name = "weth"
+decimal = 18
+address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+
+[from.rpc]
+end_point = "http://localhost:8545"
+keep_tmp_files = false
+thread = 2
+
+[to]
+type = "minute" # minute or tick or raw or pool
+save_path = "/data/gmx_v2/arbitrum/"
+skip_existed = true # if file has existed, will skip download. default is false
+keep_raw = true
+file_type = "csv" # csv or feather, default is csv
