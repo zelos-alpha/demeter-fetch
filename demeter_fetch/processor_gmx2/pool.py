@@ -183,6 +183,14 @@ class GmxV2PoolTx(DailyNode):
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         """
+        你需要使用这个交易开始的值, 这是为了让分钟级别数据更精确,
+        比如, 交易在10:10:23发生, 而最终的分钟会需要10:10:0的状态,
+        此时, 这个交易还没有发生, 因此你需要计算的是这个交易发生之前的状态.
+        而10:11:0的数据, 会由后面的交易来填充. 这会造成的问题是这一天的末尾数据不对,
+        比如, 最后一笔交易发生在23:50:25, 那么从23:51:00开始的数据, 肯定不能用23:50:00的数据, 因为这一分钟已经有交易改变状态了.
+        因此设置一个last变量, 记录最后的状态, 并放在这一天的最后一刻. 这样简单的使用bfill就可以填充所有数据了
+
+
         You need to use the value at the start of each transaction to make minute-level data more accurate.
         For example, if a transaction occurs at 10:10:23, the final minute-level data will need the state at 10:10:00.
         At this point, the transaction hasn’t happened yet, so you need to calculate the state before this transaction occurs.

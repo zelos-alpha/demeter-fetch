@@ -70,10 +70,27 @@ class GmxV2Minute(DailyNode):
         minute_df.index = minute_df.index.tz_localize(None)
 
         minute_df = pd.concat([minute_df, useful_price], axis=1)
-        mask = pd.isna(minute_df["poolValue"])
-        minute_df.loc[mask, ["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.loc[mask].apply(
-            calcPoolValue, axis=1
-        )
+
+        """
+        在这里, 我们覆盖掉从deposit和withdraw中获取的pool value和pnl, 
+        这样做的原因是, log中获取的value和计算的value存在误差. 
+        已知calcPoolValue的算法没问题, 如果使用MarketPoolValueInfo中获取的值计算的话, 误差在10^-7. 
+        所以这里的误差, 是由于数据的时间没有对齐引起的. 这是无法避免的, 为了避免数据波动这里poolvalue统一使用计算值
+        
+        Here, we override the pool value and PnL obtained from `deposit` and `withdraw`. 
+        The reason for this is that there is a discrepancy between the value obtained from the log and the calculated value. 
+        It is known that the algorithm for `calcPoolValue` is correct. 
+        If we use the values obtained from `MarketPoolValueInfo` for calculation, 
+        the error is on the order of 10⁻⁷.
+         Therefore, the error here is caused by the misalignment of data timestamps, which is unavoidable. 
+         To prevent data fluctuations, the pool value is uniformly set to the calculated value in this case.
+        """
+        # mask = pd.isna(minute_df["poolValue"])
+        # minute_df.loc[mask, ["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.loc[mask].apply(
+        #     calcPoolValue, axis=1
+        # )
+
+        minute_df[["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.apply(calcPoolValue, axis=1)
         minute_df["timestamp"] = minute_df.index
         minute_df = minute_df[minute_file_columns]
         return minute_df
