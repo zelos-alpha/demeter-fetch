@@ -1,18 +1,20 @@
 [from]
 chain = "polygon"
 datasource = "rpc" # big_query or rpc or chifra
-dapp_type = "uniswap" # uniswap or aave or squeeth
+dapp_type = "uniswap" # uniswap/aave/squeeth/uniswap_v4/gmx_v2
 #http_proxy = "http://localhost:5555" # if network is bad, try use proxy
 start = "2022-3-16"
 end = "2022-3-17"
 
 [from.uniswap]
 pool_address = "0x45dda9cb7c25131df268515131f647d726f50608"
-ignore_position_id = false # if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
+ignore_position_id = false # Just for uniswap tick files, if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
 is_token0_base = false # true of false,  # only necessary for ToType==price, e.g. token0 is usdc, token1 is weth, you want value like weth/usdc=3000, then you should set false
+
 [from.uniswap.token0] # only necessary for ToType==price
 name = "usdc"
 decimal = 6
+
 [from.uniswap.token1] # only necessary for ToType==price
 name = "eth"
 decimal = 18
@@ -24,28 +26,50 @@ tokens = [# address of erc20 token which avialable on aave
     "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
 ]
 
+
+[from.gmx_v2] # For gmx, only necessary for ToType==pool/minute
+gm_address = "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336"
+
+[from.gmx_v2.long_token]
+name = "weth"
+decimal = 18
+address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+
+[from.gmx_v2.short_token]
+name = "usdc"
+decimal = 6
+address = "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+[from.gmx_v2.index_token]
+name = "weth"
+decimal = 18
+address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+
+
+
 [from.big_query] # if you want to download from big query, use this section
 auth_file = "./auth/airy-sight-361003-d14b5ce41c48.json" # google bigquery auth file
 
 [from.rpc] # If you want to download from rpc interface, use this section
 end_point = "https://localhost:8545"
 #auth_string = "Basic Y3J0Yzo3NKY3TjY" # auth string for rpc end point
-#batch_size = 500 # default is 500
+#batch_size = 500 # block count in one get_logs query.
 #keep_tmp_files = false
-etherscan_api_key = "some_api_key" #
+etherscan_api_key = "some_api_key" # Demeter-fetch have to query start/end block number in a day from etherscan, or polygonscan etc.
 force_no_proxy = false # if force_no_proxy==true, will query ethereum rpc without proxy.
 # height_cache_path = "" # path of height cache file, if leave to none, height cache will be saved in to path
 thread=5
 
 [from.chifra]
-etherscan_api_key = "" # If this is set, query from etherscan will be faster.
+etherscan_api_key = "" # Api key of etherscan, If this is set, query from etherscan will be faster.
 
 [to] # output config
 # for uniswap:  raw/minute/tick/position/user_lp/price
 # for aave: raw/minute/tick
-type = "tick"
-#file_type = "csv" # csv or feather or parquet, default is csv
+# for gmx: raw/price/tick/pool/minute
+type = "tick" # to file type
+file_type = "csv" # save file as csv or feather or parquet, default is csv
 save_path = "./sample-data"
-keep_raw = true # Keep original files for each step, default is false
+keep_raw = true # keep raw files in every steps, or only keep final result file. default is false
 skip_existed = true # Skip if the file has existed. default is false
 

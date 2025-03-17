@@ -1,0 +1,25 @@
+[from]
+chain = "ethereum"
+datasource = "rpc"
+dapp_type = "uniswap"
+start = "2025-1-8"
+end = "2025-1-8"
+
+[from.uniswap]
+pool_address = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+
+[from.rpc]
+end_point = "http://192.168.0.100:8545"
+# We use get_logs to get event logs in traction. but this rpc interface just have block number.
+# So we have to get block timestamp by block number, this will cost a lot of time. So we set a height cache,
+# If this block number has cached, we don't have to query block height again. So downloading will faster
+# Height cache is a file. When you start a downloading, it will generate a cache file at height_cache_path
+# This cache can be shared in various downloading. So it's very helpful to keep it in a specific path.
+# You can also generate this file by demeter-fetch block_timestamp command. It will generate all blocknumber-timestamp
+# mapping in specific time range.
+height_cache_path="/data"
+
+[to]
+type = "minute"
+save_path = "/data/uniswap/ethereum/usdc-eth-005"
+skip_existed = true

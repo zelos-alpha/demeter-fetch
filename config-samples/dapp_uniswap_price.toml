@@ -1,0 +1,26 @@
+[from]
+chain = "ethereum"
+datasource = "big_query"
+dapp_type = "uniswap"
+start = "2025-1-8"
+end = "2025-1-8"
+
+[from.uniswap]
+pool_address = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+is_token0_base = false # true of false,  # only necessary for ToType==price, e.g. token0 is usdc, token1 is weth, you want price like weth/usdc=3000(usdc is quote), then you should set false
+
+[from.uniswap.token0]  # only necessary for ToType==price
+name = "usdc"
+decimal = 6
+
+[from.uniswap.token1]  # only necessary for ToType==price
+name = "eth"
+decimal = 18
+
+[from.big_query]
+auth_file = "~/zelos/code/demeter-fetch/auth/airy-sight-XXXXXX-XXXXXXXXXXXXX.json"
+
+[to]
+type = "tick" # minute or tick or raw
+save_path = "/data/uniswap/ethereum/usdc-eth-005"
+skip_existed = true # if file has existed, will skip download. default is false

@@ -1,39 +1,25 @@
+# This is a sample to download uniswap data with rpc
+
 [from]
 chain = "ethereum"
-datasource = "rpc" # big_query or rpc or chifra
-dapp_type = "uniswap" # uniswap or aave
+datasource = "rpc"
+dapp_type = "uniswap"
 http_proxy = "http://localhost:7890"
 start = "2025-1-8"
 end = "2025-1-8"
 
 [from.uniswap]
 pool_address = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
-ignore_position_id = false # Just for uniswap, if set to true, will not download uniswap proxy logs to get position_id. will save a lot of time
-is_token0_base = false # 0 or 1
+ignore_position_id = false
+is_token0_base = false
 
-[from.uniswap.token0]
-name = "usdc"
-decimal = 6
-[from.uniswap.token1]
-name = "eth"
-decimal = 18
-
-[from.big_query]
-auth_file = "~/zelos/code/demeter-fetch/auth/airy-sight-XXXXXX-XXXXXXXXXXXXX.json"
-
-[from.rpc]
-end_point = "http://10.0.0.4:8545"
-auth_string = "Basic sdfagasdgasdfasdf"
-force_no_proxy = true
-#batch_size = 500
-keep_tmp_files = false
-etherscan_api_key = "Your key at XXXScan"
-thread = 5
-height_cache_path="/data"
+[from.rpc] # If you want to download from rpc interface, use this section
+end_point = "https://192.168.0.100:8545"
+etherscan_api_key = "some_api_key" # Api key of etherscan
 
 [to]
 type = "tick" # minute or tick or raw
 save_path = "/data/uniswap/ethereum/usdc-eth-005"
 skip_existed = true # if file has existed, will skip download. default is false
-keep_raw = true
-#file_type = "feather" # csv or feather, default is csv
+# keep_raw = true # keep raw files in every step, or only keep final result file. default is false
+# file_type = "feather" # save file as csv or feather or parquet, default is csv
