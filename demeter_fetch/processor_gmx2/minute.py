@@ -15,6 +15,7 @@ minute_file_columns = [
     "virtualSwapInventoryShort",
     "poolValue",
     "marketTokensSupply",
+    "impactPoolAmount",
     "longPrice",
     "shortPrice",
     "indexPrice",
