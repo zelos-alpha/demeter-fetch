@@ -1,7 +1,8 @@
 import sys
 import demeter_fetch.common.utils as utils
 from demeter_fetch.core import download, get_commend_args
-from demeter_fetch.tools import date_to_height, block_timestamp_cache
+from demeter_fetch.tools import date_to_height, block_timestamp_cache, aave_risk_param
+
 
 def main():
     if len(sys.argv) == 1:
@@ -19,6 +20,8 @@ def main():
             date_to_height(args)
         elif args.tools == "block_timestamp":
             block_timestamp_cache(args)
+        elif args.tools == "aave":
+            aave_risk_param(args)
         pass
 
 if __name__ == "__main__":

@@ -29,5 +29,11 @@ def get_commend_args():
     block_timestamp.add_argument("-t", "--to", help="save cache to this path")
     block_timestamp.add_argument("-n", "--engine", help="storage type, sqlite or levelDB", default="sqlite")
 
+    aave = parser_tool_sub.add_parser("aave", help="Get aave risk parameter")
+    aave.add_argument("-c", "--chain", help="chain name, [ethereum, polygon]")
+    aave.add_argument("-p", "--proxy", help="proxy, eg: https://localhost:7890, optional", default="")
+    aave.add_argument("-b", "--block_number", help="block number, e.g. 10000, default is latest", default="latest")
+
     args = argParser.parse_args()
+
     return args
