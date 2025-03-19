@@ -69,6 +69,7 @@ class GmxV2Minute(DailyNode):
             }
         )
         minute_df.index = minute_df.index.tz_localize(None)
+        useful_price.index = useful_price.index.tz_localize(None)
 
         minute_df = pd.concat([minute_df, useful_price], axis=1)
 
