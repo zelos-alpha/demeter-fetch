@@ -1,3 +1,8 @@
+# v1.3.0
+
+* Add gmx v2
+* Add aave protocol parameter tool
+
 # v1.2.0
 
 * Add uniswap v4
