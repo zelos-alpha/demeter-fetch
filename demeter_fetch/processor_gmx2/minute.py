@@ -60,6 +60,7 @@ class GmxV2Minute(DailyNode):
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df = tick_df.set_index("timestamp")
         minute_df = tick_df.resample("1min").first()
+        minute_df.index = minute_df.index.tz_localize(None)
 
         new_index = pd.date_range(
             start=pd.Timestamp(day),
