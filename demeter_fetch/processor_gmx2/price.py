@@ -11,6 +11,10 @@ from .gmx2_utils import GmxTopics, data_type, data_decoder, arb_tokens
 
 
 class GmxV2Price(DailyNode):
+    def __init__(self):
+        super().__init__()
+        self.execute_in_sub_process = True
+
     name = NodeNames.gmx2_price
 
     def _get_file_name(self, param: DailyParam) -> str:

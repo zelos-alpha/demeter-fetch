@@ -168,6 +168,10 @@ class GmxV2PoolTx(DailyNode):
     """
     Pool state when a transaction occurs.
     """
+    def __init__(self):
+        super().__init__()
+        self.execute_in_sub_process = True
+
 
     name = NodeNames.gmx2_pool
 

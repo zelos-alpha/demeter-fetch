@@ -3,11 +3,11 @@
 # @Time    : 2024-01-09 11:21
 # @Author  : 32ethers
 # @Description:
+import multiprocessing
+import os
 from collections import namedtuple
 from datetime import timedelta, date
-
-import os
-from typing import List, Dict, Callable, Tuple
+from typing import List, Dict, Callable
 
 import pandas as pd
 from tqdm import tqdm
@@ -80,7 +80,7 @@ class Node:
     # region Function about files
 
     def _get_file_name(self, param: namedtuple) -> str:
-        return f"{self.name}-{str(param)}."+ self._get_file_ext()
+        return f"{self.name}-{str(param)}." + self._get_file_ext()
 
     def get_file_path(self, param: namedtuple) -> str:
         return os.path.join(self.to_path, self._get_file_name(param))
@@ -150,6 +150,14 @@ class Node:
 
 DailyParam = namedtuple("DailyParam", ["day"])
 
+def process_a_day(self_instance, day_param: DailyParam, day_idx: date):
+    param = {}
+    for depend in self_instance.depend_instance:
+        depend_file_path = depend.get_file_path(day_param)
+        param[get_depend_name(depend.name, depend.id)] = depend.read_file(depend_file_path)
+    df = self_instance._process_one_day(param, day_idx)
+    self_instance.save_file(df, self_instance.get_file_path(day_param))
+
 
 class DailyNode(Node):
     """
@@ -158,6 +166,7 @@ class DailyNode(Node):
 
     def __init__(self):
         super().__init__()
+        self.execute_in_sub_process = False
 
     def work(self):
         set_global_pbar(None)
@@ -173,12 +182,12 @@ class DailyNode(Node):
                 day_idx += timedelta(days=1)
                 pbar.update()
                 continue
-            param = {}
-            for depend in self.depend_instance:
-                depend_file_path = depend.get_file_path(day_param)
-                param[get_depend_name(depend.name, depend.id)] = depend.read_file(depend_file_path)
-            df = self._process_one_day(param, day_idx)
-            self.save_file(df, self.get_file_path(day_param))
+            if self.execute_in_sub_process:
+                p = multiprocessing.Process(target=process_a_day, args=(self, day_param, day_idx))
+                p.start()
+                p.join()
+            else:
+                process_a_day(self, day_param, day_idx)
             day_idx += timedelta(days=1)
             pbar.update()
 
@@ -191,6 +200,7 @@ class DailyNode(Node):
             DailyParam(day): self.get_file_path(DailyParam(day))
             for day in TimeUtil.get_date_array(self.from_config.start, self.from_config.end)
         }
+
 
 
 AaveDailyParam = namedtuple("AaveDailyParam", ["day", "token"])
