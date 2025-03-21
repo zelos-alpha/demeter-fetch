@@ -47,7 +47,6 @@ class GmxV2Price(DailyNode):
         sorted_time = [k for k, v in sorted(time_idx.items(), key=lambda item: item[1])]
         sorted_time = [datetime.fromtimestamp(i, tz=timezone.utc) for i in sorted_time]
         df = pd.DataFrame(time_list, index=sorted_time)
-
         for i in df.columns:
             df[i] = df[i] * 10 ** (known_tokens[i][1] - 30)
 
@@ -55,13 +54,14 @@ class GmxV2Price(DailyNode):
         price_df = df.rename(columns=rename_dict)
 
         new_index = pd.date_range(
-            start=price_df.index[0].floor("D"),
-            end=price_df.index[0].floor("D") + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
+            start=pd.Timestamp(day),
+            end=pd.Timestamp(day) + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
             freq="min",
         )
         price_df = price_df[~price_df.index.duplicated(keep="last")]  # remove duplicate index
         price_df = price_df.resample("1min").last()
         # expend to whole day, and fill tail and head empty minutes
+        price_df.index = price_df.index.tz_localize(None)
         price_df = price_df.reindex(new_index).infer_objects(copy=False).ffill().bfill()
         price_df.insert(0, "timestamp", price_df.index)
         return price_df

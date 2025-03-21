@@ -60,6 +60,14 @@ class GmxV2Minute(DailyNode):
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df = tick_df.set_index("timestamp")
         minute_df = tick_df.resample("1min").first()
+
+        new_index = pd.date_range(
+            start=pd.Timestamp(day),
+            end=pd.Timestamp(day) + pd.Timedelta(days=1) - pd.Timedelta(minutes=1),
+            freq="min",
+        )
+        minute_df = minute_df.reindex(new_index).infer_objects(copy=False)
+
         minute_df[columns_to_bfill] = minute_df[columns_to_bfill].bfill()
         useful_price = pd.DataFrame(
             {
