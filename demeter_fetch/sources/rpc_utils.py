@@ -1,4 +1,5 @@
 import os.path
+import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
@@ -11,7 +12,7 @@ from datetime import datetime, UTC, timezone
 from operator import itemgetter
 from sqlitedict import SqliteDict
 from tqdm import tqdm  # process bar
-from typing import List
+from typing import List, Dict
 
 import demeter_fetch.common.utils as utils
 from demeter_fetch import ChainType, EthError
@@ -290,12 +291,57 @@ def get_event_slice(client, contract_config, start, end, one_by_one):
     if one_by_one:
         logs = []
         for topic_hex in contract_config.topics0:
-            for topic1_hex in contract_config.topics1:
-                tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex]))
+            if len(contract_config.topics1) > 0:
+                for topic1_hex in contract_config.topics1:
+                    if len(contract_config.topics2) > 0:
+                        for topic2_hex in contract_config.topics2:
+                            if len(contract_config.topics3) > 0:
+                                for topic3_hex in contract_config.topics3:
+                                    tmp_logs = client.get_logs(
+                                        GetLogsParam(
+                                            contract_config.address,
+                                            start,
+                                            end,
+                                            [topic_hex, topic1_hex, topic2_hex, topic3_hex],
+                                        )
+                                    )
+                                    logs.extend(tmp_logs)
+                            else:
+                                tmp_logs = client.get_logs(
+                                    GetLogsParam(
+                                        contract_config.address, start, end, [topic_hex, topic1_hex, topic2_hex]
+                                    )
+                                )
+                                logs.extend(tmp_logs)
+                    else:
+                        tmp_logs = client.get_logs(
+                            GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex])
+                        )
+                        logs.extend(tmp_logs)
+            else:
+                tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
                 logs.extend(tmp_logs)
+
     else:
         logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
     return logs
+
+
+def _is_log_useful(log: Dict, contract_config: ContractConfig) -> bool:
+    if log["removed"]:
+        return False
+    if len(contract_config.topics0) > 0 and log["topics"][0] not in contract_config.topics0:
+        return False
+    # match topic1
+    if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
+        return False
+    # match topic2
+    if len(contract_config.topics2) > 0 and log["topics"][2] not in contract_config.topics2:
+        return False
+    # match topic3
+    if len(contract_config.topics3) > 0 and log["topics"][3] not in contract_config.topics3:
+        return False
+    return True
 
 
 def query_event_by_height_concurrent(
@@ -312,6 +358,24 @@ def query_event_by_height_concurrent(
     skip_timestamp: bool = False,
     thread: int = 10,
 ) -> List[str]:
+    """
+
+
+
+    :param chain:
+    :param client:
+    :param contract_config:
+    :param start_height:
+    :param end_height:
+    :param height_cache:
+    :param height_cache_path:
+    :param save_path:
+    :param batch_size:
+    :param one_by_one: query every log in contract_config one by one, or download all logs then filter with contract_config
+    :param skip_timestamp:
+    :param thread:
+    :return:
+    """
     tmp_file_path = get_tmp_file_path(save_path, start_height, end_height, chain, contract_config.address)
     if os.path.exists(tmp_file_path):
         return [tmp_file_path]
@@ -332,19 +396,11 @@ def query_event_by_height_concurrent(
             as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Loading logs"
         ):
             data = future.result()
+            print(len(data))
             raw_log_list.extend(data)
     log_list = []
     for log in raw_log_list:
-        if log["removed"] or len(log["topics"]) < 1:
-            continue
-        if len(contract_config.topics0) > 0:
-            if log["topics"][0] not in contract_config.topics0:
-                continue
-            # match topic0 and topic1
-            if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
-                continue
-        # allow topic[0] is empty but topic[1] has filter
-        if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
+        if not _is_log_useful(log, contract_config):
             continue
         log["blockNumber"] = int(log["blockNumber"], 16)
 
@@ -409,7 +465,7 @@ def query_event_by_height(
     :return: 临时文件的文件名
     :rtype:
     """
-
+    warnings.warn("use query_event_by_height_concurrent", DeprecationWarning)
     collect_dt, logs_to_save, collect_start = None, [], None  # collect date, date log by day，collect start time
     tmp_file_full_path_list = []
     if not height_cache:
@@ -454,9 +510,7 @@ def query_event_by_height(
             for log in logs:
                 log["blockNumber"] = int(log["blockNumber"], 16)
                 if len(log["topics"]) > 0 and (log["topics"][0] in contract_config.topics0):
-                    if len(contract_config.topics1) > 0 and log["topics"][1] not in contract_config.topics1:
-                        continue
-                    if log["removed"]:
+                    if not _is_log_useful(log, contract_config):
                         continue
                     # block_number, block_timestamp, transaction_hash, transaction_index, log_index, topics, data
                     log_list.append(

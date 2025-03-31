@@ -12,6 +12,8 @@ class ContractConfig:
     address: str
     topics0: List[str]
     topics1: List[str]=field(default_factory=list)
+    topics2: List[str]=field(default_factory=list)
+    topics3: List[str]=field(default_factory=list)
 
 
 height_cache: Dict[date, Tuple[int, int]] = {}
