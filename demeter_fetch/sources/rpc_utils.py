@@ -288,7 +288,14 @@ def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> p
 
 
 def get_event_slice(client, contract_config, start, end, one_by_one):
-    if one_by_one:
+    # allow download all when no topic is specified
+    if (
+        one_by_one
+        and len(contract_config.topics0) > 0
+        and len(contract_config.topics1) > 0
+        and len(contract_config.topics2) > 0
+        and len(contract_config.topics3) > 0
+    ):
         logs = []
         for topic_hex in contract_config.topics0:
             if len(contract_config.topics1) > 0:
