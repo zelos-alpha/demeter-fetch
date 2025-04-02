@@ -5,6 +5,7 @@
 # @Description:
 import multiprocessing
 import os
+import time
 from collections import namedtuple
 from datetime import timedelta, date
 from typing import List, Dict, Callable
@@ -181,6 +182,7 @@ class DailyNode(Node):
             if self.config.to_config.skip_existed and os.path.exists(step_file_name):
                 day_idx += timedelta(days=1)
                 pbar.update()
+                time.sleep(0.001) # force process bar update
                 continue
             if self.execute_in_sub_process:
                 p = multiprocessing.Process(target=process_a_day, args=(self, day_param, day_idx))
