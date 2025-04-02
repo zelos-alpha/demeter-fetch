@@ -28,6 +28,10 @@ tick_file_columns = [
 
 
 class GmxV2Tick(DailyNode):
+    def __init__(self):
+        super().__init__()
+        self.execute_in_sub_process = True
+
     name = NodeNames.gmx2_tick
 
     def _get_file_name(self, param: DailyParam) -> str:
