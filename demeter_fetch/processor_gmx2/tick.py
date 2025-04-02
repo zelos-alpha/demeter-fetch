@@ -38,7 +38,7 @@ class GmxV2Tick(DailyNode):
         return ["block_timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: date) -> pd.DataFrame:
-        input_df = data[get_depend_name(NodeNames.gmx2_raw, self.id)]#.head(2000)
+        input_df = data[get_depend_name(NodeNames.gmx2_raw, self.id)]  # .head(2000)
         result_list = []
         block_time = {}
         with tqdm(total=len(input_df.index), ncols=60, position=1, leave=False) as pbar:
@@ -67,6 +67,10 @@ class GmxV2Tick(DailyNode):
                 if log_item["event_name"] == "OraclePriceUpdate":
                     block_time[row.block_number] = datetime.datetime.fromtimestamp(
                         log_item["data"]["timestamp"], datetime.timezone.utc
+                    )
+                elif "updatedAtTime" in log_item["data"]:
+                    block_time[row.block_number] = datetime.datetime.fromtimestamp(
+                        log_item["data"]["updatedAtTime"], datetime.timezone.utc
                     )
                 pbar.update()
         for item in result_list:
