@@ -1,3 +1,7 @@
+# v1.3.2
+
+* remove debug print in RPC 
+
 # v1.3.1
 
 * Fix bugs in download sequence. 
