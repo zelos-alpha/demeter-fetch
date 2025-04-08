@@ -403,7 +403,6 @@ def query_event_by_height_concurrent(
             as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Loading logs"
         ):
             data = future.result()
-            print(len(data))
             raw_log_list.extend(data)
     log_list = []
     for log in raw_log_list:
