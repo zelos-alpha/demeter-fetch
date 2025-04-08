@@ -43,12 +43,17 @@ def get_relative_nodes(root: Node) -> List[Node]:
                 depend_instance = depend_class()
                 depend_instance.set_config(depend_config)
                 depend_instance.id = depend_config.id
-                if depend_instance not in stack and depend_instance not in depth_first_array:
-                    stack.append(depend_instance)
+                # if depend_instance not in stack and depend_instance not in depth_first_array:
+                stack.append(depend_instance)
                 current_node_depends.append(depend_instance)
         current_node.set_depend_instance(current_node_depends)
     depth_first_array.reverse()
-    return depth_first_array
+    final_list = []
+    for node in depth_first_array:
+        if node not in final_list:
+            final_list.append(node)
+
+    return final_list
 
 
 # region depends
@@ -83,7 +88,7 @@ GmxV2Source.depend = []
 GmxV2Tick.depend = [GmxV2Source]
 GmxV2Price.depend = [GmxV2Source]
 GmxV2PoolTx.depend = [GmxV2Tick]
-GmxV2Minute.depend = [GmxV2PoolTx, GmxV2Price]
+GmxV2Minute.depend = [GmxV2Price, GmxV2PoolTx]
 
 
 def get_root_node(dapp: DappType, to_type: ToType, ignore_pos_id: bool = False) -> Node:

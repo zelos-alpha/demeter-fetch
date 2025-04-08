@@ -20,6 +20,7 @@ from demeter_fetch import (
 from demeter_fetch.common import Node
 from demeter_fetch.core import get_relative_nodes
 from demeter_fetch.core.engine import get_root_node
+from demeter_fetch.processor_gmx2 import GmxV2Minute
 from demeter_fetch.processor_squeeth import SqueethMinute
 from demeter_fetch.processor_uniswap import UniTick, UniUserLP
 from demeter_fetch.processor_uniswap.relative_price import UniRelativePrice
@@ -74,7 +75,13 @@ class TreeTest(unittest.TestCase):
             UniUserLP,
             ["uni_pool", "uni_proxy_LP", "uni_tick", "uni_tx", "uni_positions", "uni_user_lp"],
         )
-
+    def test_gmx2_minute(self):
+        self.check_sequence(
+            DappType.gmx_v2,
+            ToType.minute,
+            GmxV2Minute,
+            ["gmx2_raw", "gmx2_price", "gmx2_tick", "gmx2_pool", "gmx2_minute"],
+        )
     def test_osqth_minute(self):
         # requires two extra token price node
         self.check_sequence(
