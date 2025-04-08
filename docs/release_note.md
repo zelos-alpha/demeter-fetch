@@ -1,3 +1,7 @@
+# v1.3.1
+
+* Fix bugs in download sequence. 
+
 # v1.3.0
 
 * Add gmx v2
