@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from demeter_fetch import NodeNames, GmxV2Config
 from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
-from .gmx2_utils import GMX_FLOAT_DECIMAL
+from .gmx2_utils import GMX_FLOAT_DECIMAL, SwapFeeType
 
 pool_file_columns = [
     "timestamp",  # 💚
@@ -17,8 +17,12 @@ pool_file_columns = [
     "tx_type",  # 💚
     "longAmount",  # 💚  #:  event MarketPoolValueInfo
     "shortAmount",  # 💚  #:  event MarketPoolValueInfo
-    "virtualSwapInventoryLong",  # 💚   deposit,VirtualSwapInventoryUpdated, calculate priceImpact of deposit
-    "virtualSwapInventoryShort",  # 💚 deposit,VirtualSwapInventoryUpdated
+    "longAmountDelta",  # 💚
+    "shortAmountDelta",  # 💚
+    "longAmountDeltaNoFee",  # 💚
+    "shortAmountDeltaNoFee",  # 💚
+    # "virtualSwapInventoryLong",  # 💚   deposit,VirtualSwapInventoryUpdated, calculate priceImpact of deposit
+    # "virtualSwapInventoryShort",  # 💚 deposit,VirtualSwapInventoryUpdated
     "poolValue",  # 💚  deposit, event MarketPoolValueInfo,
     "marketTokensSupply",  # 💚  deposit, event MarketPoolValueInfo
     "impactPoolAmount",  # 💚  deposit, event MarketPoolValueInfo/PositionImpactPoolAmountUpdated
@@ -37,20 +41,22 @@ pool_file_columns = [
 ]
 
 
-def find_log(name: str, tx_data: pd.DataFrame) -> pd.Series | None:
+def find_logs(name: str, tx_data: pd.DataFrame) -> pd.Series | None:
     # Grok give me this magic line. it believes it is the fastest to find first record
-    locate = (tx_data["event_name"] == name).idxmax()
-    if locate > tx_data.index[0]:
-        return tx_data.loc[locate]
-    if tx_data.iloc[0]["event_name"] == name:
-        return tx_data.iloc[0]
-    else:
-        return None
+    # locate = (tx_data["event_name"] == name).idxmax()
+    # if locate > tx_data.index[0]:
+    #     return tx_data.loc[locate]
+    # if tx_data.iloc[0]["event_name"] == name:
+    #     return tx_data.iloc[0]
+    # else:
+    #     return None
+    return tx_data[tx_data["event_name"] == name]
 
 
 def _add_pool_value_prop(pool_snapshot: Dict, pool_config, tx_data):
-    log = find_log("MarketPoolValueInfo", tx_data)
-    if log is not None:
+    logs = find_logs("MarketPoolValueInfo", tx_data)
+    logs = logs.head(1)  # just use the first one
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         pool_snapshot["longAmount"] = log_data["longTokenAmount"] / 10**pool_config.long_token.decimal
         pool_snapshot["shortAmount"] = log_data["shortTokenAmount"] / 10**pool_config.short_token.decimal
@@ -65,8 +71,9 @@ def _add_pool_value_prop(pool_snapshot: Dict, pool_config, tx_data):
 
 def _add_pool_value_prop_last(pool_config, tx_data, last_snapshot):
     # for the last row of the day
-    log = find_log("MarketPoolValueUpdated", tx_data)
-    if log is not None:
+    logs = find_logs("MarketPoolValueUpdated", tx_data)
+    logs = logs.tail(1)  # use the last one
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         last_snapshot["longAmount"] = log_data["longTokenAmount"] / 10**pool_config.long_token.decimal
         last_snapshot["shortAmount"] = log_data["shortTokenAmount"] / 10**pool_config.short_token.decimal
@@ -75,35 +82,86 @@ def _add_pool_value_prop_last(pool_config, tx_data, last_snapshot):
         last_snapshot["totalBorrowingFees"] = log_data["totalBorrowingFees"] / GMX_FLOAT_DECIMAL
 
 
-def _add_swap_inventory(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
-    log = find_log("VirtualSwapInventoryUpdated", tx_data)
-    if log is not None:
+def _add_swap_delta_in_swap(pool_snapshot: Dict, pool_config, tx_data):
+    logs = find_logs("SwapInfo", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        if log_data["tokenIn"].lower() == pool_config.long_token.address:
+            pool_snapshot["longAmountDeltaNoFee"] += log_data["amountInAfterFees"] / 10**pool_config.long_token.decimal
+            pool_snapshot["shortAmountDeltaNoFee"] -= log_data["amountOut"] / 10**pool_config.short_token.decimal
+        elif log_data["tokenIn"].lower() == pool_config.short_token.address:
+            pool_snapshot["shortAmountDeltaNoFee"] += (
+                log_data["amountInAfterFees"] / 10**pool_config.short_token.decimal
+            )
+            pool_snapshot["longAmountDeltaNoFee"] -= log_data["amountOut"] / 10**pool_config.long_token.decimal
+
+
+def _add_swap_delta_in_deposits(pool_snapshot: Dict, pool_config, tx_data):
+    # for the last row of the day
+    logs = find_logs("SwapFeesCollected", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        # just process swap fees of deposit and withdraw,
+        swap_fee_type = "0x" + log_data["swapFeeType"].hex()
+        if swap_fee_type == SwapFeeType.Deposit.value:
+            value = log_data["amountAfterFees"]
+        elif swap_fee_type == SwapFeeType.Withdraw.value:
+            value = -log_data["amountAfterFees"]
+        else:
+            continue
+
+        if log_data["token"].lower() == pool_config.long_token.address:
+            pool_snapshot["longAmountDeltaNoFee"] += value / 10**pool_config.long_token.decimal
+        else:
+            pool_snapshot["shortAmountDeltaNoFee"] += value / 10**pool_config.short_token.decimal
+
+
+def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
+    logs = find_logs("VirtualSwapInventoryUpdated", tx_data)
+    head = logs.head(2)
+    tail = logs.tail(2)
+    for idx, log in head.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         if log_data["isLongToken"]:
             pool_snapshot["virtualSwapInventoryLong"] = old_val / 10**pool_config.long_token.decimal
-            last_snapshot["virtualSwapInventoryLong"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
         else:
             pool_snapshot["virtualSwapInventoryShort"] = old_val / 10**pool_config.short_token.decimal
+    for idx, log in tail.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        if log_data["isLongToken"]:
+            last_snapshot["virtualSwapInventoryLong"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
+        else:
             last_snapshot["virtualSwapInventoryShort"] = log_data["nextValue"] / 10**pool_config.short_token.decimal
 
 
-def _add_pool_amount(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
-    log = find_log("PoolAmountUpdated", tx_data)
-    if log is not None:
+def _add_pool_amount_updated(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
+    logs = find_logs("PoolAmountUpdated", tx_data)
+    head = logs.head(2)
+    tail = logs.tail(2)
+    for idx, log in head.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         if log_data["token"].lower() == pool_config.long_token.address:
             pool_snapshot["longAmount"] = old_val / 10**pool_config.long_token.decimal
-            last_snapshot["longAmount"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
         else:
             pool_snapshot["shortAmount"] = old_val / 10**pool_config.short_token.decimal
+    for idx, log in tail.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        if log_data["token"].lower() == pool_config.long_token.address:
+            last_snapshot["longAmount"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
+        else:
             last_snapshot["shortAmount"] = log_data["nextValue"] / 10**pool_config.short_token.decimal
-
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        if log_data["token"].lower() == pool_config.long_token.address:
+            pool_snapshot["longAmountDelta"] += log_data["delta"] / 10**pool_config.long_token.decimal
+        else:
+            pool_snapshot["shortAmountDelta"] += log_data["delta"] / 10**pool_config.short_token.decimal
 
 def _add_position_impact_pool_amount(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
-    log = find_log("PositionImpactPoolAmountUpdated", tx_data)
-    if log is not None:
+    logs = find_logs("PositionImpactPoolAmountUpdated", tx_data)
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         pool_snapshot["impactPoolAmount"] = old_val / 10**pool_config.index_token.decimal
@@ -111,8 +169,8 @@ def _add_position_impact_pool_amount(pool_snapshot: Dict, pool_config, tx_data, 
 
 
 def _add_open_interest(pool_snapshot: Dict, pool_config: GmxV2Config, tx_data, last_snapshot):
-    log = find_log("OpenInterestUpdated", tx_data)
-    if log is not None:
+    logs = find_logs("OpenInterestUpdated", tx_data)
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         if pool_config.long_token.address == log_data["collateralToken"]:
@@ -134,8 +192,8 @@ def _add_open_interest(pool_snapshot: Dict, pool_config: GmxV2Config, tx_data, l
 
 
 def _add_open_interest_in_tokens(pool_snapshot: Dict, pool_config: GmxV2Config, tx_data, last_snapshot):
-    log = find_log("OpenInterestInTokensUpdated", tx_data)
-    if log is not None:
+    logs = find_logs("OpenInterestInTokensUpdated", tx_data)
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         if pool_config.long_token.address == log_data["collateralToken"]:
@@ -168,10 +226,10 @@ class GmxV2PoolTx(DailyNode):
     """
     Pool state when a transaction occurs.
     """
+
     def __init__(self):
         super().__init__()
         self.execute_in_sub_process = True
-
 
     name = NodeNames.gmx2_pool
 
@@ -228,18 +286,24 @@ class GmxV2PoolTx(DailyNode):
             for (height, tx_index), tx_data in txes:
                 pool_snapshot = {
                     "timestamp": tx_data.iloc[0]["block_timestamp"],
-                    "block_number": height,
+                    "block_number": int(height),
                     "transaction_Hash": tx_data.iloc[0]["transaction_hash"],
                     "tx_type": tx_data.iloc[0]["tx_type"],
+                    "longAmountDelta": 0,
+                    "longAmountDeltaNoFee": 0,
+                    "shortAmountDelta": 0,
+                    "shortAmountDeltaNoFee": 0,
                 }
 
                 _add_pool_value_prop(pool_snapshot, pool_config, tx_data)
                 _add_pool_value_prop_last(pool_config, tx_data, last_snapshot)
-                _add_pool_amount(pool_snapshot, pool_config, tx_data, last_snapshot)
-                _add_swap_inventory(pool_snapshot, pool_config, tx_data, last_snapshot)
+                _add_pool_amount_updated(pool_snapshot, pool_config, tx_data, last_snapshot)
+                # _add_virtual_swap_inventory(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_open_interest_in_tokens(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_position_impact_pool_amount(pool_snapshot, pool_config, tx_data, last_snapshot)
+                _add_swap_delta_in_deposits(pool_snapshot, pool_config, tx_data)
+                _add_swap_delta_in_swap(pool_snapshot, pool_config, tx_data)
                 row_list.append(pool_snapshot)
                 pbar.update()
 

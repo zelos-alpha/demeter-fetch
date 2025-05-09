@@ -57,3 +57,8 @@ def data_decoder(data: Tuple) -> Dict:
             for item in data[i][j]:
                 result[item[0]] = item[1]
     return result
+
+class SwapFeeType(enum.Enum):
+    Deposit="0x39226eb4fed85317aa310fa53f734c7af59274c49325ab568f9c4592250e8cc5"
+    Withdraw = "0xda1ac8fcb4f900f8ab7c364d553e5b6b8bdc58f74160df840be80995056f3838"
+    Swap = "0x7ad0b6f464d338ea140ff9ef891b4a69cf89f107060a105c31bb985d9e532214"
