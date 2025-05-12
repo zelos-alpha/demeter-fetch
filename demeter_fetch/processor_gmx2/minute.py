@@ -9,12 +9,12 @@ from .pool_value_util import calcPoolValue
 
 minute_file_columns = [
     "timestamp",
+    "marketTokensSupply",
+    "poolValue",
     "longAmount",
     "shortAmount",
     "virtualSwapInventoryLong",
     "virtualSwapInventoryShort",
-    "poolValue",
-    "marketTokensSupply",
     "impactPoolAmount",
     "longPrice",
     "shortPrice",
@@ -36,6 +36,18 @@ class GmxV2Minute(DailyNode):
         return ["timestamp"]
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
+        '''
+        误差分析:
+        * amount: 能够获取当前时刻的精确值.
+        * 各个token价格: 由于价格通过插值得到, 所以有误差. 但这个误差不会太大, 因为每个交易都能获取到价格而且交易频率足够高.
+        * pending pnl: 取决于openInterest和index price, 其中openInterest是准确的.
+        * pending borrowing fee: 取决于total borrowing fee(无法从log中获得), openInterest, pending currumlate borrowing factor(依赖于时间), 所以不容易准确计算. 且pending borrowing fee是一个差值, 因此造成影响较小
+        * pending position price impact: 可以准确计算, indexPrice会有一些影响但不大, 至于和virtual price impact比较(更新不及时)的部分, 二者差值不会太大. 所以会有误差但可以接受.
+
+        :param data:
+        :param day:
+        :return:
+        '''
         pool_config = self.from_config.gmx_v2_config
         tick_df = data[get_depend_name(NodeNames.gmx2_pool, self.id)]
         price_df = data[get_depend_name(NodeNames.gmx2_price, self.id)]

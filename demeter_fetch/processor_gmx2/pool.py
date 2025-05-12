@@ -21,8 +21,8 @@ pool_file_columns = [
     "shortAmountDelta",  # 💚
     "longAmountDeltaNoFee",  # 💚
     "shortAmountDeltaNoFee",  # 💚
-    # "virtualSwapInventoryLong",  # 💚   deposit,VirtualSwapInventoryUpdated, calculate priceImpact of deposit
-    # "virtualSwapInventoryShort",  # 💚 deposit,VirtualSwapInventoryUpdated
+    "virtualSwapInventoryLong",  # 💚   deposit,VirtualSwapInventoryUpdated, calculate priceImpact of deposit
+    "virtualSwapInventoryShort",  # 💚 deposit,VirtualSwapInventoryUpdated
     "poolValue",  # 💚  deposit, event MarketPoolValueInfo,
     "marketTokensSupply",  # 💚  deposit, event MarketPoolValueInfo
     "impactPoolAmount",  # 💚  deposit, event MarketPoolValueInfo/PositionImpactPoolAmountUpdated
@@ -118,13 +118,17 @@ def _add_swap_delta_in_deposits(pool_snapshot: Dict, pool_config, tx_data):
 
 def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
     logs = find_logs("VirtualSwapInventoryUpdated", tx_data)
+    # Note: VirtualSwapInventory is updated by all relative pool, although we can filter every log to get a accurate value,
+    # But this value doesn't have to be accurate. because it is used in calculation of position price impact.
+    # and it will affect only when virtual price impact < pool price impact.
+    # More important, we can get accurate value when it is updated.
     long_list = []
     short_list = []
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         # get amount
-        if log_data["token"].lower() == pool_config.long_token.address:
+        if log_data["isLongToken"]:
             long_list.append((old_val, log_data["nextValue"]))
         else:
             short_list.append((old_val, log_data["nextValue"]))
@@ -302,7 +306,7 @@ class GmxV2PoolTx(DailyNode):
                 _add_pool_value_prop(pool_snapshot, pool_config, tx_data)
                 _add_pool_value_prop_last(pool_config, tx_data, last_snapshot)
                 _add_pool_amount_updated(pool_snapshot, pool_config, tx_data, last_snapshot)
-                # _add_virtual_swap_inventory(pool_snapshot, pool_config, tx_data, last_snapshot)
+                _add_virtual_swap_inventory(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_open_interest_in_tokens(pool_snapshot, pool_config, tx_data, last_snapshot)
                 _add_position_impact_pool_amount(pool_snapshot, pool_config, tx_data, last_snapshot)
