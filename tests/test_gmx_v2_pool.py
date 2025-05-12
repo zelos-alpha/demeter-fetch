@@ -1,5 +1,7 @@
 import datetime
 import unittest
+from decimal import Decimal
+
 import pandas as pd
 
 from demeter_fetch import Config, FromConfig, GmxV2Config, TokenConfig
@@ -7,6 +9,7 @@ from demeter_fetch.processor_gmx2 import GmxV2PoolTx
 
 pd.options.display.max_columns = None
 pd.set_option("display.width", 5000)
+
 
 class GmxV2PoolTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -34,3 +37,8 @@ class GmxV2PoolTest(unittest.TestCase):
         param = {"gmx2_tick": pd.read_feather("samples/arbitrum-GmxV2-2025-04-07.tick.feather")}
         result_df = node._process_one_day(param, day)
         print(result_df)
+        self.assertEqual(len(result_df.index), 2374)
+        self.assertEqual(
+            Decimal(str(result_df.loc[115]["shortAmount"])) + Decimal(str(result_df.loc[115]["shortAmountDelta"])),
+            Decimal(str(result_df.loc[116]["shortAmount"])),
+        )

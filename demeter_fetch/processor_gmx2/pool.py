@@ -118,46 +118,50 @@ def _add_swap_delta_in_deposits(pool_snapshot: Dict, pool_config, tx_data):
 
 def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
     logs = find_logs("VirtualSwapInventoryUpdated", tx_data)
-    head = logs.head(2)
-    tail = logs.tail(2)
-    for idx, log in head.iterrows():
+    long_list = []
+    short_list = []
+    for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
-        if log_data["isLongToken"]:
-            pool_snapshot["virtualSwapInventoryLong"] = old_val / 10**pool_config.long_token.decimal
+        # get amount
+        if log_data["token"].lower() == pool_config.long_token.address:
+            long_list.append((old_val, log_data["nextValue"]))
         else:
-            pool_snapshot["virtualSwapInventoryShort"] = old_val / 10**pool_config.short_token.decimal
-    for idx, log in tail.iterrows():
-        log_data = ast.literal_eval(log["data"])
-        if log_data["isLongToken"]:
-            last_snapshot["virtualSwapInventoryLong"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
-        else:
-            last_snapshot["virtualSwapInventoryShort"] = log_data["nextValue"] / 10**pool_config.short_token.decimal
+            short_list.append((old_val, log_data["nextValue"]))
+    if len(long_list) > 0:
+        pool_snapshot["virtualSwapInventoryLong"] = long_list[0][0] / 10**pool_config.long_token.decimal
+        last_snapshot["virtualSwapInventoryLong"] = long_list[-1][1] / 10**pool_config.long_token.decimal
+    if len(short_list) > 0:
+        pool_snapshot["virtualSwapInventoryShort"] = short_list[0][0] / 10**pool_config.short_token.decimal
+        last_snapshot["virtualSwapInventoryShort"] = short_list[-1][1] / 10**pool_config.short_token.decimal
 
 
 def _add_pool_amount_updated(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
     logs = find_logs("PoolAmountUpdated", tx_data)
-    head = logs.head(2)
-    tail = logs.tail(2)
-    for idx, log in head.iterrows():
-        log_data = ast.literal_eval(log["data"])
-        old_val = log_data["nextValue"] - log_data["delta"]
-        if log_data["token"].lower() == pool_config.long_token.address:
-            pool_snapshot["longAmount"] = old_val / 10**pool_config.long_token.decimal
-        else:
-            pool_snapshot["shortAmount"] = old_val / 10**pool_config.short_token.decimal
-    for idx, log in tail.iterrows():
-        log_data = ast.literal_eval(log["data"])
-        if log_data["token"].lower() == pool_config.long_token.address:
-            last_snapshot["longAmount"] = log_data["nextValue"] / 10**pool_config.long_token.decimal
-        else:
-            last_snapshot["shortAmount"] = log_data["nextValue"] / 10**pool_config.short_token.decimal
+    tx_hash = tx_data.iloc[0]["transaction_hash"]
+
+    long_list = []
+    short_list = []
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
+        old_val = log_data["nextValue"] - log_data["delta"]
+        # get delta
         if log_data["token"].lower() == pool_config.long_token.address:
             pool_snapshot["longAmountDelta"] += log_data["delta"] / 10**pool_config.long_token.decimal
         else:
             pool_snapshot["shortAmountDelta"] += log_data["delta"] / 10**pool_config.short_token.decimal
+        # get amount
+        if log_data["token"].lower() == pool_config.long_token.address:
+            long_list.append((old_val, log_data["nextValue"]))
+        else:
+            short_list.append((old_val, log_data["nextValue"]))
+    if len(long_list) > 0:
+        pool_snapshot["longAmount"] = long_list[0][0] / 10**pool_config.long_token.decimal
+        last_snapshot["longAmount"] = long_list[-1][1] / 10**pool_config.long_token.decimal
+    if len(short_list) > 0:
+        pool_snapshot["shortAmount"] = short_list[0][0] / 10**pool_config.short_token.decimal
+        last_snapshot["shortAmount"] = short_list[-1][1] / 10**pool_config.short_token.decimal
+
 
 def _add_position_impact_pool_amount(pool_snapshot: Dict, pool_config, tx_data, last_snapshot):
     logs = find_logs("PositionImpactPoolAmountUpdated", tx_data)
