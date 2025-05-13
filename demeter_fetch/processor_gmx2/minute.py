@@ -14,13 +14,33 @@ minute_file_columns = [
     "poolValue",
     "longAmount",
     "shortAmount",
-    "virtualSwapInventoryLong",
-    "virtualSwapInventoryShort",
-    "impactPoolAmount",
+    "pendingPnl",
+    "netYield",
     "longPrice",
     "shortPrice",
     "indexPrice",
 ]
+
+columns_to_bfill = [
+    "longAmount",
+    "shortAmount",
+    "virtualSwapInventoryLong",
+    "virtualSwapInventoryShort",
+    "marketTokensSupply",
+    "impactPoolAmount",
+    "openInterestLongIsLong",
+    "openInterestLongNotLong",
+    "openInterestShortIsLong",
+    "openInterestShortNotLong",
+    "openInterestInTokensLongIsLong",
+    "openInterestInTokensLongNotLong",
+    "openInterestInTokensShortIsLong",
+    "openInterestInTokensShortNotLong",
+]
+
+
+def get_net_yield(tick_df: pd.DataFrame) -> pd.Series:
+    return pd.Series()
 
 
 class GmxV2Minute(DailyNode):
@@ -35,6 +55,29 @@ class GmxV2Minute(DailyNode):
     @property
     def _parse_date_column(self) -> List[str]:
         return ["timestamp"]
+
+    def prepare_tick_df(self, tick_df: pd.DataFrame) -> pd.DataFrame:
+
+        tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
+        cum_sum_borrowingFeeUsd = 0
+        # fill empty totalBorrowingFees,fill all empty then fill first empty rows
+        tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
+        last_value = -1
+        for idx, row in tick_df.iterrows():
+            # pending_borrowing_fee = total_borrowing_fee - totalBorrowingFees
+            #                       = currumlate_borrowing_factor * all_history_open_interest - totalBorrowingFees
+            # when deposit and withdraw, we can get accurate totalBorrowingFees. we will keep this value.
+            # and when decrease position, position borrowing fee will be transferred from pending to realized totalBorrowingFees.
+            # so we add position borrowing fee to totalBorrowingFees to avoid double count.
+            # on next deposit and withdraw, clear the borrowingFeeUsd sum, and use the new accurate totalBorrowingFees value
+            if last_value == -1 or row["totalBorrowingFees"] != last_value:  # when totalBorrowingFees changed
+                cum_sum_borrowingFeeUsd = 0
+                last_value = row["totalBorrowingFees"]
+            cum_sum_borrowingFeeUsd += row["borrowingFeeUsd"]  #
+            tick_df.loc[idx, "totalBorrowingFees"] -= cum_sum_borrowingFeeUsd
+        tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].shift().bfill()
+        tick_df = tick_df.set_index("timestamp")
+        return tick_df
 
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         """
@@ -53,41 +96,8 @@ class GmxV2Minute(DailyNode):
         tick_df = data[get_depend_name(NodeNames.gmx2_pool, self.id)]
         price_df = data[get_depend_name(NodeNames.gmx2_price, self.id)]
         price_df = price_df.set_index("timestamp")
-        columns_to_bfill = [
-            "longAmount",
-            "shortAmount",
-            "virtualSwapInventoryLong",
-            "virtualSwapInventoryShort",
-            "marketTokensSupply",
-            "impactPoolAmount",
-            "openInterestLongIsLong",
-            "openInterestLongNotLong",
-            "openInterestShortIsLong",
-            "openInterestShortNotLong",
-            "openInterestInTokensLongIsLong",
-            "openInterestInTokensLongNotLong",
-            "openInterestInTokensShortIsLong",
-            "openInterestInTokensShortNotLong",
-        ]
-        tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
-        cum_sum_borrowingFeeUsd = 0
-        # fill empty
-        tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
-        last_value = -1
-        for idx, row in tick_df.iterrows():
-            # when deposit and withdraw, we can get accurate borrowing fee. we will keep this value.
-            # and when decrease position, we can add position borrowing fee to realized totalBorrowingFees.
-            # on next deposit and withdraw, clear the borrowingFeeUsd sum, and use the accurate totalBorrowingFees
-            if last_value == -1 or row["totalBorrowingFees"] != last_value: # when totalBorrowingFees changed
-                cum_sum_borrowingFeeUsd = 0
-                last_value = row["totalBorrowingFees"]
-            # borrowing fee are transferred from pending borrowing fee to pool amount, so we have to add
-            # borrowing fee to realized totalBorrowingFees, so when we do pending_borrowing_fee = total_borrowing_fee - borrowingFeeUsd
-            # we would not double count borrowing fee in decrease position
-            cum_sum_borrowingFeeUsd += row["borrowingFeeUsd"] #
-            tick_df.loc[idx, "totalBorrowingFees"] -= cum_sum_borrowingFeeUsd
-        tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].shift().bfill()
-        tick_df = tick_df.set_index("timestamp")
+
+        tick_df = self.prepare_tick_df(tick_df)
         minute_df = tick_df.resample("1min").first()
         minute_df.index = minute_df.index.tz_localize(None)
 
@@ -110,7 +120,6 @@ class GmxV2Minute(DailyNode):
         useful_price.index = useful_price.index.tz_localize(None)
 
         minute_df = pd.concat([minute_df, useful_price], axis=1)
-
         """
         在这里, 我们覆盖掉从deposit和withdraw中获取的pool value和pnl, 
         这样做的原因是, log中获取的value和计算的value存在误差. 
@@ -132,5 +141,8 @@ class GmxV2Minute(DailyNode):
 
         minute_df[["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.apply(calcPoolValue, axis=1)
         minute_df["timestamp"] = minute_df.index
+        minute_df.rename(columns={"netPnl": "pendingPnl"}, inplace=True)
+        minute_df["netYield"] = 0
         minute_df = minute_df[minute_file_columns]
+
         return minute_df
