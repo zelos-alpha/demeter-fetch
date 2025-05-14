@@ -36,12 +36,14 @@ def compare_values(calc_value, actual_val):
 
     df = pd.DataFrame()
     actual_val = actual_val.map(lambda x: float(x))
+    actual_val["marketTokensSupply"] = actual_val["poolValue"]/actual_val["market_tokens_price"]
     df["poolValue"] = calc_error(calc_value, actual_val, "poolValue", "poolValue")
     df["longAmount"] = calc_error(calc_value, actual_val, "longAmount", "longTokenAmount")
     df["shortAmount"] = calc_error(calc_value, actual_val, "shortAmount", "shortTokenAmount")
     df["netPnl"] = calc_error(calc_value, actual_val, "netPnl", "netPnl")
     df["impactPoolAmount"] = calc_error(calc_value, actual_val, "impactPoolAmount", "impactPoolAmount")
     df["totalBorrowingFees"] = calc_error(calc_value, actual_val, "totalBorrowingFees", "totalBorrowingFees")
+    df["marketTokensSupply"] = calc_error(calc_value, actual_val, "marketTokensSupply", "marketTokensSupply")
 
     result_dict = {}
     for c in df.columns:
@@ -162,6 +164,7 @@ class GmxV2PoolTest(unittest.TestCase):
         compare_result = compare_values(tick_df, on_chain_value)
         print(compare_result)
         self.assertLess(compare_result.loc["poolValue"]["mean"], 0.000001)
+        self.assertLess(compare_result.loc["marketTokensSupply"]["mean"], 1e-16)
         self.assertEqual(compare_result.loc["longAmount"]["max"], 0)
         self.assertEqual(compare_result.loc["shortAmount"]["max"], 0)
         self.assertEqual(compare_result.loc["impactPoolAmount"]["max"], 0)
