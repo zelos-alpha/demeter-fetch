@@ -23,6 +23,9 @@ def calcPoolValue(row: pd.Series):
     longTokenUsd = row["longAmount"] * row["longPrice"]
     shortTokenUsd = row["shortAmount"] * row["shortPrice"]
     pool_net_value = longTokenUsd + shortTokenUsd
+
+    pool_net_value += row["totalBorrowingFees"] * row["borrowingFeePoolFactor"]
+
     longPnl = getPnl(row, True)
     longPnl = getCappedPnl(longPnl, longTokenUsd, False)
 

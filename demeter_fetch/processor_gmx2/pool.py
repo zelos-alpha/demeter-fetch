@@ -35,8 +35,9 @@ pool_file_columns = [
     "poolValue",  # 💚  deposit, event MarketPoolValueInfo,
     "marketTokensSupply",  # 💚  deposit, event MarketPoolValueInfo
     "impactPoolAmount",  # 💚  deposit, event MarketPoolValueInfo/PositionImpactPoolAmountUpdated
-    "totalBorrowingFees",  # 💚
-    "borrowingFeeUsd",  # 💚
+    "totalBorrowingFees",  # 💚 in pool, event MarketPoolValueInfo
+    "borrowingFeePoolFactor",  # 💚in pool, event MarketPoolValueInfo
+    "borrowingFeeUsd",  # 💚 for each position
     "longPnl",  # 💚 from MarketPoolValueInfo, used to calculate poolvalue
     "shortPnl",  # 💚 from MarketPoolValueInfo
     "netPnl",  # 💚 from MarketPoolValueInfo
@@ -77,6 +78,7 @@ def _add_pool_value_prop(pool_snapshot: Dict, pool_info: PoolInfo, tx_data):
         pool_snapshot["longPnl"] = log_data["longPnl"] / GMX_FLOAT_DECIMAL
         pool_snapshot["shortPnl"] = log_data["shortPnl"] / GMX_FLOAT_DECIMAL
         pool_snapshot["netPnl"] = log_data["netPnl"] / GMX_FLOAT_DECIMAL
+        pool_snapshot["borrowingFeePoolFactor"] = log_data["borrowingFeePoolFactor"] / GMX_FLOAT_DECIMAL
 
 
 def _add_pool_value_prop_last(pool_info: PoolInfo, tx_data, last_snapshot):
@@ -230,7 +232,7 @@ def _add_open_interest_in_tokens(pool_snapshot: Dict, pool_info: PoolInfo, tx_da
             raise RuntimeError("OpenInterestInTokensUpdated should have long or short token")
 
 
-def _add_positon_fees(pool_snapshot: Dict, pool_config: GmxV2Config, tx_data):
+def _add_positon_fees(pool_snapshot: Dict, tx_data):
     logs = find_logs("PositionFeesCollected", tx_data)
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
@@ -326,7 +328,7 @@ class GmxV2PoolTx(DailyNode):
                 _add_position_impact_pool_amount(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_swap_delta_in_deposits(pool_snapshot, pool_info_simple, tx_data)
                 _add_swap_delta_in_swap(pool_snapshot, pool_info_simple, tx_data)
-                _add_positon_fees(pool_snapshot, pool_info_simple, tx_data)
+                _add_positon_fees(pool_snapshot, tx_data)
                 row_list.append(pool_snapshot)
                 pbar.update()
 

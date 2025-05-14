@@ -59,6 +59,7 @@ class GmxV2Minute(DailyNode):
     def prepare_tick_df(self, tick_df: pd.DataFrame) -> pd.DataFrame:
 
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
+        tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
