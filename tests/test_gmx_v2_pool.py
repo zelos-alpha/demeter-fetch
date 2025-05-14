@@ -140,8 +140,15 @@ class GmxV2PoolTest(unittest.TestCase):
         result_df = node._process_one_day(param, day)
         print(result_df)
         self.assertEqual(len(result_df.index), 1440)
+        self.assertEqual(len(result_df[result_df["poolValue"].isna()]), 0)
 
     def test_compare_pool_net_value(self):
+        """
+        Query pool net value on chain, then compare with calculated value.
+        When query pool net value, we need to set prices of pool tokens. so we can not query pool net value at any time.
+        We just have price when we see OraclePriceUpdate. So we can only query pool net value when there are a transaction at this pool
+        That's why we compare pool net value on transactions instead of on every minutes.
+        """
         node = GmxV2Minute()
         node.config = test_config
         node.from_config = test_config.from_config
@@ -169,14 +176,14 @@ class GmxV2PoolTest(unittest.TestCase):
         self.assertEqual(compare_result.loc["shortAmount"]["max"], 0)
         self.assertEqual(compare_result.loc["impactPoolAmount"]["max"], 0)
         """
-        Error to onchain pool net value, before add borrowing fee.
-                                    mean       min           max           std
-        poolValue           7.499348e-04  0.000655  8.716586e-04  6.841117e-05
-        longAmount          0.000000e+00  0.000000  0.000000e+00  0.000000e+00
-        shortAmount         0.000000e+00  0.000000  0.000000e+00  0.000000e+00
-        netPnl              1.081141e-15  0.000000  4.707417e-15  8.107960e-16
-        impactPoolAmount    0.000000e+00  0.000000  0.000000e+00  0.000000e+00
-        totalBorrowingFees  7.307627e-04  0.0       7.908768e-03  9.313706e-04
+        Error to on chain pool net value, before add borrowing fee.
+                                    mean  min           max           std
+        poolValue           7.499348e-04  0.0  8.716586e-04  6.841117e-05
+        longAmount          0.000000e+00  0.0  0.000000e+00  0.000000e+00
+        shortAmount         0.000000e+00  0.0  0.000000e+00  0.000000e+00
+        netPnl              1.081141e-15  0.0  4.707417e-15  8.107960e-16
+        impactPoolAmount    0.000000e+00  0.0  0.000000e+00  0.000000e+00
+        totalBorrowingFees  7.307627e-04  0.0  7.908768e-03  9.313706e-04
         
         After add borrowing fee.       
                                     mean  min           max           std

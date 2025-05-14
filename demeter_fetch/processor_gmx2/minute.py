@@ -1,7 +1,6 @@
 import datetime
 from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 from demeter_fetch import NodeNames
@@ -15,7 +14,7 @@ minute_file_columns = [
     "longAmount",
     "shortAmount",
     "pendingPnl",
-    "netYield",
+    "realizedNetYield",
     "longPrice",
     "shortPrice",
     "indexPrice",
@@ -100,6 +99,12 @@ class GmxV2Minute(DailyNode):
 
         tick_df = self.prepare_tick_df(tick_df)
         minute_df = tick_df.resample("1min").first()
+        minute_df["longAmountYield"] = (
+            (tick_df["longAmountDelta"] - tick_df["longAmountDeltaNoFee"]).resample("1min").sum()
+        )
+        minute_df["shortAmountYield"] = (
+            (tick_df["shortAmountDelta"] - tick_df["shortAmountDeltaNoFee"]).resample("1min").sum()
+        )
         minute_df.index = minute_df.index.tz_localize(None)
 
         new_index = pd.date_range(
@@ -110,6 +115,12 @@ class GmxV2Minute(DailyNode):
         minute_df = minute_df.reindex(new_index).infer_objects(copy=False)
 
         minute_df[columns_to_bfill] = minute_df[columns_to_bfill].bfill()
+        minute_df[["totalBorrowingFees", "borrowingFeePoolFactor"]] = minute_df[
+            ["totalBorrowingFees", "borrowingFeePoolFactor"]
+        ].bfill()
+        minute_df[["longAmountYield", "shortAmountYield"]] = minute_df[["longAmountYield", "shortAmountYield"]].fillna(
+            0
+        )
         useful_price = pd.DataFrame(
             {
                 "longPrice": price_df[pool_config.long_token.name.upper()],
@@ -139,11 +150,17 @@ class GmxV2Minute(DailyNode):
         # minute_df.loc[mask, ["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.loc[mask].apply(
         #     calcPoolValue, axis=1
         # )
-
         minute_df[["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.apply(calcPoolValue, axis=1)
         minute_df["timestamp"] = minute_df.index
+        # Reframe the PnL from the LP’s perspective, as the LP acts as the counterparty to the Open Interest.
+        minute_df["netPnl"] = -minute_df["netPnl"]
         minute_df.rename(columns={"netPnl": "pendingPnl"}, inplace=True)
-        minute_df["netYield"] = 0
+
+        minute_df["realizedNetYield"] = (
+            minute_df["longAmountYield"] * minute_df["longPrice"]
+            + minute_df["shortAmountYield"] * minute_df["shortPrice"]
+        )
+
         minute_df = minute_df[minute_file_columns]
 
         return minute_df
