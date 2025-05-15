@@ -15,10 +15,14 @@ minute_file_columns = [
     "shortAmount",
     "pendingPnl",
     "realizedNetYield",
+    "virtualSwapInventoryLong",
+    "virtualSwapInventoryShort",
+    "impactPoolAmount",
     "longPrice",
     "shortPrice",
     "indexPrice",
 ]
+
 
 columns_to_bfill = [
     "longAmount",
