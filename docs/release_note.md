@@ -1,3 +1,7 @@
+# v1.3.3
+
+* Update gmx v2, pool net value is more accurate.
+
 # v1.3.2
 
 * remove debug print in RPC 
