@@ -1,3 +1,7 @@
+# v1.3.4
+
+* [Breaking change] Rename realizedNetYield in GMX V2 minute file to realizedProfit
+
 # v1.3.3
 
 * Update gmx v2, pool net value is more accurate.

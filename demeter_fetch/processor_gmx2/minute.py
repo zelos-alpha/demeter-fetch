@@ -14,7 +14,7 @@ minute_file_columns = [
     "longAmount",
     "shortAmount",
     "pendingPnl",
-    "realizedNetYield",
+    "realizedProfit",
     "virtualSwapInventoryLong",
     "virtualSwapInventoryShort",
     "impactPoolAmount",
@@ -40,10 +40,6 @@ columns_to_bfill = [
     "openInterestInTokensShortIsLong",
     "openInterestInTokensShortNotLong",
 ]
-
-
-def get_net_yield(tick_df: pd.DataFrame) -> pd.Series:
-    return pd.Series()
 
 
 class GmxV2Minute(DailyNode):
@@ -103,10 +99,10 @@ class GmxV2Minute(DailyNode):
 
         tick_df = self.prepare_tick_df(tick_df)
         minute_df = tick_df.resample("1min").first()
-        minute_df["longAmountYield"] = (
+        minute_df["longProfitAmount"] = (
             (tick_df["longAmountDelta"] - tick_df["longAmountDeltaNoFee"]).resample("1min").sum()
         )
-        minute_df["shortAmountYield"] = (
+        minute_df["shortProfitAmount"] = (
             (tick_df["shortAmountDelta"] - tick_df["shortAmountDeltaNoFee"]).resample("1min").sum()
         )
         minute_df.index = minute_df.index.tz_localize(None)
@@ -122,7 +118,7 @@ class GmxV2Minute(DailyNode):
         minute_df[["totalBorrowingFees", "borrowingFeePoolFactor"]] = minute_df[
             ["totalBorrowingFees", "borrowingFeePoolFactor"]
         ].bfill()
-        minute_df[["longAmountYield", "shortAmountYield"]] = minute_df[["longAmountYield", "shortAmountYield"]].fillna(
+        minute_df[["longProfitAmount", "shortProfitAmount"]] = minute_df[["longProfitAmount", "shortProfitAmount"]].fillna(
             0
         )
         useful_price = pd.DataFrame(
@@ -160,9 +156,9 @@ class GmxV2Minute(DailyNode):
         minute_df["netPnl"] = -minute_df["netPnl"]
         minute_df.rename(columns={"netPnl": "pendingPnl"}, inplace=True)
 
-        minute_df["realizedNetYield"] = (
-            minute_df["longAmountYield"] * minute_df["longPrice"]
-            + minute_df["shortAmountYield"] * minute_df["shortPrice"]
+        minute_df["realizedProfit"] = (
+            minute_df["longProfitAmount"] * minute_df["longPrice"]
+            + minute_df["shortProfitAmount"] * minute_df["shortPrice"]
         )
 
         minute_df = minute_df[minute_file_columns]
