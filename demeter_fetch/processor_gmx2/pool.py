@@ -41,6 +41,7 @@ pool_file_columns = [
     "longPnl",  # 💚 from MarketPoolValueInfo, used to calculate poolvalue
     "shortPnl",  # 💚 from MarketPoolValueInfo
     "netPnl",  # 💚 from MarketPoolValueInfo
+    "realizedPnl",
     "openInterestLongIsLong",  # 💚  event OpenInterestUpdated, to calculate pnl,
     "openInterestLongNotLong",  # 💚
     "openInterestShortIsLong",  # 💚
@@ -239,6 +240,13 @@ def _add_positon_fees(pool_snapshot: Dict, tx_data):
         pool_snapshot["borrowingFeeUsd"] += log_data["borrowingFeeUsd"] / GMX_FLOAT_DECIMAL
 
 
+def _add_positon_decrease(pool_snapshot: Dict, tx_data):
+    logs = find_logs("PositionDecrease", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        pool_snapshot["realizedPnl"] += log_data["basePnlUsd"] / GMX_FLOAT_DECIMAL
+
+
 class GmxV2PoolTx(DailyNode):
     """
     Pool state when a transaction occurs.
@@ -317,6 +325,7 @@ class GmxV2PoolTx(DailyNode):
                     "shortAmountDelta": 0,
                     "shortAmountDeltaNoFee": 0,
                     "borrowingFeeUsd": 0,
+                    "realizedPnl": 0,
                 }
 
                 _add_pool_value_prop(pool_snapshot, pool_info_simple, tx_data)
@@ -329,6 +338,7 @@ class GmxV2PoolTx(DailyNode):
                 _add_swap_delta_in_deposits(pool_snapshot, pool_info_simple, tx_data)
                 _add_swap_delta_in_swap(pool_snapshot, pool_info_simple, tx_data)
                 _add_positon_fees(pool_snapshot, tx_data)
+                _add_positon_decrease(pool_snapshot, tx_data)
                 row_list.append(pool_snapshot)
                 pbar.update()
 

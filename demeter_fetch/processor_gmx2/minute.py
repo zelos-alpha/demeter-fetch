@@ -13,8 +13,10 @@ minute_file_columns = [
     "poolValue",
     "longAmount",
     "shortAmount",
-    "pendingPnl",
-    "realizedProfit",
+    "pendingPnl", # pnl caused by open interest
+    "realizedPnl", # pnl for decreased position
+    "realizedProfit", # pnl + fee + priceImpact
+    "profitWithoutPnl", # fee + priceImpact, so it can be negative
     "virtualSwapInventoryLong",
     "virtualSwapInventoryShort",
     "impactPoolAmount",
@@ -62,6 +64,7 @@ class GmxV2Minute(DailyNode):
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
+        tick_df["realizedPnl"] = tick_df["realizedPnl"].fillna(0)
         last_value = -1
         for idx, row in tick_df.iterrows():
             # pending_borrowing_fee = total_borrowing_fee - totalBorrowingFees
@@ -76,6 +79,7 @@ class GmxV2Minute(DailyNode):
             cum_sum_borrowingFeeUsd += row["borrowingFeeUsd"]  #
             tick_df.loc[idx, "totalBorrowingFees"] -= cum_sum_borrowingFeeUsd
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].shift().bfill()
+        tick_df["realizedPnl"] = -tick_df["realizedPnl"]
         tick_df = tick_df.set_index("timestamp")
         return tick_df
 
@@ -105,6 +109,7 @@ class GmxV2Minute(DailyNode):
         minute_df["shortProfitAmount"] = (
             (tick_df["shortAmountDelta"] - tick_df["shortAmountDeltaNoFee"]).resample("1min").sum()
         )
+        minute_df["realizedPnl"] = tick_df["realizedPnl"].resample("1min").sum()
         minute_df.index = minute_df.index.tz_localize(None)
 
         new_index = pd.date_range(
@@ -118,9 +123,9 @@ class GmxV2Minute(DailyNode):
         minute_df[["totalBorrowingFees", "borrowingFeePoolFactor"]] = minute_df[
             ["totalBorrowingFees", "borrowingFeePoolFactor"]
         ].bfill()
-        minute_df[["longProfitAmount", "shortProfitAmount"]] = minute_df[["longProfitAmount", "shortProfitAmount"]].fillna(
-            0
-        )
+        minute_df[["longProfitAmount", "shortProfitAmount"]] = minute_df[
+            ["longProfitAmount", "shortProfitAmount"]
+        ].fillna(0)
         useful_price = pd.DataFrame(
             {
                 "longPrice": price_df[pool_config.long_token.name.upper()],
@@ -160,7 +165,7 @@ class GmxV2Minute(DailyNode):
             minute_df["longProfitAmount"] * minute_df["longPrice"]
             + minute_df["shortProfitAmount"] * minute_df["shortPrice"]
         )
-
+        minute_df["profitWithoutPnl"] = minute_df["realizedProfit"] - minute_df["realizedPnl"]
         minute_df = minute_df[minute_file_columns]
 
         return minute_df
