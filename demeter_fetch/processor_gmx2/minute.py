@@ -16,7 +16,6 @@ minute_file_columns = [
     "pendingPnl",  # pnl caused by open interest
     "realizedPnl",  # pnl for decreased position
     "realizedProfit",  # pnl + fee + priceImpact
-    "profitWithoutPnl",  # fee + priceImpact, so it can be negative
     "virtualSwapInventoryLong",
     "virtualSwapInventoryShort",
     "impactPoolAmount",
@@ -79,7 +78,6 @@ class GmxV2Minute(DailyNode):
             cum_sum_borrowingFeeUsd += row["borrowingFeeUsd"]  #
             tick_df.loc[idx, "totalBorrowingFees"] -= cum_sum_borrowingFeeUsd
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].shift().bfill()
-        tick_df["realizedPnl"] = -tick_df["realizedPnl"]
         tick_df = tick_df.set_index("timestamp")
         return tick_df
 
@@ -123,8 +121,8 @@ class GmxV2Minute(DailyNode):
         minute_df[["totalBorrowingFees", "borrowingFeePoolFactor"]] = minute_df[
             ["totalBorrowingFees", "borrowingFeePoolFactor"]
         ].bfill()
-        minute_df[["longProfitAmount", "shortProfitAmount","realizedPnl"]] = minute_df[
-            ["longProfitAmount", "shortProfitAmount","realizedPnl"]
+        minute_df[["longProfitAmount", "shortProfitAmount", "realizedPnl"]] = minute_df[
+            ["longProfitAmount", "shortProfitAmount", "realizedPnl"]
         ].fillna(0)
         useful_price = pd.DataFrame(
             {
@@ -159,13 +157,14 @@ class GmxV2Minute(DailyNode):
         minute_df["timestamp"] = minute_df.index
         # Reframe the PnL from the LP’s perspective, as the LP acts as the counterparty to the Open Interest.
         minute_df["netPnl"] = -minute_df["netPnl"]
+        minute_df["realizedPnl"] = -minute_df["realizedPnl"]
+
         minute_df.rename(columns={"netPnl": "pendingPnl"}, inplace=True)
 
         minute_df["realizedProfit"] = (
             minute_df["longProfitAmount"] * minute_df["longPrice"]
             + minute_df["shortProfitAmount"] * minute_df["shortPrice"]
         )
-        minute_df["profitWithoutPnl"] = minute_df["realizedProfit"] - minute_df["realizedPnl"]
         minute_df = minute_df[minute_file_columns]
 
         return minute_df
