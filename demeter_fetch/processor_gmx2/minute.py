@@ -13,10 +13,10 @@ minute_file_columns = [
     "poolValue",
     "longAmount",
     "shortAmount",
-    "pendingPnl", # pnl caused by open interest
-    "realizedPnl", # pnl for decreased position
-    "realizedProfit", # pnl + fee + priceImpact
-    "profitWithoutPnl", # fee + priceImpact, so it can be negative
+    "pendingPnl",  # pnl caused by open interest
+    "realizedPnl",  # pnl for decreased position
+    "realizedProfit",  # pnl + fee + priceImpact
+    "profitWithoutPnl",  # fee + priceImpact, so it can be negative
     "virtualSwapInventoryLong",
     "virtualSwapInventoryShort",
     "impactPoolAmount",
@@ -123,8 +123,8 @@ class GmxV2Minute(DailyNode):
         minute_df[["totalBorrowingFees", "borrowingFeePoolFactor"]] = minute_df[
             ["totalBorrowingFees", "borrowingFeePoolFactor"]
         ].bfill()
-        minute_df[["longProfitAmount", "shortProfitAmount"]] = minute_df[
-            ["longProfitAmount", "shortProfitAmount"]
+        minute_df[["longProfitAmount", "shortProfitAmount","realizedPnl"]] = minute_df[
+            ["longProfitAmount", "shortProfitAmount","realizedPnl"]
         ].fillna(0)
         useful_price = pd.DataFrame(
             {
