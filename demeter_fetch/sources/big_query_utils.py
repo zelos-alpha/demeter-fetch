@@ -16,8 +16,8 @@ class BigQueryChain(Enum):
         "tx_table_name": "bigquery-public-data.crypto_ethereum.transactions",
     }
     polygon = {
-        "table_name": "public-data-finance.crypto_polygon.logs",
-        "tx_table_name": "public-data-finance.crypto_polygon.transactions",
+        "table_name": "bigquery-public-data.goog_blockchain_polygon_mainnet_us.logs",
+        "tx_table_name": "bigquery-public-data.goog_blockchain_polygon_mainnet_us.transactions",
     }
     arbitrum = {
         "table_name": "bigquery-public-data.goog_blockchain_arbitrum_one_us.logs",

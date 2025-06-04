@@ -1,6 +1,8 @@
 # v1.3.4
 
 * [Breaking change] Rename realizedNetYield in GMX V2 minute file to realizedProfit
+* Update polygon table in bigquery, but as new table is partitioned by month, query will be very expensive
+
 
 # v1.3.3
 
