@@ -22,6 +22,10 @@ minute_file_columns = [
     "longPrice",
     "shortPrice",
     "indexPrice",
+    "openInterestLong",
+    "openInterestShort",
+    "openInterestInTokensLong",
+    "openInterestInTokensShort",
 ]
 
 
@@ -155,9 +159,6 @@ class GmxV2Minute(DailyNode):
         # )
         minute_df[["poolValue", "longPnl", "shortPnl", "netPnl"]] = minute_df.apply(calcPoolValue, axis=1)
         minute_df["timestamp"] = minute_df.index
-        # Reframe the PnL from the LP’s perspective, as the LP acts as the counterparty to the Open Interest.
-        minute_df["netPnl"] = -minute_df["netPnl"]
-        minute_df["realizedPnl"] = -minute_df["realizedPnl"]
 
         minute_df.rename(columns={"netPnl": "pendingPnl"}, inplace=True)
 
@@ -165,6 +166,16 @@ class GmxV2Minute(DailyNode):
             minute_df["longProfitAmount"] * minute_df["longPrice"]
             + minute_df["shortProfitAmount"] * minute_df["shortPrice"]
         )
+
+        minute_df["openInterestLong"] = minute_df["openInterestLongIsLong"] + minute_df["openInterestShortIsLong"]
+        minute_df["openInterestShort"] = minute_df["openInterestLongNotLong"] + minute_df["openInterestShortNotLong"]
+        minute_df["openInterestInTokensLong"] = (
+            minute_df["openInterestInTokensLongIsLong"] + minute_df["openInterestInTokensShortIsLong"]
+        )
+        minute_df["openInterestInTokensShort"] = (
+            minute_df["openInterestInTokensLongNotLong"] + minute_df["openInterestInTokensShortNotLong"]
+        )
+
         minute_df = minute_df[minute_file_columns]
 
         return minute_df

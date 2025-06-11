@@ -2,7 +2,8 @@
 
 * [Breaking change] Rename realizedNetYield in GMX V2 minute file to realizedProfit
 * Update polygon table in bigquery, but as new table is partitioned by month, query will be very expensive
-
+* add openinterest for gmx minute file. 
+* Reverse the sign of the PnL to reflect it from the trader's perspective again.
 
 # v1.3.3
 
