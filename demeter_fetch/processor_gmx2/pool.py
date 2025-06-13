@@ -349,4 +349,17 @@ class GmxV2PoolTx(DailyNode):
             if column_name not in df.columns:
                 df[column_name] = np.nan
         df = df[pool_file_columns]
+        if pool_config.long_token.name.upper() == pool_config.short_token.name.upper():
+            df[
+                [
+                    "openInterestLongIsLong",
+                    "openInterestLongNotLong",
+                    "openInterestShortIsLong",
+                    "openInterestShortNotLong",
+                    "openInterestInTokensLongIsLong",
+                    "openInterestInTokensLongNotLong",
+                    "openInterestInTokensShortIsLong",
+                    "openInterestInTokensShortNotLong",
+                ]
+            ] /= 2
         return df
