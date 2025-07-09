@@ -109,7 +109,7 @@ class EthRpcClient:
     def send(self, commend: str, params: List):
         response = self.do_post(EthRpcClient.__encode_json_rpc(commend, params))
         if response.status_code != 200:
-            raise RuntimeError("Request rpc return error with code {}".format(response.status_code))
+            raise RuntimeError("Request rpc return error with code {}, info: {}".format(response.status_code, response.text))
         return EthRpcClient.__decode_json_rpc(response)
 
 
@@ -176,9 +176,7 @@ class HeightCacheManager:
             return self._block_dict[height] if height in self._block_dict else None
         elif self.cache_engine == CacheEngineType.leveldb:
             cache_val = self._block_dict.get(height.to_bytes(4))
-            return (
-                None if cache_val is None else datetime.fromtimestamp(int.from_bytes(cache_val) / 1000, tz=timezone.utc)
-            )
+            return None if cache_val is None else datetime.fromtimestamp(int.from_bytes(cache_val) / 1000, tz=timezone.utc)
         elif self.cache_engine == CacheEngineType.dict_pickle:
             return self.block_dict[height] if height in self.block_dict else None
         else:
@@ -261,9 +259,7 @@ def query_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFra
 def query_event_by_tx(client: EthRpcClient, tx_list: pd.Series, threads=10) -> pd.DataFrame:
     param_list = [(tx_hash, client) for tx_hash in tx_list]
     with ThreadPoolExecutor(max_workers=threads) as executor:
-        tx_receipts = list(
-            tqdm(executor.map(_query_tx_receipt, param_list), ncols=60, position=1, leave=False, total=len(tx_list))
-        )
+        tx_receipts = list(tqdm(executor.map(_query_tx_receipt, param_list), ncols=60, position=1, leave=False, total=len(tx_list)))
 
     logs_list = []
     for tx in tx_receipts:
@@ -314,16 +310,10 @@ def get_event_slice(client, contract_config, start, end, one_by_one):
                                     )
                                     logs.extend(tmp_logs)
                             else:
-                                tmp_logs = client.get_logs(
-                                    GetLogsParam(
-                                        contract_config.address, start, end, [topic_hex, topic1_hex, topic2_hex]
-                                    )
-                                )
+                                tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex, topic2_hex]))
                                 logs.extend(tmp_logs)
                     else:
-                        tmp_logs = client.get_logs(
-                            GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex])
-                        )
+                        tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex]))
                         logs.extend(tmp_logs)
             else:
                 tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex]))
@@ -399,11 +389,13 @@ def query_event_by_height_concurrent(
                 end = end_height
             obj = t.submit(get_event_slice, client, contract_config, start, end, one_by_one)
             async_list.append(obj)
-        for future in tqdm(
-            as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Loading logs"
-        ):
-            data = future.result()
-            raw_log_list.extend(data)
+        for future in tqdm(as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Loading logs"):
+            try:
+                data = future.result()
+                raw_log_list.extend(data)
+            except Exception as e:
+                print(e)
+                sys.exit(1)
     log_list = []
     for log in raw_log_list:
         if not _is_log_useful(log, contract_config):
@@ -431,9 +423,7 @@ def query_event_by_height_concurrent(
             for data in log_list:
                 obj = t.submit(_fill_block_info, data, client, height_cache)
                 async_list.append(obj)
-            for future in tqdm(
-                as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Appending timestamp"
-            ):
+            for future in tqdm(as_completed(async_list), total=len(async_list), position=1, leave=False, desc="Appending timestamp"):
                 future.result()
     height_cache.save()
     return [save_tmp_file(save_path, log_list, start_height, end_height, chain, contract_config.address)]
@@ -506,9 +496,7 @@ def query_event_by_height(
                 logs = []
                 for topic_hex in contract_config.topics0:
                     for topic1_hex in contract_config.topics1:
-                        tmp_logs = client.get_logs(
-                            GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex])
-                        )
+                        tmp_logs = client.get_logs(GetLogsParam(contract_config.address, start, end, [topic_hex, topic1_hex]))
                     logs.extend(tmp_logs)
             else:
                 logs = client.get_logs(GetLogsParam(contract_config.address, start, end, None))
@@ -550,17 +538,13 @@ def query_event_by_height(
                 # save tmp file
                 logs_to_save = sorted(logs_to_save, key=itemgetter("block_number", "transaction_index", "log_index"))
                 end_blk = end
-                tmp_file_full_path_list.append(
-                    save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address)
-                )
+                tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
                 logs_to_save = []
             pbar.update(n=len(height_slice))
     if batch_count % save_every_query != 0 and skip_until < end:  # save tail queries
         logs_to_save = sorted(logs_to_save, key=itemgetter("block_number", "transaction_index", "log_index"))
         end_blk = end
-        tmp_file_full_path_list.append(
-            save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address)
-        )
+        tmp_file_full_path_list.append(save_tmp_file(save_path, logs_to_save, start_blk, end_blk, chain, contract_config.address))
     height_cache.save()
     return tmp_file_full_path_list
 
