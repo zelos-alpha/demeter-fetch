@@ -1,3 +1,8 @@
+# v1.3.5
+
+* fix issue in Aave Protocol Parameter tool
+* Add more error handling in rpc request
+
 # v1.3.4
 
 * [Breaking change] Rename realizedNetYield in GMX V2 minute file to realizedProfit

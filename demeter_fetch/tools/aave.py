@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import NamedTuple
 
 import pandas as pd
@@ -67,49 +68,49 @@ data_type = [
 
 
 class ChainCfg(NamedTuple):
-    url: str
+    # url: str
     to: str
     data: str
 
 
 chain_cfgs = {
     "ethereum": ChainCfg(
-        "https://eth-mainnet.g.alchemy.com/v2/ZiMMq2478EVIEJdsxC5dMal_ccQwtb31",
+        # "https://eth-mainnet.g.alchemy.com/v2/ZiMMq2478EVIEJdsxC5dMal_ccQwtb31",
         "0x3f78bbd206e4d3c504eb854232eda7e47e9fd8fc",
         "0xec489c210000000000000000000000002f39d218133afab8f2b819b1066c7e434ad94e9e",
     ),
     "polygon": ChainCfg(
-        "https://polygon-mainnet.g.alchemy.com/v2/MbgjyHR1CQiU5Y8CUa2mqfRlYwltE5Zr",
+        # "https://polygon-mainnet.g.alchemy.com/v2/MbgjyHR1CQiU5Y8CUa2mqfRlYwltE5Zr",
         "0x68100bd5345ea474d93577127c11f39ff8463e93",
         "0xec489c21000000000000000000000000a97684ead0e402dc232d5a977953df7ecbab3cdb",
     ),
     "avalanche": ChainCfg(
-        "https://avax-mainnet.g.alchemy.com/v2/qBXCF7-6YfiiAdG0dvUyLpQuHt02DbXH",
+        # "https://avax-mainnet.g.alchemy.com/v2/qBXCF7-6YfiiAdG0dvUyLpQuHt02DbXH",
         "0x50b4a66bf4d41e6252540ea7427d7a933bc3c088",
         "0xec489c21000000000000000000000000a97684ead0e402dc232d5a977953df7ecbab3cdb",
     ),
     "arbitrum": ChainCfg(
-        "https://arb-mainnet.g.alchemy.com/v2/2oA-8BGeYqHHpd2uCU49IzeZDL9skdSm",
+        # "https://arb-mainnet.g.alchemy.com/v2/2oA-8BGeYqHHpd2uCU49IzeZDL9skdSm",
         "0x5c5228ac8bc1528482514af3e27e692495148717",
         "0xec489c21000000000000000000000000a97684ead0e402dc232d5a977953df7ecbab3cdb",
     ),
     "base": ChainCfg(
-        "https://base-mainnet.g.alchemy.com/v2/AFu9kulpkXzHO7kQQ9UQDXWRyEhJEXPk",
+        # "https://base-mainnet.g.alchemy.com/v2/AFu9kulpkXzHO7kQQ9UQDXWRyEhJEXPk",
         "0x68100bd5345ea474d93577127c11f39ff8463e93",
         "0xec489c21000000000000000000000000e20fcbdbffc4dd138ce8b2e6fbb6cb49777ad64d",
     ),
     "optimism": ChainCfg(
-        "https://opt-mainnet.g.alchemy.com/v2/H8ZBGuz1LZbRsYnCBQHY4YMv_AUAVGeM",
+        # "https://opt-mainnet.g.alchemy.com/v2/H8ZBGuz1LZbRsYnCBQHY4YMv_AUAVGeM",
         "0xe92cd6164ce7dc68e740765bc1f2a091b6cbc3e4",
         "0xec489c21000000000000000000000000a97684ead0e402dc232d5a977953df7ecbab3cdb",
     ),
     "bsc": ChainCfg(
-        "https://bnb-mainnet.g.alchemy.com/v2/nCU1F9Y1KDQFMs9OBtkGw0GLsIKiYBho",
+        # "https://bnb-mainnet.g.alchemy.com/v2/nCU1F9Y1KDQFMs9OBtkGw0GLsIKiYBho",
         "0xc0179321f0825c3e0f59fe7ca4e40557b97797a3",
         "0xec489c21000000000000000000000000ff75b6da14ffbbfd355daf7a2731456b3562ba6d",
     ),
     "celo": ChainCfg(
-        "https://celo-mainnet.g.alchemy.com/v2/QSIQ93fznmXwv9qEWBnKIOOsQGldk3wL",
+        # "https://celo-mainnet.g.alchemy.com/v2/QSIQ93fznmXwv9qEWBnKIOOsQGldk3wL",
         "0xf07ffd12b119b921c4a2ce8d4a13c5d1e3000d6e",
         "0xec489c210000000000000000000000009f7cf9417d5251c59fe94fb9147feee1aad9cea5",
     ),
@@ -131,8 +132,11 @@ def aave_risk_param(args):
     )
     params = [{"to": cfg.to, "data": cfg.data}, "latest" if height == "latest" else hex(int(height))]
     param = {"jsonrpc": "2.0", "method": "eth_call", "params": params, "id": random.randint(1, 2147483648)}
-    result = requests.post(cfg.url, json=param, proxies=proxies, headers={"Origin": "https://aave.com"})
+    result = requests.post(args.rpc, json=param, proxies=proxies, headers={"Origin": "https://aave.com"})
     response = result.json()
+    if "result" not in response:
+        print(response)
+        sys.exit(1)
     data = response["result"]
     decoded_data = decode(data_type, bytes.fromhex(data[2:]))
     token_info_list = []

@@ -31,6 +31,7 @@ def get_commend_args():
 
     aave = parser_tool_sub.add_parser("aave", help="Get aave risk parameter")
     aave.add_argument("-c", "--chain", help="chain name, [ethereum, polygon]")
+    aave.add_argument("-r", "--rpc", help="chain name, e.g. https://eth-mainnet.g.alchemy.com/v2/ZiMMq2478EVIEJdsxC5dMal_ccQwtb31")
     aave.add_argument("-p", "--proxy", help="proxy, eg: https://localhost:7890, optional", default="")
     aave.add_argument("-b", "--block_number", help="block number, e.g. 10000, default is latest", default="latest")
 
