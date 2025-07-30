@@ -25,7 +25,7 @@ class ChainType(enum.IntEnum):
 ChainTypeConfig = {
     ChainType.ethereum: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=1&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
         "squeeth_controller": "0x64187ae08781b09368e6253f9e94951243a493d5",
@@ -33,21 +33,21 @@ ChainTypeConfig = {
     },
     ChainType.polygon: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.polygonscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=137&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
         "uni_v4_pool_manager": "0x67366782805870060151383f4bbff9dab53e5cd6",
     },
     ChainType.optimism: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api-optimistic.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=10&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "uni_v4_pool_manager": "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
     },
     ChainType.arbitrum: {
         "allow": [DataSource.big_query, DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.arbiscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=42161&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
         "aave_v3_pool_addr": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
         "uni_v4_pool_manager": "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
@@ -55,21 +55,21 @@ ChainTypeConfig = {
     },
     ChainType.celo: {
         "allow": [DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.celoscan.io/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=42220&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
         "uni_v4_pool_manager": "",
         "aave_v3_pool_addr": "0x3e59a31363e2ad014dcbc521c4a0d5757d9f3402",
     },
     ChainType.bsc: {
         "allow": [DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.bscscan.com/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=56&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
         "uni_v4_pool_manager": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
         "aave_v3_pool_addr": "0x6807dc923806fe8fd134338eabca509979a7e0cb",
     },
     ChainType.base: {
         "allow": [DataSource.rpc, DataSource.chifra],
-        "query_height_api": "https://api.basescan.org/api?module=block&action=getblocknobytime&timestamp=%1&closest=%2",
+        "query_height_api": "https://api.etherscan.io/v2/api?chainid=8453&module=block&action=getblocknobytime&timestamp=%1&closest=%2",
         "uniswap_proxy_addr": "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
         "uni_v4_pool_manager": "0x498581ff718922c3f8e6a244956af099b2652b2b",
         "aave_v3_pool_addr": "0xa238dd80c259a72e81d7e4664a9801593f98d1c5",

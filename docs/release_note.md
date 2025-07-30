@@ -2,6 +2,7 @@
 
 * fix issue in Aave Protocol Parameter tool
 * Add more error handling in rpc request
+* [Breaking change] Updated to etherscan api v2, so you will have to update your api key
 
 # v1.3.4
 
