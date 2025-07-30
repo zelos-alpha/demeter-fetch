@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='demeter-fetch',
-    version='1.3.3',
+    version='1.3.5',
     packages=find_packages(exclude=["tests", "tests.*", "samples", "samples.*"]),
     url='',
     license='MIT',
