@@ -1,3 +1,7 @@
+# v1.3.6
+
+* remove import from top level
+
 # v1.3.5
 
 * fix issue in Aave Protocol Parameter tool
