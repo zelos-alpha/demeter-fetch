@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import List, Tuple, Dict
 
-import demeter_fetch.common.utils as utils
+from ..common import utils as utils
 from .. import ChainType
 
 

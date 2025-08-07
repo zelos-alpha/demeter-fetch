@@ -11,7 +11,7 @@ from typing import List
 
 import toml
 
-import demeter_fetch.common as utils
+from ..common import utils as utils
 from . import engine
 from .config import convert_to_config
 from .. import Config

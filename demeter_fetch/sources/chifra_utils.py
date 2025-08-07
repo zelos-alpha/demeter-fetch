@@ -6,9 +6,9 @@ from typing import Dict
 
 import pandas as pd
 
-from demeter_fetch import ChainType
-from demeter_fetch.common import ApiUtil, print_log
-from demeter_fetch.sources.source_utils import get_height_from_date
+from .. import ChainType
+from ..common import ApiUtil, print_log
+from ..sources.source_utils import get_height_from_date
 from .source_utils import ContractConfig
 
 

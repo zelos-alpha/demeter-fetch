@@ -6,7 +6,7 @@ from .chifra_utils import query_log_by_chifra
 from .source_utils import ContractConfig
 from .. import ChainTypeConfig
 from ..common import FromConfig
-import demeter_fetch.common._typing as TYPE
+from ..common import _typing as TYPE
 
 
 def chifra_pool(config: FromConfig, save_path: str, day: date) -> pd.DataFrame:

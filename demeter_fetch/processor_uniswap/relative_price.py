@@ -3,10 +3,9 @@ from typing import Callable, Dict, List
 
 import pandas as pd
 
-from demeter_fetch import Config
-from demeter_fetch.common import DailyNode, DailyParam, get_tx_type, to_decimal, to_int, get_depend_name
-from demeter_fetch.common import KECCAK, NodeNames
 from .uniswap_utils import x96_sqrt_to_decimal
+from .. import Config
+from ..common import DailyNode, DailyParam, to_decimal, to_int, get_depend_name, NodeNames
 
 price_df_columns = ["block_timestamp", "token0", "token1", "total_liquidity", "sqrtPriceX96"]
 
@@ -22,8 +21,8 @@ class UniRelativePrice(DailyNode):
 
     def _get_file_name(self, param: DailyParam) -> str:
         return (
-            f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.rel-price"
-            + self._get_file_ext()
+                f"{self.from_config.chain.name}-{self.from_config.uniswap_config.pool_address}-{param.day.strftime('%Y-%m-%d')}.rel-price"
+                + self._get_file_ext()
         )
 
     @property

@@ -4,7 +4,7 @@ from typing import List, Dict
 
 import pandas as pd
 
-import demeter_fetch.sources.rpc_utils as rpc_utils
+from . import rpc_utils as rpc_utils
 from .source_utils import get_height_from_date
 from .. import ChainType, ChainTypeConfig
 from ..common import FromConfig, KECCAK, utils, split_topic, hex_to_length

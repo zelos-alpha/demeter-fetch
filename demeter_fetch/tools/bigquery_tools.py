@@ -6,7 +6,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from typing import Tuple
 
-from demeter_fetch import ChainType
+from .. import ChainType
 
 global_client: Client | None = None
 

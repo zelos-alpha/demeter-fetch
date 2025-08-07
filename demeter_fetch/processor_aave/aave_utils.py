@@ -3,8 +3,8 @@ from typing import List
 
 import numpy as np
 
-import demeter_fetch.common._typing as TYPE
-from demeter_fetch.common import split_topic
+from ..common import _typing as TYPE
+from ..common import split_topic
 
 RAY = 10**27
 

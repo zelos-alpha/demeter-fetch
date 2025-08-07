@@ -3,8 +3,8 @@ from typing import Dict, List
 
 import pandas as pd
 
-from demeter_fetch import NodeNames
-from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
+from .. import NodeNames
+from ..common import DailyNode, DailyParam, get_depend_name
 from .pool_value_util import calcPoolValue
 
 minute_file_columns = [

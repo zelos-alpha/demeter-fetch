@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from demeter_fetch import NodeNames, GmxV2Config
-from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
+from .. import NodeNames
+from ..common import DailyNode, DailyParam, get_depend_name
 from .gmx2_utils import GMX_FLOAT_DECIMAL, SwapFeeType, GM_DECIMAL
 
 

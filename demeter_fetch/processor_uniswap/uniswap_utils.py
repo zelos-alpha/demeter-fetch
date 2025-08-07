@@ -3,8 +3,8 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-import demeter_fetch.common._typing as _typing
-from demeter_fetch.common import split_topic, get_tx_type
+from ..common import _typing as _typing
+from ..common import split_topic, get_tx_type
 
 
 def signed_int(h):

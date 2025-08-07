@@ -5,8 +5,8 @@ from typing import Dict, Callable, List
 import numpy as np
 import pandas as pd
 
-import demeter_fetch.processor_uniswap.uniswap_utils as uniswap_utils
-from demeter_fetch.common import (
+from . import uniswap_utils as uniswap_utils
+from ..common import (
     DailyNode,
     DailyParam,
     get_tx_type,

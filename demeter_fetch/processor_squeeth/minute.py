@@ -5,8 +5,8 @@ from typing import List, Dict
 import numpy as np
 import pandas as pd
 
-from demeter_fetch import NodeNames, Config, DappType, UniswapConfig, TokenConfig
-from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
+from .. import NodeNames, Config, DappType, UniswapConfig, TokenConfig
+from ..common import DailyNode, DailyParam, get_depend_name
 import copy
 
 

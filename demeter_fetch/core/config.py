@@ -5,7 +5,7 @@
 # @Description:
 from typing import Dict
 
-from demeter_fetch.common import *
+from ..common import *
 
 
 def get_item_with_default(cfg: Dict, keys: List, default_val, converter=None):
