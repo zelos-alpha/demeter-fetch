@@ -2,10 +2,10 @@ from typing import Dict, List
 
 import pandas as pd
 
-from demeter_fetch import KECCAK, NodeNames
-from demeter_fetch.common import AaveDailyNode, get_tx_type, get_depend_name
-from demeter_fetch.common.nodes import AaveDailyParam
-from demeter_fetch.processor_aave.aave_utils import decode_event_ReserveDataUpdated
+from .. import KECCAK, NodeNames
+from ..common import AaveDailyNode, get_tx_type, get_depend_name
+from ..common.nodes import AaveDailyParam
+from ..processor_aave.aave_utils import decode_event_ReserveDataUpdated
 from datetime import datetime, date
 
 

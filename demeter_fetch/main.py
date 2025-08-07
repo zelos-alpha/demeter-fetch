@@ -1,13 +1,13 @@
 import sys
 
-import demeter_fetch.common.utils as utils
-from demeter_fetch.core import download, get_commend_args
-from demeter_fetch.tools import date_to_height, block_timestamp_cache,aave_risk_param
+from .common.utils import print_log
+from .core import download, get_commend_args
+from .tools import date_to_height, block_timestamp_cache,aave_risk_param
 
 
 def main():
     if len(sys.argv) == 1:
-        utils.print_log("use parameter -h for help")
+        print_log("use parameter -h for help")
         exit(1)
     if len(sys.argv) > 1 and sys.argv[1].endswith(".toml"):
         download(sys.argv[1])

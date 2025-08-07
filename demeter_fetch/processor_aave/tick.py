@@ -2,10 +2,10 @@ from datetime import date
 from typing import Dict, List
 
 import pandas as pd
-import demeter_fetch.processor_aave.aave_utils as aave_utils
-from demeter_fetch import NodeNames
-from demeter_fetch.common import AaveDailyNode, get_tx_type, KECCAK, get_depend_name
-from demeter_fetch.common.nodes import AaveDailyParam
+from .aave_utils import handle_event
+from .. import NodeNames
+from ..common import AaveDailyNode, get_tx_type, KECCAK, get_depend_name
+from ..common.nodes import AaveDailyParam
 
 
 class AaveTick(AaveDailyNode):
@@ -49,7 +49,7 @@ def preprocess_one(df: pd.DataFrame):
             ret_df[column] = None
         return ret_df
     ret_df[append_columns] = df.apply(
-        lambda x: aave_utils.handle_event(x.tx_type, x.topics, x.data),
+        lambda x: handle_event(x.tx_type, x.topics, x.data),
         axis=1,
         result_type="expand",
     )

@@ -6,8 +6,8 @@ import pandas as pd
 from eth_abi import decode
 from tqdm import tqdm
 
-from demeter_fetch import NodeNames
-from demeter_fetch.common import DailyNode, DailyParam, get_depend_name
+from .. import NodeNames
+from ..common import DailyNode, DailyParam, get_depend_name
 from .gmx2_utils import data_type, data_decoder
 
 tick_file_columns = [

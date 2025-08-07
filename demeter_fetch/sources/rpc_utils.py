@@ -15,8 +15,8 @@ from sqlitedict import SqliteDict
 from tqdm import tqdm  # process bar
 from typing import List, Dict
 
-import demeter_fetch.common.utils as utils
-from demeter_fetch import ChainType, EthError
+from ..common.utils import print_log
+from .. import ChainType, EthError
 from .source_utils import ContractConfig
 
 
@@ -153,12 +153,12 @@ class HeightCacheManager:
             self.cache_engine = CacheEngineType.dict_pickle
             with open(self.height_cache_path, "rb") as f:
                 self.block_dict = pickle.load(f)
-                utils.print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
+                print_log(f"Height cache has loaded, length: {len(self.block_dict)}")
         else:  # will use and create a sqlite instance by default
             self.cache_engine = CacheEngineType.sqlite
             self.height_cache_path = sqlite_cache_path
             self._block_dict = SqliteDict(self.height_cache_path, outer_stack=False)  # True is the default
-            utils.print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
+            print_log(f"Height cache has loaded, length: {len(self._block_dict)}")
         print("Height cache path: " + str(self.height_cache_path))
         self.in_mem_count = 0
 
@@ -204,7 +204,7 @@ class HeightCacheManager:
         elif self.cache_engine == CacheEngineType.dict_pickle:
             with open(self.height_cache_path, "wb") as f:
                 pickle.dump(self.block_dict, f)
-            utils.print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self._block_dict)}")
+            print_log(f"Save block timestamp cache to {self.height_cache_path}, length: {len(self._block_dict)}")
 
     def __del__(self):
         if self.cache_engine == CacheEngineType.sqlite or self.cache_engine == CacheEngineType.leveldb:
@@ -379,7 +379,7 @@ def query_event_by_height_concurrent(
         return [tmp_file_path]
     if not height_cache:
         height_cache = HeightCacheManager(chain, save_path if height_cache_path is None else height_cache_path)
-    utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
+    print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
     task_list = [start_height + i * batch_size for i in range((end_height - start_height) // batch_size + 1)]
     raw_log_list = []
     with ThreadPoolExecutor(max_workers=thread) as t:
@@ -469,7 +469,7 @@ def query_event_by_height(
         height_cache = HeightCacheManager(chain, save_path if height_cache_path is None else height_cache_path)
     batch_count = start_blk = end_blk = 0
     skip_until = -1
-    utils.print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
+    print_log(f"Querying {contract_config.address} from {start_height} to {end_height}")
     with tqdm(total=(end_height - start_height + 1), ncols=60, position=1, leave=False) as pbar:
         for height_slice in _cut([i for i in range(start_height, end_height + 1)], batch_size):
             start = height_slice[0]

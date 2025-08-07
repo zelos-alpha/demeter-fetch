@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import numpy as np
 
-from demeter_fetch.common._typing import *
+from ._typing import *
 
 
 global_pbar = None

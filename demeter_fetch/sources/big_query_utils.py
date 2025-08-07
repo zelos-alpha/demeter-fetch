@@ -2,10 +2,9 @@ import os
 from datetime import date, timedelta
 from enum import Enum
 from typing import List
+
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
-
-from demeter_fetch.common import print_log
 
 global_client: Client | None = None
 
