@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='demeter-fetch',
-    version='1.3.5',
+    version='1.3.6',
     packages=find_packages(exclude=["tests", "tests.*", "samples", "samples.*"]),
     url='',
     license='MIT',
@@ -20,7 +20,8 @@ setup(
         "google-cloud-bigquery>=3.19.0",
         "db-dtypes>=1.2.0",
         "argparse>=1.4.0",
-        "sqlitedict>=2.1.1",
+        "sqlitedict>=2.1.0",
+        "eth_abi>=5.2.0",
     ],
     entry_points={
         'console_scripts': [
