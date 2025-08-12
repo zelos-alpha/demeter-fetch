@@ -40,16 +40,29 @@ def calcPoolValue(row: pd.Series):
     return pd.Series([pool_net_value, longPnl, shortPnl, netPnl], index=["poolValue", "longPnl", "shortPnl", "netPnl"])
 
 
-def getPnl(row: pd.Series, isLong: bool) -> int:
+def getPnl(row: pd.Series, isLong: bool) -> float:
+    # When short token == long token, short deposit will be nan
+    tmp = (
+        row[
+            [
+                "openInterestShortIsLong",
+                "openInterestShortNotLong",
+                "openInterestInTokensShortIsLong",
+                "openInterestInTokensShortNotLong",
+            ]
+        ]
+        .astype(float)
+        .fillna(0)
+    )
     openInterest = (
-        row["openInterestLongIsLong"] + row["openInterestShortIsLong"]
+        row["openInterestLongIsLong"] + tmp["openInterestShortIsLong"]
         if isLong
-        else row["openInterestLongNotLong"] + row["openInterestShortNotLong"]
+        else row["openInterestLongNotLong"] + tmp["openInterestShortNotLong"]
     )
     openInterestInTokens = (
-        row["openInterestInTokensLongIsLong"] + row["openInterestInTokensShortIsLong"]
+        row["openInterestInTokensLongIsLong"] + tmp["openInterestInTokensShortIsLong"]
         if isLong
-        else row["openInterestInTokensLongNotLong"] + row["openInterestInTokensShortNotLong"]
+        else row["openInterestInTokensLongNotLong"] + tmp["openInterestInTokensShortNotLong"]
     )
     # openInterest is the cost of all positions, openInterestValue is the current worth of all positions
     openInterestValue = openInterestInTokens * row["indexPrice"]
@@ -58,7 +71,7 @@ def getPnl(row: pd.Series, isLong: bool) -> int:
     return pnl
 
 
-def getCappedPnl(pnl: int, poolUsd: int, is_deposit: bool) -> int:
+def getCappedPnl(pnl: float, poolUsd: float, is_deposit: bool) -> float:
     if pnl < 0:
         return pnl
     maxPnlFactor = GeneralPoolConfig.maxPnlFactorDeposit if is_deposit else GeneralPoolConfig.maxPnlFactorWithdraw

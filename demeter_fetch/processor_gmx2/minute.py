@@ -166,7 +166,26 @@ class GmxV2Minute(DailyNode):
             minute_df["longProfitAmount"] * minute_df["longPrice"]
             + minute_df["shortProfitAmount"] * minute_df["shortPrice"]
         )
-
+        # When short token == long token, short deposit will be nan
+        minute_df[
+            [
+                "openInterestShortIsLong",
+                "openInterestShortNotLong",
+                "openInterestInTokensShortIsLong",
+                "openInterestInTokensShortNotLong",
+            ]
+        ] = (
+            minute_df[
+                [
+                    "openInterestShortIsLong",
+                    "openInterestShortNotLong",
+                    "openInterestInTokensShortIsLong",
+                    "openInterestInTokensShortNotLong",
+                ]
+            ]
+            .astype(float)
+            .fillna(0)
+        )
         minute_df["openInterestLong"] = minute_df["openInterestLongIsLong"] + minute_df["openInterestShortIsLong"]
         minute_df["openInterestShort"] = minute_df["openInterestLongNotLong"] + minute_df["openInterestShortNotLong"]
         minute_df["openInterestInTokensLong"] = (
@@ -177,5 +196,8 @@ class GmxV2Minute(DailyNode):
         )
 
         minute_df = minute_df[minute_file_columns]
-
+        # in case this pool doesn't have virtual inventory
+        minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]] = (
+            minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]].astype(float).fillna(0)
+        )
         return minute_df
