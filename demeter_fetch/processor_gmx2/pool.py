@@ -160,16 +160,22 @@ def _add_pool_amount_updated(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, 
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
-        # get delta
-        if log_data["token"].lower() == pool_info.long_addr:
-            pool_snapshot["longAmountDelta"] += log_data["delta"] / pool_info.long_decimal
+        # get delta, and amount
+        if pool_info.long_addr != pool_info.long_addr:
+            if log_data["token"].lower() == pool_info.long_addr:
+                pool_snapshot["longAmountDelta"] += log_data["delta"] / pool_info.long_decimal
+                long_list.append((old_val, log_data["nextValue"]))
+            else:
+                pool_snapshot["shortAmountDelta"] += log_data["delta"] / pool_info.short_decimal
+                short_list.append((old_val, log_data["nextValue"]))
         else:
-            pool_snapshot["shortAmountDelta"] += log_data["delta"] / pool_info.short_decimal
-        # get amount
-        if log_data["token"].lower() == pool_info.long_addr:
-            long_list.append((old_val, log_data["nextValue"]))
-        else:
-            short_list.append((old_val, log_data["nextValue"]))
+            delta = log_data["delta"] / 2
+            old_val = old_val / 2
+            next_val = log_data["nextValue"] / 2
+            pool_snapshot["longAmountDelta"] += delta / pool_info.long_decimal
+            long_list.append((old_val, next_val))
+            pool_snapshot["shortAmountDelta"] += delta / pool_info.short_decimal
+            short_list.append((old_val, next_val))
     if len(long_list) > 0:
         pool_snapshot["longAmount"] = long_list[0][0] / pool_info.long_decimal
         last_snapshot["longAmount"] = long_list[-1][1] / pool_info.long_decimal
