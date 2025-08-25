@@ -26,6 +26,17 @@ minute_file_columns = [
     "openInterestShort",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
+    "virtualInventoryForPositions",
+    "cumulativeBorrowingFactorLong",
+    "cumulativeBorrowingFactorShort",
+    "longTokenFundingFeeAmountPerSizeLong",
+    "longTokenFundingFeeAmountPerSizeShort",
+    "shortTokenFundingFeeAmountPerSizeLong",
+    "shortTokenFundingFeeAmountPerSizeShort",
+    "longTokenClaimableFundingAmountPerSizeLong",
+    "longTokenClaimableFundingAmountPerSizeShort",
+    "shortTokenClaimableFundingAmountPerSizeLong",
+    "shortTokenClaimableFundingAmountPerSizeShort",
 ]
 
 
@@ -44,6 +55,17 @@ columns_to_bfill = [
     "openInterestInTokensLongNotLong",
     "openInterestInTokensShortIsLong",
     "openInterestInTokensShortNotLong",
+    "virtualInventoryForPositions",
+    "cumulativeBorrowingFactorLong",
+    "cumulativeBorrowingFactorShort",
+    "longTokenFundingFeeAmountPerSizeLong",
+    "longTokenFundingFeeAmountPerSizeShort",
+    "shortTokenFundingFeeAmountPerSizeLong",
+    "shortTokenFundingFeeAmountPerSizeShort",
+    "longTokenClaimableFundingAmountPerSizeLong",
+    "longTokenClaimableFundingAmountPerSizeShort",
+    "shortTokenClaimableFundingAmountPerSizeLong",
+    "shortTokenClaimableFundingAmountPerSizeShort",
 ]
 
 
@@ -64,6 +86,7 @@ class GmxV2Minute(DailyNode):
 
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
+        tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
@@ -199,5 +222,36 @@ class GmxV2Minute(DailyNode):
         # in case this pool doesn't have virtual inventory
         minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]] = (
             minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]].astype(float).fillna(0)
+        )
+        minute_df[
+            [
+                "cumulativeBorrowingFactorLong",
+                "cumulativeBorrowingFactorShort",
+                "longTokenFundingFeeAmountPerSizeLong",
+                "longTokenFundingFeeAmountPerSizeShort",
+                "shortTokenFundingFeeAmountPerSizeLong",
+                "shortTokenFundingFeeAmountPerSizeShort",
+                "longTokenClaimableFundingAmountPerSizeLong",
+                "longTokenClaimableFundingAmountPerSizeShort",
+                "shortTokenClaimableFundingAmountPerSizeLong",
+                "shortTokenClaimableFundingAmountPerSizeShort",
+            ]
+        ] = (
+            minute_df[
+                [
+                    "cumulativeBorrowingFactorLong",
+                    "cumulativeBorrowingFactorShort",
+                    "longTokenFundingFeeAmountPerSizeLong",
+                    "longTokenFundingFeeAmountPerSizeShort",
+                    "shortTokenFundingFeeAmountPerSizeLong",
+                    "shortTokenFundingFeeAmountPerSizeShort",
+                    "longTokenClaimableFundingAmountPerSizeLong",
+                    "longTokenClaimableFundingAmountPerSizeShort",
+                    "shortTokenClaimableFundingAmountPerSizeLong",
+                    "shortTokenClaimableFundingAmountPerSizeShort",
+                ]
+            ]
+            .astype(float)
+            .fillna(0)
         )
         return minute_df

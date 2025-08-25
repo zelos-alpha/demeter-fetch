@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from .. import NodeNames
 from ..common import DailyNode, DailyParam, get_depend_name
-from .gmx2_utils import GMX_FLOAT_DECIMAL, SwapFeeType, GM_DECIMAL
+from .gmx2_utils import GMX_FLOAT_DECIMAL, SwapFeeType, GM_DECIMAL, GMX_FLOAT_PRECISION_SQRT
 
 
 class PoolInfo(NamedTuple):
@@ -50,6 +50,17 @@ pool_file_columns = [
     "openInterestInTokensLongNotLong",  # 💚
     "openInterestInTokensShortIsLong",  # 💚
     "openInterestInTokensShortNotLong",  # 💚
+    "virtualInventoryForPositions",
+    "cumulativeBorrowingFactorLong",
+    "cumulativeBorrowingFactorShort",
+    "longTokenFundingFeeAmountPerSizeLong",
+    "longTokenFundingFeeAmountPerSizeShort",
+    "shortTokenFundingFeeAmountPerSizeLong",
+    "shortTokenFundingFeeAmountPerSizeShort",
+    "longTokenClaimableFundingAmountPerSizeLong",
+    "longTokenClaimableFundingAmountPerSizeShort",
+    "shortTokenClaimableFundingAmountPerSizeLong",
+    "shortTokenClaimableFundingAmountPerSizeShort"
 ]
 
 
@@ -149,6 +160,85 @@ def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_dat
     if len(short_list) > 0:
         pool_snapshot["virtualSwapInventoryShort"] = short_list[0][0] / pool_info.short_decimal
         last_snapshot["virtualSwapInventoryShort"] = short_list[-1][1] / pool_info.short_decimal
+
+
+def _add_virtual_position_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
+    logs = find_logs("VirtualPositionInventoryUpdated", tx_data)  # 因为没有market字段，所以这里数据都为0
+    data_list = []
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        old_val = log_data["nextValue"] - log_data["delta"]
+        data_list.append((old_val, log_data["nextValue"]))
+
+    if len(data_list) > 0:
+        pool_snapshot["virtualInventoryForPositions"] = data_list[0][0] / pool_info.long_decimal
+        last_snapshot["virtualInventoryForPositions"] = data_list[-1][1] / pool_info.long_decimal
+
+
+def _add_cumulative_borrowing_factor(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
+    logs = find_logs("CumulativeBorrowingFactorUpdated", tx_data)
+    long_list = []
+    short_list = []
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        old_val = log_data["nextValue"] - log_data["delta"]
+        # get amount
+        if log_data["isLong"]:
+            long_list.append((old_val, log_data["nextValue"]))
+        else:
+            short_list.append((old_val, log_data["nextValue"]))
+    if len(long_list) > 0:
+        pool_snapshot["cumulativeBorrowingFactorLong"] = long_list[0][0] / GMX_FLOAT_DECIMAL
+        last_snapshot["cumulativeBorrowingFactorLong"] = long_list[-1][1] / GMX_FLOAT_DECIMAL
+    if len(short_list) > 0:
+        pool_snapshot["cumulativeBorrowingFactorShort"] = short_list[0][0] / GMX_FLOAT_DECIMAL
+        last_snapshot["cumulativeBorrowingFactorShort"] = short_list[-1][1] / GMX_FLOAT_DECIMAL
+
+
+def _add_funding_fee_amount_per_size(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
+    logs = find_logs("FundingFeeAmountPerSizeUpdated", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        old_val = log_data["value"] - log_data["delta"]
+        if pool_info.long_addr == log_data["collateralToken"]:
+            if log_data["isLong"]:
+                pool_snapshot["longTokenFundingFeeAmountPerSizeLong"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["longTokenFundingFeeAmountPerSizeLong"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+            else:
+                pool_snapshot["longTokenFundingFeeAmountPerSizeShort"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["longTokenFundingFeeAmountPerSizeShort"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+        elif pool_info.short_addr == log_data["collateralToken"]:
+            if log_data["isLong"]:
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+            else:
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+        else:
+            raise RuntimeError("FundingFeeAmountPerSizeUpdated should have long or short token")
+
+
+def _add_claimable_funding_amount_per_size(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
+    logs = find_logs("ClaimableFundingAmountPerSizeUpdated", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        old_val = log_data["value"] - log_data["delta"]
+        if pool_info.long_addr == log_data["collateralToken"]:
+            if log_data["isLong"]:
+                pool_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+            else:
+                pool_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+        elif pool_info.short_addr == log_data["collateralToken"]:
+            if log_data["isLong"]:
+                pool_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+            else:
+                pool_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = old_val / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+                last_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = log_data["value"] / (GMX_FLOAT_DECIMAL * GMX_FLOAT_PRECISION_SQRT)
+        else:
+            raise RuntimeError("ClaimableFundingAmountPerSizeUpdated should have long or short token")
 
 
 def _add_pool_amount_updated(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
@@ -338,6 +428,10 @@ class GmxV2PoolTx(DailyNode):
                 _add_pool_value_prop_last(pool_info_simple, tx_data, last_snapshot)
                 _add_pool_amount_updated(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_virtual_swap_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                _add_virtual_position_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                _add_cumulative_borrowing_factor(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                _add_funding_fee_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                _add_claimable_funding_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest_in_tokens(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_position_impact_pool_amount(pool_snapshot, pool_info_simple, tx_data, last_snapshot)

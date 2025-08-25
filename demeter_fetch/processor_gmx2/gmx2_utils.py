@@ -2,6 +2,7 @@ import enum
 from typing import Tuple, Dict
 
 GMX_FLOAT_DECIMAL=10**30
+GMX_FLOAT_PRECISION_SQRT = 10 ** 15
 GM_DECIMAL=10**18
 
 class GmxTopics(enum.StrEnum):
