@@ -1,3 +1,7 @@
+# v1.3.8
+
+* fix issue in gmx v2
+
 # v1.3.7 
 
 * fix issue in gmx v2: when long token == short token, pool value will be nan, and pool amount is incorrect

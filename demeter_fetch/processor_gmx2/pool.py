@@ -161,7 +161,7 @@ def _add_pool_amount_updated(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, 
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
         # get delta, and amount
-        if pool_info.long_addr != pool_info.long_addr:
+        if pool_info.long_addr != pool_info.short_addr:
             if log_data["token"].lower() == pool_info.long_addr:
                 pool_snapshot["longAmountDelta"] += log_data["delta"] / pool_info.long_decimal
                 long_list.append((old_val, log_data["nextValue"]))
