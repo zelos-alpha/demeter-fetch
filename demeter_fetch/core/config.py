@@ -91,6 +91,7 @@ def convert_to_config(conf_file: dict) -> Config:
         from_config.aave_config = AaveConfig(token_addresses)
     elif dapp_type == DappType.gmx_v2:
         pool_address = conf_file["from"]["gmx_v2"]["gm_address"].lower()
+        virtual_token = conf_file["from"]["gmx_v2"]["virtual_token"].lower()
         long_token = TokenConfig(
             conf_file["from"]["gmx_v2"]["long_token"]["name"].lower(),
             conf_file["from"]["gmx_v2"]["long_token"]["decimal"],
@@ -106,7 +107,7 @@ def convert_to_config(conf_file: dict) -> Config:
             conf_file["from"]["gmx_v2"]["index_token"]["decimal"],
             conf_file["from"]["gmx_v2"]["index_token"]["address"].lower(),
         )
-        from_config.gmx_v2_config = GmxV2Config(pool_address, long_token, short_token, index_token)
+        from_config.gmx_v2_config = GmxV2Config(pool_address, virtual_token, long_token, short_token, index_token)
 
     if data_source not in ChainTypeConfig[from_config.chain]["allow"]:
         raise RuntimeError(f"{data_source.name} is not allowed to download from {from_config.chain.name}")

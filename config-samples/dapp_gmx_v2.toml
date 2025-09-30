@@ -7,6 +7,7 @@ end = "2025-1-8"
 
 [from.gmx_v2] # only necessary for ToType==pool/minute, because for raw, tick, price, data in all gmx pool will be downloaded
 gm_address = "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336"
+virtual_token = "PERP:ETH/USD" # gmx tick for filter VirtualPositionInventoryUpdated
 
 [from.gmx_v2.long_token]
 name = "weth"

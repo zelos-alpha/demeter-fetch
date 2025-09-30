@@ -2,6 +2,7 @@ import datetime
 from typing import Dict, List
 
 import pandas as pd
+import numpy as np
 
 from .. import NodeNames
 from ..common import DailyNode, DailyParam, get_depend_name
@@ -24,8 +25,24 @@ minute_file_columns = [
     "indexPrice",
     "openInterestLong",
     "openInterestShort",
+    "openInterestLongIsLong",
+    "openInterestLongNotLong",
+    "openInterestShortIsLong",
+    "openInterestShortNotLong",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
+    "virtualInventoryForPositions",
+    "cumulativeBorrowingFactorLong",
+    "cumulativeBorrowingFactorShort",
+    "longTokenFundingFeeAmountPerSizeLong",
+    "longTokenFundingFeeAmountPerSizeShort",
+    "shortTokenFundingFeeAmountPerSizeLong",
+    "shortTokenFundingFeeAmountPerSizeShort",
+    "longTokenClaimableFundingAmountPerSizeLong",
+    "longTokenClaimableFundingAmountPerSizeShort",
+    "shortTokenClaimableFundingAmountPerSizeLong",
+    "shortTokenClaimableFundingAmountPerSizeShort",
+    "positionImpactPoolAmount"
 ]
 
 
@@ -44,6 +61,18 @@ columns_to_bfill = [
     "openInterestInTokensLongNotLong",
     "openInterestInTokensShortIsLong",
     "openInterestInTokensShortNotLong",
+    "virtualInventoryForPositions",
+    "cumulativeBorrowingFactorLong",
+    "cumulativeBorrowingFactorShort",
+    "longTokenFundingFeeAmountPerSizeLong",
+    "longTokenFundingFeeAmountPerSizeShort",
+    "shortTokenFundingFeeAmountPerSizeLong",
+    "shortTokenFundingFeeAmountPerSizeShort",
+    "longTokenClaimableFundingAmountPerSizeLong",
+    "longTokenClaimableFundingAmountPerSizeShort",
+    "shortTokenClaimableFundingAmountPerSizeLong",
+    "shortTokenClaimableFundingAmountPerSizeShort",
+    "positionImpactPoolAmount"
 ]
 
 
@@ -60,10 +89,24 @@ class GmxV2Minute(DailyNode):
     def _parse_date_column(self) -> List[str]:
         return ["timestamp"]
 
-    def prepare_tick_df(self, tick_df: pd.DataFrame) -> pd.DataFrame:
+    def prepare_tick_df(self, tick_df: pd.DataFrame, pool_config) -> pd.DataFrame:
 
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
+        # tmp_tick_df = tick_df[(~pd.isna(tick_df.longTokenFundingFeeAmountPerSizeLong) & pd.isna(tick_df.longTokenFundingFeeAmountPerSizeShort))]  # 一半条件就可以筛选出来了
+        tick_df['ts'] = tick_df.timestamp.values.astype(np.int64) // 10 ** 9
+        tick_df['ts_diff'] = tick_df['ts'].diff()
+        tick_df['ts_diff'] = tick_df['ts_diff'].fillna(0)
+
+
+        tick_df["fundingFactorPerSecond"] = tick_df.apply(self.calc_funding_factor_per_second, axis=1)
+        from .gmx2_utils import GMX_FLOAT_DECIMAL, GMX_FLOAT_PRECISION_SQRT
+        # with long time no update, will fetch data from contract state.↓↓↓↓↓
+        tick_df["longTokenFundingFeeAmountPerSizeShort"] = tick_df["longTokenFundingFeeAmountPerSizeShort"].fillna(7607151505212865329836638002 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
+        tick_df["shortTokenFundingFeeAmountPerSizeShort"] = tick_df["shortTokenFundingFeeAmountPerSizeShort"].fillna(15715465412082774524 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
+        tick_df["longTokenClaimableFundingAmountPerSizeLong"] = tick_df["longTokenClaimableFundingAmountPerSizeLong"].fillna(4117446384759965489999004204 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
+        tick_df["shortTokenClaimableFundingAmountPerSizeLong"] = tick_df["shortTokenClaimableFundingAmountPerSizeLong"].fillna(7250294981528901831 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
+        # ↑↑↑↑↑
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
@@ -85,6 +128,17 @@ class GmxV2Minute(DailyNode):
         tick_df = tick_df.set_index("timestamp")
         return tick_df
 
+    def calc_funding_factor_per_second(self, data):
+
+        longsPayShorts = False
+        if (pd.isna(data.longTokenFundingFeeAmountPerSizeLong) and pd.isna(data.shortTokenFundingFeeAmountPerSizeLong)) and (pd.isna(data.longTokenFundingFeeAmountPerSizeLong) and pd.isna(data.shortTokenFundingFeeAmountPerSizeLong)):
+            return np.nan
+        if pd.isna(data.longTokenFundingFeeAmountPerSizeLong) and pd.isna(data.shortTokenFundingFeeAmountPerSizeLong):
+            longsPayShorts = False
+        elif pd.isna(data.longTokenFundingFeeAmountPerSizeLong) and pd.isna(data.shortTokenFundingFeeAmountPerSizeLong):
+            longsPayShorts = True
+
+
     def _process_one_day(self, data: Dict[str, pd.DataFrame], day: datetime.date) -> pd.DataFrame:
         """
         误差分析:
@@ -103,7 +157,7 @@ class GmxV2Minute(DailyNode):
         price_df = data[get_depend_name(NodeNames.gmx2_price, self.id)]
         price_df = price_df.set_index("timestamp")
 
-        tick_df = self.prepare_tick_df(tick_df)
+        tick_df = self.prepare_tick_df(tick_df, pool_config)
         minute_df = tick_df.resample("1min").first()
         minute_df["longProfitAmount"] = (
             (tick_df["longAmountDelta"] - tick_df["longAmountDeltaNoFee"]).resample("1min").sum()
@@ -199,5 +253,36 @@ class GmxV2Minute(DailyNode):
         # in case this pool doesn't have virtual inventory
         minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]] = (
             minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]].astype(float).fillna(0)
+        )
+        minute_df[
+            [
+                "cumulativeBorrowingFactorLong",
+                "cumulativeBorrowingFactorShort",
+                "longTokenFundingFeeAmountPerSizeLong",
+                "longTokenFundingFeeAmountPerSizeShort",
+                "shortTokenFundingFeeAmountPerSizeLong",
+                "shortTokenFundingFeeAmountPerSizeShort",
+                "longTokenClaimableFundingAmountPerSizeLong",
+                "longTokenClaimableFundingAmountPerSizeShort",
+                "shortTokenClaimableFundingAmountPerSizeLong",
+                "shortTokenClaimableFundingAmountPerSizeShort",
+            ]
+        ] = (
+            minute_df[
+                [
+                    "cumulativeBorrowingFactorLong",
+                    "cumulativeBorrowingFactorShort",
+                    "longTokenFundingFeeAmountPerSizeLong",
+                    "longTokenFundingFeeAmountPerSizeShort",
+                    "shortTokenFundingFeeAmountPerSizeLong",
+                    "shortTokenFundingFeeAmountPerSizeShort",
+                    "longTokenClaimableFundingAmountPerSizeLong",
+                    "longTokenClaimableFundingAmountPerSizeShort",
+                    "shortTokenClaimableFundingAmountPerSizeLong",
+                    "shortTokenClaimableFundingAmountPerSizeShort",
+                ]
+            ]
+            .astype(float)
+            .fillna(0)
         )
         return minute_df

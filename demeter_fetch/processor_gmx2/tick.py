@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from .. import NodeNames
 from ..common import DailyNode, DailyParam, get_depend_name
-from .gmx2_utils import data_type, data_decoder
+from .gmx2_utils import data_type, data_decoder, hash_string, hash_data
 
 tick_file_columns = [
     "block_number",
@@ -76,6 +76,11 @@ class GmxV2Tick(DailyNode):
                     block_time[row.block_number] = datetime.datetime.fromtimestamp(
                         log_item["data"]["updatedAtTime"], datetime.timezone.utc
                     )
+                if log_item['event_name'] == "VirtualPositionInventoryUpdated":
+                    virtual_token_id = hash_string(self.from_config.gmx_v2_config.virtual_token).hex()  # "PERP:ETH/USD"
+                    if log_item["data"]["virtualTokenId"].hex() == virtual_token_id:
+                        log_item["market"] = self.from_config.gmx_v2_config.GM_address
+                    pass
                 pbar.update()
         for item in result_list:
             if item["block_number"] in block_time:

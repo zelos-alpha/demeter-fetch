@@ -148,6 +148,7 @@ class UniswapConfig:
 @dataclass
 class GmxV2Config:
     GM_address: str
+    virtual_token: str
     long_token: TokenConfig
     short_token: TokenConfig
     index_token: TokenConfig
