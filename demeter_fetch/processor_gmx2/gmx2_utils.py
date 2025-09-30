@@ -1,5 +1,7 @@
 import enum
 from typing import Tuple, Dict
+from eth_utils import keccak, to_bytes
+from eth_abi import encode
 
 GMX_FLOAT_DECIMAL=10**30
 GMX_FLOAT_PRECISION_SQRT = 10 ** 15
@@ -59,6 +61,18 @@ def data_decoder(data: Tuple) -> Dict:
             for item in data[i][j]:
                 result[item[0]] = item[1]
     return result
+
+
+def hash_data(_types=None, _args=None):
+    input_bytes = to_bytes(encode(types=_types, args=_args))
+    data = keccak(input_bytes)
+    return data
+
+
+def hash_string(string):
+    data = hash_data(_types=["string"], _args=[string])
+    return data
+
 
 class SwapFeeType(enum.Enum):
     Deposit="0x39226eb4fed85317aa310fa53f734c7af59274c49325ab568f9c4592250e8cc5"

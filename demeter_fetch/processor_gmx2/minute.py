@@ -2,6 +2,7 @@ import datetime
 from typing import Dict, List
 
 import pandas as pd
+import numpy as np
 
 from .. import NodeNames
 from ..common import DailyNode, DailyParam, get_depend_name
@@ -24,6 +25,10 @@ minute_file_columns = [
     "indexPrice",
     "openInterestLong",
     "openInterestShort",
+    "openInterestLongIsLong",
+    "openInterestLongNotLong",
+    "openInterestShortIsLong",
+    "openInterestShortNotLong",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
     "virtualInventoryForPositions",
@@ -37,6 +42,7 @@ minute_file_columns = [
     "longTokenClaimableFundingAmountPerSizeShort",
     "shortTokenClaimableFundingAmountPerSizeLong",
     "shortTokenClaimableFundingAmountPerSizeShort",
+    "positionImpactPoolAmount"
 ]
 
 
@@ -66,6 +72,7 @@ columns_to_bfill = [
     "longTokenClaimableFundingAmountPerSizeShort",
     "shortTokenClaimableFundingAmountPerSizeLong",
     "shortTokenClaimableFundingAmountPerSizeShort",
+    "positionImpactPoolAmount"
 ]
 
 
@@ -82,11 +89,18 @@ class GmxV2Minute(DailyNode):
     def _parse_date_column(self) -> List[str]:
         return ["timestamp"]
 
-    def prepare_tick_df(self, tick_df: pd.DataFrame) -> pd.DataFrame:
+    def prepare_tick_df(self, tick_df: pd.DataFrame, pool_config) -> pd.DataFrame:
 
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
         tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
+        from .gmx2_utils import GMX_FLOAT_DECIMAL, GMX_FLOAT_PRECISION_SQRT
+        # with long time no update, will fetch data from contract state.↓↓↓↓↓
+        # tick_df["longTokenFundingFeeAmountPerSizeShort"] = tick_df["longTokenFundingFeeAmountPerSizeShort"].fillna(7607151505212865329836638002 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
+        # tick_df["shortTokenFundingFeeAmountPerSizeShort"] = tick_df["shortTokenFundingFeeAmountPerSizeShort"].fillna(15715465412082774524 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
+        # tick_df["longTokenClaimableFundingAmountPerSizeLong"] = tick_df["longTokenClaimableFundingAmountPerSizeLong"].fillna(4117446384759965489999004204 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
+        # tick_df["shortTokenClaimableFundingAmountPerSizeLong"] = tick_df["shortTokenClaimableFundingAmountPerSizeLong"].fillna(7250294981528901831 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
+        # ↑↑↑↑↑
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
@@ -126,7 +140,7 @@ class GmxV2Minute(DailyNode):
         price_df = data[get_depend_name(NodeNames.gmx2_price, self.id)]
         price_df = price_df.set_index("timestamp")
 
-        tick_df = self.prepare_tick_df(tick_df)
+        tick_df = self.prepare_tick_df(tick_df, pool_config)
         minute_df = tick_df.resample("1min").first()
         minute_df["longProfitAmount"] = (
             (tick_df["longAmountDelta"] - tick_df["longAmountDeltaNoFee"]).resample("1min").sum()
