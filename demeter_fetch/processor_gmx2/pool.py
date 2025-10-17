@@ -86,6 +86,8 @@ def _add_pool_value_prop(pool_snapshot: Dict, pool_info: PoolInfo, tx_data):
         log_data = ast.literal_eval(log["data"])
         pool_snapshot["longAmount"] = log_data["longTokenAmount"] / pool_info.long_decimal
         pool_snapshot["shortAmount"] = log_data["shortTokenAmount"] / pool_info.short_decimal
+        if log_data["shortTokenAmount"] / pool_info.short_decimal > 70441588600579:
+            print('_add_pool_value_prop', log_data["shortTokenAmount"] / pool_info.short_decimal)
         pool_snapshot["poolValue"] = log_data["poolValue"] / GMX_FLOAT_DECIMAL
         pool_snapshot["marketTokensSupply"] = log_data["marketTokensSupply"] / GM_DECIMAL
         pool_snapshot["impactPoolAmount"] = log_data["impactPoolAmount"] / pool_info.index_decimal
@@ -104,6 +106,8 @@ def _add_pool_value_prop_last(pool_info: PoolInfo, tx_data, last_snapshot):
         log_data = ast.literal_eval(log["data"])
         last_snapshot["longAmount"] = log_data["longTokenAmount"] / pool_info.long_decimal
         last_snapshot["shortAmount"] = log_data["shortTokenAmount"] / pool_info.short_decimal
+        if log_data["shortTokenAmount"] / pool_info.short_decimal > 70441588600579:
+            print('_add_pool_value_prop_last', log_data["shortTokenAmount"] / pool_info.short_decimal)
         last_snapshot["marketTokensSupply"] = log_data["marketTokensSupply"] / GM_DECIMAL
         last_snapshot["impactPoolAmount"] = log_data["impactPoolAmount"] / pool_info.index_decimal
         last_snapshot["totalBorrowingFees"] = log_data["totalBorrowingFees"] / GMX_FLOAT_DECIMAL
@@ -297,6 +301,8 @@ def _add_pool_amount_updated(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, 
     if len(short_list) > 0:
         pool_snapshot["shortAmount"] = short_list[0][0] / pool_info.short_decimal
         last_snapshot["shortAmount"] = short_list[-1][1] / pool_info.short_decimal
+        if short_list[0][0] / pool_info.short_decimal / pool_info.short_decimal > 70441588600579:
+            print('_add_pool_amount_updated', short_list[0][0] / pool_info.short_decimal)
 
 
 def _add_position_impact_pool_amount(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
