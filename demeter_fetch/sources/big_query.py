@@ -133,3 +133,18 @@ def bigquery_aave(config: FromConfig, day: date, tokens: List[str]):
     df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
     df = _update_df(df)
     return df
+
+
+def bigquery_gmx(config: FromConfig, day: date):
+    day_str = day.strftime("%Y-%m-%d")
+    sql = f"""
+            SELECT block_number,block_timestamp,transaction_hash,transaction_index,log_index,topics,DATA as data
+            FROM {BigQueryChain[config.chain.name].value["table_name"]}
+            WHERE
+              address = "{ChainTypeConfig[config.chain]['gmx_event_emitter']}" 
+              AND DATE(block_timestamp) >= DATE("{day_str}")
+              AND DATE(block_timestamp) <= DATE("{day_str}")
+        """
+    df = query_by_sql(sql, config.big_query.auth_file, config.http_proxy)
+    df = _update_df(df)
+    return df

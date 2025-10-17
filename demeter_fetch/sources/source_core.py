@@ -10,6 +10,7 @@ from typing import Dict, List
 import pandas as pd
 
 from .big_query import (
+    bigquery_gmx,
     bigquery_aave,
     bigquery_v4_pool,
     bigquery_pool,
@@ -226,6 +227,8 @@ class GmxV2Source(DailyNode):
         match self.from_config.data_source:
             case DataSource.rpc:
                 df = rpc_gmx_v2(self.from_config, self.to_path, day)
+            # case DataSource.big_query:
+            #     df = bigquery_gmx(self.from_config, day)
             case _:
                 raise NotImplementedError()
 
