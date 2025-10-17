@@ -1,3 +1,7 @@
+# v1.3.9
+
+* Update gmx v2, add position data field.
+
 # v1.3.8
 
 * fix issue in gmx v2: pool data error caused by v1.3.7
