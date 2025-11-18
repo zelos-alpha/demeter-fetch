@@ -31,7 +31,8 @@ minute_file_columns = [
     "openInterestShortNotLong",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
-    "virtualInventoryForPositions",
+    "virtualPositionInventoryLong",
+    "virtualPositionInventoryShort",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -42,7 +43,7 @@ minute_file_columns = [
     "longTokenClaimableFundingAmountPerSizeShort",
     "shortTokenClaimableFundingAmountPerSizeLong",
     "shortTokenClaimableFundingAmountPerSizeShort",
-    "positionImpactPoolAmount"
+    "positionImpactPoolAmount",
 ]
 
 
@@ -61,7 +62,8 @@ columns_to_bfill = [
     "openInterestInTokensLongNotLong",
     "openInterestInTokensShortIsLong",
     "openInterestInTokensShortNotLong",
-    "virtualInventoryForPositions",
+    "virtualPositionInventoryLong",
+    "virtualPositionInventoryShort",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -72,7 +74,7 @@ columns_to_bfill = [
     "longTokenClaimableFundingAmountPerSizeShort",
     "shortTokenClaimableFundingAmountPerSizeLong",
     "shortTokenClaimableFundingAmountPerSizeShort",
-    "positionImpactPoolAmount"
+    "positionImpactPoolAmount",
 ]
 
 
@@ -95,6 +97,7 @@ class GmxV2Minute(DailyNode):
         tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
         tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
         from .gmx2_utils import GMX_FLOAT_DECIMAL, GMX_FLOAT_PRECISION_SQRT
+
         # with long time no update, will fetch data from contract state.↓↓↓↓↓
         # tick_df["longTokenFundingFeeAmountPerSizeShort"] = tick_df["longTokenFundingFeeAmountPerSizeShort"].fillna(7607151505212865329836638002 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
         # tick_df["shortTokenFundingFeeAmountPerSizeShort"] = tick_df["shortTokenFundingFeeAmountPerSizeShort"].fillna(15715465412082774524 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
@@ -234,8 +237,24 @@ class GmxV2Minute(DailyNode):
 
         minute_df = minute_df[minute_file_columns]
         # in case this pool doesn't have virtual inventory
-        minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]] = (
-            minute_df[["virtualSwapInventoryLong", "virtualSwapInventoryShort"]].astype(float).fillna(0)
+        minute_df[
+            [
+                "virtualSwapInventoryLong",
+                "virtualSwapInventoryShort",
+                "virtualPositionInventoryLong",
+                "virtualPositionInventoryShort",
+            ]
+        ] = (
+            minute_df[
+                [
+                    "virtualSwapInventoryLong",
+                    "virtualSwapInventoryShort",
+                    "virtualPositionInventoryLong",
+                    "virtualPositionInventoryShort",
+                ]
+            ]
+            .astype(float)
+            .fillna(0)
         )
         minute_df[
             [

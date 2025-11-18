@@ -50,7 +50,8 @@ pool_file_columns = [
     "openInterestInTokensLongNotLong",  # 💚
     "openInterestInTokensShortIsLong",  # 💚
     "openInterestInTokensShortNotLong",  # 💚
-    "virtualInventoryForPositions",
+    "virtualPositionInventoryLong",
+    "virtualPositionInventoryShort",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -170,16 +171,23 @@ def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_dat
 
 
 def _add_virtual_position_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
-    logs = find_logs("VirtualPositionInventoryUpdated", tx_data)  # 因为没有market字段，所以这里数据都为0
-    data_list = []
+    logs = find_logs("VirtualPositionInventoryUpdated", tx_data)
+    long_list = []
+    short_list = []
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
         old_val = log_data["nextValue"] - log_data["delta"]
-        data_list.append((old_val, log_data["nextValue"]))
-
-    if len(data_list) > 0:
-        pool_snapshot["virtualInventoryForPositions"] = data_list[0][0] / GMX_FLOAT_DECIMAL
-        last_snapshot["virtualInventoryForPositions"] = data_list[-1][1] / GMX_FLOAT_DECIMAL
+        # get amount
+        if log_data["isLongToken"]:
+            long_list.append((old_val, log_data["nextValue"]))
+        else:
+            short_list.append((old_val, log_data["nextValue"]))
+    if len(long_list) > 0:
+        pool_snapshot["virtualPositionInventoryLong"] = long_list[0][0] / pool_info.long_decimal
+        last_snapshot["virtualPositionInventoryLong"] = long_list[-1][1] / pool_info.long_decimal
+    if len(short_list) > 0:
+        pool_snapshot["virtualPositionInventoryShort"] = short_list[0][0] / pool_info.short_decimal
+        last_snapshot["virtualPositionInventoryShort"] = short_list[-1][1] / pool_info.short_decimal
 
 
 def _add_cumulative_borrowing_factor(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):

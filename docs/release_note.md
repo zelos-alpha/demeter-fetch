@@ -1,3 +1,7 @@
+# v1.3.10
+
+* Fix gmx v2 data issue
+
 # v1.3.9
 
 * Update gmx v2, add position data field.
