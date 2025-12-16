@@ -9,7 +9,7 @@ def get_commend_args():
     parser_height_range = parser_tool_sub.add_parser(
         "date_to_height", help="Query block height from etherscan in certain date range"
     )
-    parser_height_range.add_argument("-c", "--chain", help="chain name, [ethereum, polygon]")
+    parser_height_range.add_argument("-c", "--chain", help="chain name, [ethereum, polygon, arbtirum .etc]")
     parser_height_range.add_argument("-s", "--start", help="start date, eg: 2023-1-1")
     parser_height_range.add_argument("-e", "--end", help="end date, eg: 2023-1-1")
     parser_height_range.add_argument(
@@ -21,7 +21,7 @@ def get_commend_args():
         "block_timestamp",
         help="Generate a cache for block number and timestamp in leveldb, datasource is bigquery, and you need install plyvel with pip first",
     )
-    block_timestamp.add_argument("-c", "--chain", help="chain name, [ethereum, polygon]")
+    block_timestamp.add_argument("-c", "--chain", help="chain name, [ethereum, polygon, arbtirum .etc]")
     block_timestamp.add_argument("-s", "--start", help="start date, eg: 2023-1-1")
     block_timestamp.add_argument("-e", "--end", help="end date, eg: 2023-2-1")
     block_timestamp.add_argument("-p", "--http_proxy", help="proxy, eg: https://localhost:7890, optional", default="")
@@ -30,10 +30,16 @@ def get_commend_args():
     block_timestamp.add_argument("-n", "--engine", help="storage type, sqlite or levelDB", default="sqlite")
 
     aave = parser_tool_sub.add_parser("aave", help="Get aave risk parameter")
-    aave.add_argument("-c", "--chain", help="chain name, [ethereum, polygon]")
+    aave.add_argument("-c", "--chain", help="chain name, [ethereum, polygon, arbtirum .etc]")
     aave.add_argument("-r", "--rpc", help="chain name, e.g. https://eth-mainnet.g.alchemy.com/v2/ZiMMq2478EVIEJdsxC5dMal_ccQwtb31")
     aave.add_argument("-p", "--proxy", help="proxy, eg: https://localhost:7890, optional", default="")
     aave.add_argument("-b", "--block_number", help="block number, e.g. 10000, default is latest", default="latest")
+
+    gmx_config = parser_tool_sub.add_parser("gmx", help="Get gmx pool config")
+    gmx_config.add_argument("-r", "--rpc", help="chain name, e.g. https://eth-mainnet.g.alchemy.com/v2/ZiMMq2478EVIEJdsxC5dMal_ccQwtb31")
+    gmx_config.add_argument("-p", "--proxy", help="proxy, eg: https://localhost:7890, optional", default="")
+    gmx_config.add_argument("-m", "--market", help="market address, e.g. 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336")
+    gmx_config.add_argument("-b", "--block_number", help="block number, e.g. 10000, default is latest", default="latest")
 
     args = argParser.parse_args()
 

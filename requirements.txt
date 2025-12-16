@@ -10,3 +10,4 @@ argparse>=1.4.0
 sqlitedict>=2.1.0
 eth_abi>=5.2.0
 pycryptodome==3.22.0
+web3==7.14.0

@@ -2,7 +2,7 @@ import sys
 
 from .common.utils import print_log
 from .core import download, get_commend_args
-from .tools import date_to_height, block_timestamp_cache,aave_risk_param
+from .tools import date_to_height, block_timestamp_cache, aave_risk_param, get_gmx_pool_config
 
 
 def main():
@@ -23,7 +23,10 @@ def main():
             block_timestamp_cache(args)
         elif args.tools == "aave":
             aave_risk_param(args)
+        elif args.tools == "gmx":
+            get_gmx_pool_config(args)
         pass
+
 
 if __name__ == "__main__":
     main()

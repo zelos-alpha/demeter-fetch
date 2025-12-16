@@ -95,7 +95,10 @@ class GmxV2Minute(DailyNode):
 
         tick_df[columns_to_bfill] = tick_df[columns_to_bfill].bfill()
         tick_df["borrowingFeePoolFactor"] = tick_df["borrowingFeePoolFactor"].ffill().bfill()
-        tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
+        if 'virtualInventoryForPositions' in tick_df.columns:
+            tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
+        else:
+            tick_df["virtualInventoryForPositions"] = 0
         from .gmx2_utils import GMX_FLOAT_DECIMAL, GMX_FLOAT_PRECISION_SQRT
 
         # with long time no update, will fetch data from contract state.↓↓↓↓↓
