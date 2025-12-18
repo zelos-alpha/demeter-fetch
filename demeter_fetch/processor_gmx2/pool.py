@@ -42,14 +42,14 @@ pool_file_columns = [
     "shortPnl",  # 💚 from MarketPoolValueInfo
     "netPnl",  # 💚 from MarketPoolValueInfo
     "realizedPnl",
-    "openInterestLongIsLong",  # 💚  event OpenInterestUpdated, to calculate pnl,
-    "openInterestLongNotLong",  # 💚
-    "openInterestShortIsLong",  # 💚
-    "openInterestShortNotLong",  # 💚
-    "openInterestInTokensLongIsLong",  # 💚   event : OpenInterestInTokensUpdated, to calculate pnl,
-    "openInterestInTokensLongNotLong",  # 💚
-    "openInterestInTokensShortIsLong",  # 💚
-    "openInterestInTokensShortNotLong",  # 💚
+    "LongTokenOpenInterestLong",  # 💚  event OpenInterestUpdated, to calculate pnl,
+    "LongTokenOpenInterestShort",  # 💚
+    "ShortTokenOpenInterestLong",  # 💚
+    "ShortTokenOpenInterestShort",  # 💚
+    "LongTokenOpenInterestInTokensLong",  # 💚   event : OpenInterestInTokensUpdated, to calculate pnl,
+    "LongTokenOpenInterestInTokensShort",  # 💚
+    "ShortTokenOpenInterestInTokensLong",  # 💚
+    "ShortTokenOpenInterestInTokensShort",  # 💚
     "virtualPositionInventoryLong",
     "virtualPositionInventoryShort",
     "cumulativeBorrowingFactorLong",
@@ -88,7 +88,7 @@ def _add_pool_value_prop(pool_snapshot: Dict, pool_info: PoolInfo, tx_data):
         pool_snapshot["longAmount"] = log_data["longTokenAmount"] / pool_info.long_decimal
         pool_snapshot["shortAmount"] = log_data["shortTokenAmount"] / pool_info.short_decimal
         if log_data["shortTokenAmount"] / pool_info.short_decimal > 70441588600579:
-            print('_add_pool_value_prop', log_data["shortTokenAmount"] / pool_info.short_decimal)
+            print("_add_pool_value_prop", log_data["shortTokenAmount"] / pool_info.short_decimal)
         pool_snapshot["poolValue"] = log_data["poolValue"] / GMX_FLOAT_DECIMAL
         pool_snapshot["marketTokensSupply"] = log_data["marketTokensSupply"] / GM_DECIMAL
         pool_snapshot["impactPoolAmount"] = log_data["impactPoolAmount"] / pool_info.index_decimal
@@ -108,7 +108,7 @@ def _add_pool_value_prop_last(pool_info: PoolInfo, tx_data, last_snapshot):
         last_snapshot["longAmount"] = log_data["longTokenAmount"] / pool_info.long_decimal
         last_snapshot["shortAmount"] = log_data["shortTokenAmount"] / pool_info.short_decimal
         if log_data["shortTokenAmount"] / pool_info.short_decimal > 70441588600579:
-            print('_add_pool_value_prop_last', log_data["shortTokenAmount"] / pool_info.short_decimal)
+            print("_add_pool_value_prop_last", log_data["shortTokenAmount"] / pool_info.short_decimal)
         last_snapshot["marketTokensSupply"] = log_data["marketTokensSupply"] / GM_DECIMAL
         last_snapshot["impactPoolAmount"] = log_data["impactPoolAmount"] / pool_info.index_decimal
         last_snapshot["totalBorrowingFees"] = log_data["totalBorrowingFees"] / GMX_FLOAT_DECIMAL
@@ -221,15 +221,66 @@ def _add_cumulative_borrowing_factor_updated_at(pool_snapshot: Dict, pool_info: 
         log_data = ast.literal_eval(log["data"])
         delta = log_data["delta"]
         if log_data["isLong"] and delta > 0:
-            long_list.append(log['block_timestamp'])
+            long_list.append(log["block_timestamp"])
         if not log_data["isLong"] and delta > 0:
-            short_list.append(log['block_timestamp'])
+            short_list.append(log["block_timestamp"])
         if len(long_list) > 0:
             pool_snapshot["cumulativeBorrowingFactorUpdatedAtLong"] = long_list[0]
             last_snapshot["cumulativeBorrowingFactorUpdatedAtLong"] = long_list[-1]
         if len(short_list) > 0:
             pool_snapshot["cumulativeBorrowingFactorUpdatedAtShort"] = short_list[0]
             last_snapshot["cumulativeBorrowingFactorUpdatedAtShort"] = short_list[-1]
+
+
+def _add_unchanged_funding_fee_per_size(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
+    logs = find_logs("PositionFeesCollected", tx_data)
+    for idx, log in logs.iterrows():
+        log_data = ast.literal_eval(log["data"])
+        next_log = tx_data.loc[idx + 1]
+        # according to contract code, PositionDecrease is just after position fee,
+        # find position info to get "isLong"
+        assert next_log["event_name"] in ["PositionDecrease", "PositionIncrease"]
+        next_log_data = ast.literal_eval(next_log["data"])
+        is_long = next_log_data["isLong"]
+
+        latestFundingFeeAmountPerSize = log_data["latestFundingFeeAmountPerSize"] / GMX_FLOAT_PRECISION_SQRT
+        if pool_info.long_addr == log_data["collateralToken"]:
+            latestFundingFeeAmountPerSize /= pool_info.long_decimal
+            if is_long:
+                pool_snapshot["longTokenFundingFeeAmountPerSizeLong"] = latestFundingFeeAmountPerSize
+                last_snapshot["longTokenFundingFeeAmountPerSizeLong"] = latestFundingFeeAmountPerSize
+            else:
+                pool_snapshot["longTokenFundingFeeAmountPerSizeShort"] = latestFundingFeeAmountPerSize
+                last_snapshot["longTokenFundingFeeAmountPerSizeShort"] = latestFundingFeeAmountPerSize
+        elif pool_info.short_addr == log_data["collateralToken"]:
+            latestFundingFeeAmountPerSize /= pool_info.short_decimal
+            if is_long:
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = latestFundingFeeAmountPerSize
+                last_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = latestFundingFeeAmountPerSize
+            else:
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = latestFundingFeeAmountPerSize
+                last_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = latestFundingFeeAmountPerSize
+        else:
+            raise RuntimeError("FundingFeeAmountPerSizeUpdated should have long or short token")
+
+        longTokenClaimableFundingAmountPerSize = (
+            log_data["latestLongTokenClaimableFundingAmountPerSize"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+        )
+        shortTokenClaimableFundingAmountPerSize = (
+            log_data["latestShortTokenClaimableFundingAmountPerSize"]
+            / GMX_FLOAT_PRECISION_SQRT
+            / pool_info.short_decimal
+        )
+        if is_long:
+            pool_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = longTokenClaimableFundingAmountPerSize
+            last_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = longTokenClaimableFundingAmountPerSize
+            pool_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = shortTokenClaimableFundingAmountPerSize
+            last_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = shortTokenClaimableFundingAmountPerSize
+        else:
+            pool_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = longTokenClaimableFundingAmountPerSize
+            last_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = longTokenClaimableFundingAmountPerSize
+            pool_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = shortTokenClaimableFundingAmountPerSize
+            last_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = shortTokenClaimableFundingAmountPerSize
 
 
 def _add_funding_fee_amount_per_size(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
@@ -239,18 +290,34 @@ def _add_funding_fee_amount_per_size(pool_snapshot: Dict, pool_info: PoolInfo, t
         old_val = log_data["value"] - log_data["delta"]
         if pool_info.long_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["longTokenFundingFeeAmountPerSizeLong"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
-                last_snapshot["longTokenFundingFeeAmountPerSizeLong"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                pool_snapshot["longTokenFundingFeeAmountPerSizeLong"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
+                last_snapshot["longTokenFundingFeeAmountPerSizeLong"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
             else:
-                pool_snapshot["longTokenFundingFeeAmountPerSizeShort"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
-                last_snapshot["longTokenFundingFeeAmountPerSizeShort"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                pool_snapshot["longTokenFundingFeeAmountPerSizeShort"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
+                last_snapshot["longTokenFundingFeeAmountPerSizeShort"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
         elif pool_info.short_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
-                last_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
+                last_snapshot["shortTokenFundingFeeAmountPerSizeLong"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
             else:
-                pool_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
-                last_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                pool_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
+                last_snapshot["shortTokenFundingFeeAmountPerSizeShort"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
         else:
             raise RuntimeError("FundingFeeAmountPerSizeUpdated should have long or short token")
 
@@ -262,18 +329,34 @@ def _add_claimable_funding_amount_per_size(pool_snapshot: Dict, pool_info: PoolI
         old_val = log_data["value"] - log_data["delta"]
         if pool_info.long_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
-                last_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                pool_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
+                last_snapshot["longTokenClaimableFundingAmountPerSizeLong"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
             else:
-                pool_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
-                last_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                pool_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
+                last_snapshot["longTokenClaimableFundingAmountPerSizeShort"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.long_decimal
+                )
         elif pool_info.short_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
-                last_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                pool_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
+                last_snapshot["shortTokenClaimableFundingAmountPerSizeLong"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
             else:
-                pool_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
-                last_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                pool_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = (
+                    old_val / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
+                last_snapshot["shortTokenClaimableFundingAmountPerSizeShort"] = (
+                    log_data["value"] / GMX_FLOAT_PRECISION_SQRT / pool_info.short_decimal
+                )
         else:
             raise RuntimeError("ClaimableFundingAmountPerSizeUpdated should have long or short token")
 
@@ -310,7 +393,7 @@ def _add_pool_amount_updated(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, 
         pool_snapshot["shortAmount"] = short_list[0][0] / pool_info.short_decimal
         last_snapshot["shortAmount"] = short_list[-1][1] / pool_info.short_decimal
         if short_list[0][0] / pool_info.short_decimal / pool_info.short_decimal > 70441588600579:
-            print('_add_pool_amount_updated', short_list[0][0] / pool_info.short_decimal)
+            print("_add_pool_amount_updated", short_list[0][0] / pool_info.short_decimal)
 
 
 def _add_position_impact_pool_amount(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
@@ -338,18 +421,18 @@ def _add_open_interest(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_s
         old_val = log_data["nextValue"] - log_data["delta"]
         if pool_info.long_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["openInterestLongIsLong"] = old_val / GMX_FLOAT_DECIMAL
-                last_snapshot["openInterestLongIsLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
+                pool_snapshot["LongTokenOpenInterestLong"] = old_val / GMX_FLOAT_DECIMAL
+                last_snapshot["LongTokenOpenInterestLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
             else:
-                pool_snapshot["openInterestLongNotLong"] = old_val / GMX_FLOAT_DECIMAL
-                last_snapshot["openInterestLongNotLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
+                pool_snapshot["LongTokenOpenInterestShort"] = old_val / GMX_FLOAT_DECIMAL
+                last_snapshot["LongTokenOpenInterestShort"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
         elif pool_info.short_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["openInterestShortIsLong"] = old_val / GMX_FLOAT_DECIMAL
-                last_snapshot["openInterestShortIsLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
+                pool_snapshot["ShortTokenOpenInterestLong"] = old_val / GMX_FLOAT_DECIMAL
+                last_snapshot["ShortTokenOpenInterestLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
             else:
-                pool_snapshot["openInterestShortNotLong"] = old_val / GMX_FLOAT_DECIMAL
-                last_snapshot["openInterestShortNotLong"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
+                pool_snapshot["ShortTokenOpenInterestShort"] = old_val / GMX_FLOAT_DECIMAL
+                last_snapshot["ShortTokenOpenInterestShort"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
         else:
             raise RuntimeError("OpenInterestUpdated should have long or short token")
 
@@ -361,23 +444,23 @@ def _add_open_interest_in_tokens(pool_snapshot: Dict, pool_info: PoolInfo, tx_da
         old_val = log_data["nextValue"] - log_data["delta"]
         if pool_info.long_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["openInterestInTokensLongIsLong"] = old_val / pool_info.index_decimal
-                last_snapshot["openInterestInTokensLongIsLong"] = log_data["nextValue"] / pool_info.index_decimal
+                pool_snapshot["LongTokenOpenInterestInTokensLong"] = old_val / pool_info.index_decimal
+                last_snapshot["LongTokenOpenInterestInTokensLong"] = log_data["nextValue"] / pool_info.index_decimal
             else:
-                pool_snapshot["openInterestInTokensLongNotLong"] = old_val / pool_info.index_decimal
-                last_snapshot["openInterestInTokensLongNotLong"] = log_data["nextValue"] / pool_info.index_decimal
+                pool_snapshot["LongTokenOpenInterestInTokensShort"] = old_val / pool_info.index_decimal
+                last_snapshot["LongTokenOpenInterestInTokensShort"] = log_data["nextValue"] / pool_info.index_decimal
         elif pool_info.short_addr == log_data["collateralToken"]:
             if log_data["isLong"]:
-                pool_snapshot["openInterestInTokensShortIsLong"] = old_val / pool_info.index_decimal
-                last_snapshot["openInterestInTokensShortIsLong"] = log_data["nextValue"] / pool_info.index_decimal
+                pool_snapshot["ShortTokenOpenInterestInTokensLong"] = old_val / pool_info.index_decimal
+                last_snapshot["ShortTokenOpenInterestInTokensLong"] = log_data["nextValue"] / pool_info.index_decimal
             else:
-                pool_snapshot["openInterestInTokensShortNotLong"] = old_val / pool_info.index_decimal
-                last_snapshot["openInterestInTokensShortNotLong"] = log_data["nextValue"] / pool_info.index_decimal
+                pool_snapshot["ShortTokenOpenInterestInTokensShort"] = old_val / pool_info.index_decimal
+                last_snapshot["ShortTokenOpenInterestInTokensShort"] = log_data["nextValue"] / pool_info.index_decimal
         else:
             raise RuntimeError("OpenInterestInTokensUpdated should have long or short token")
 
 
-def _add_positon_fees(pool_snapshot: Dict, tx_data):
+def _add_positon_fees(pool_snapshot: Dict, tx_data, last_snapshot: Dict):
     logs = find_logs("PositionFeesCollected", tx_data)
     for idx, log in logs.iterrows():
         log_data = ast.literal_eval(log["data"])
@@ -459,6 +542,7 @@ class GmxV2PoolTx(DailyNode):
         # all take the first value(before this tx happend)
         with tqdm(total=len(txes), ncols=60, position=1, leave=False) as pbar:
             for (height, tx_index), tx_data in txes:
+                # only values need initialization
                 pool_snapshot = {
                     "timestamp": tx_data.iloc[0]["block_timestamp"],
                     "block_number": int(height),
@@ -479,16 +563,22 @@ class GmxV2PoolTx(DailyNode):
                 _add_virtual_position_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_cumulative_borrowing_factor(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 # _add_cumulative_borrowing_factor_updated_at(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
-                _add_funding_fee_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
-                _add_claimable_funding_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest_in_tokens(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_position_impact_pool_amount(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_position_impact_pool_amount_v2(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_swap_delta_in_deposits(pool_snapshot, pool_info_simple, tx_data)
                 _add_swap_delta_in_swap(pool_snapshot, pool_info_simple, tx_data)
-                _add_positon_fees(pool_snapshot, tx_data)
+                _add_positon_fees(pool_snapshot, tx_data, last_snapshot)
                 _add_positon_decrease(pool_snapshot, tx_data)
+
+                # If funding fee amount per size, is not changed, it will show in position fees,
+                # old value and new will be the same
+                _add_unchanged_funding_fee_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                # if per size is changed, we will receive a FundingFeeAmountPerSizeUpdated, old value will be updated
+                _add_funding_fee_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+                _add_claimable_funding_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
+
                 row_list.append(pool_snapshot)
                 pbar.update()
 
@@ -502,14 +592,14 @@ class GmxV2PoolTx(DailyNode):
         if pool_config.long_token.name.upper() == pool_config.short_token.name.upper():
             df[
                 [
-                    "openInterestLongIsLong",
-                    "openInterestLongNotLong",
-                    "openInterestShortIsLong",
-                    "openInterestShortNotLong",
-                    "openInterestInTokensLongIsLong",
-                    "openInterestInTokensLongNotLong",
-                    "openInterestInTokensShortIsLong",
-                    "openInterestInTokensShortNotLong",
+                    "LongTokenOpenInterestLong",
+                    "LongTokenOpenInterestShort",
+                    "ShortTokenOpenInterestLong",
+                    "ShortTokenOpenInterestShort",
+                    "LongTokenOpenInterestInTokensLong",
+                    "LongTokenOpenInterestInTokensShort",
+                    "ShortTokenOpenInterestInTokensLong",
+                    "ShortTokenOpenInterestInTokensShort",
                 ]
             ] /= 2
         return df

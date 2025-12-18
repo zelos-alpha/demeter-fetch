@@ -25,10 +25,6 @@ minute_file_columns = [
     "indexPrice",
     "openInterestLong",
     "openInterestShort",
-    "openInterestLongIsLong",
-    "openInterestLongNotLong",
-    "openInterestShortIsLong",
-    "openInterestShortNotLong",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
     "virtualPositionInventoryLong",
@@ -54,14 +50,14 @@ columns_to_bfill = [
     "virtualSwapInventoryShort",
     "marketTokensSupply",
     "impactPoolAmount",
-    "openInterestLongIsLong",
-    "openInterestLongNotLong",
-    "openInterestShortIsLong",
-    "openInterestShortNotLong",
-    "openInterestInTokensLongIsLong",
-    "openInterestInTokensLongNotLong",
-    "openInterestInTokensShortIsLong",
-    "openInterestInTokensShortNotLong",
+    "LongTokenOpenInterestLong",
+    "LongTokenOpenInterestShort",
+    "ShortTokenOpenInterestLong",
+    "ShortTokenOpenInterestShort",
+    "LongTokenOpenInterestInTokensLong",
+    "LongTokenOpenInterestInTokensShort",
+    "ShortTokenOpenInterestInTokensLong",
+    "ShortTokenOpenInterestInTokensShort",
     "virtualPositionInventoryLong",
     "virtualPositionInventoryShort",
     "cumulativeBorrowingFactorLong",
@@ -99,14 +95,6 @@ class GmxV2Minute(DailyNode):
             tick_df["virtualInventoryForPositions"] = tick_df["virtualInventoryForPositions"].fillna(0)
         else:
             tick_df["virtualInventoryForPositions"] = 0
-        from .gmx2_utils import GMX_FLOAT_DECIMAL, GMX_FLOAT_PRECISION_SQRT
-
-        # with long time no update, will fetch data from contract state.↓↓↓↓↓
-        # tick_df["longTokenFundingFeeAmountPerSizeShort"] = tick_df["longTokenFundingFeeAmountPerSizeShort"].fillna(7607151505212865329836638002 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
-        # tick_df["shortTokenFundingFeeAmountPerSizeShort"] = tick_df["shortTokenFundingFeeAmountPerSizeShort"].fillna(15715465412082774524 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
-        # tick_df["longTokenClaimableFundingAmountPerSizeLong"] = tick_df["longTokenClaimableFundingAmountPerSizeLong"].fillna(4117446384759965489999004204 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.long_token.decimal)
-        # tick_df["shortTokenClaimableFundingAmountPerSizeLong"] = tick_df["shortTokenClaimableFundingAmountPerSizeLong"].fillna(7250294981528901831 / GMX_FLOAT_PRECISION_SQRT / 10 ** pool_config.short_token.decimal)
-        # ↑↑↑↑↑
         cum_sum_borrowingFeeUsd = 0
         # fill empty totalBorrowingFees,fill all empty then fill first empty rows
         tick_df["totalBorrowingFees"] = tick_df["totalBorrowingFees"].ffill().bfill()
@@ -212,30 +200,30 @@ class GmxV2Minute(DailyNode):
         # When short token == long token, short deposit will be nan
         minute_df[
             [
-                "openInterestShortIsLong",
-                "openInterestShortNotLong",
-                "openInterestInTokensShortIsLong",
-                "openInterestInTokensShortNotLong",
+                "ShortTokenOpenInterestLong",
+                "ShortTokenOpenInterestShort",
+                "ShortTokenOpenInterestInTokensLong",
+                "ShortTokenOpenInterestInTokensShort",
             ]
         ] = (
             minute_df[
                 [
-                    "openInterestShortIsLong",
-                    "openInterestShortNotLong",
-                    "openInterestInTokensShortIsLong",
-                    "openInterestInTokensShortNotLong",
+                    "ShortTokenOpenInterestLong",
+                    "ShortTokenOpenInterestShort",
+                    "ShortTokenOpenInterestInTokensLong",
+                    "ShortTokenOpenInterestInTokensShort",
                 ]
             ]
             .astype(float)
             .fillna(0)
         )
-        minute_df["openInterestLong"] = minute_df["openInterestLongIsLong"] + minute_df["openInterestShortIsLong"]
-        minute_df["openInterestShort"] = minute_df["openInterestLongNotLong"] + minute_df["openInterestShortNotLong"]
+        minute_df["openInterestLong"] = minute_df["LongTokenOpenInterestLong"] + minute_df["ShortTokenOpenInterestLong"]
+        minute_df["openInterestShort"] = minute_df["LongTokenOpenInterestShort"] + minute_df["ShortTokenOpenInterestShort"]
         minute_df["openInterestInTokensLong"] = (
-            minute_df["openInterestInTokensLongIsLong"] + minute_df["openInterestInTokensShortIsLong"]
+            minute_df["LongTokenOpenInterestInTokensLong"] + minute_df["ShortTokenOpenInterestInTokensLong"]
         )
         minute_df["openInterestInTokensShort"] = (
-            minute_df["openInterestInTokensLongNotLong"] + minute_df["openInterestInTokensShortNotLong"]
+            minute_df["LongTokenOpenInterestInTokensShort"] + minute_df["ShortTokenOpenInterestInTokensShort"]
         )
 
         minute_df = minute_df[minute_file_columns]

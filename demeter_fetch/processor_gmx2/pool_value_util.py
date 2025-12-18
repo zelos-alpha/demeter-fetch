@@ -45,24 +45,24 @@ def getPnl(row: pd.Series, isLong: bool) -> float:
     tmp = (
         row[
             [
-                "openInterestShortIsLong",
-                "openInterestShortNotLong",
-                "openInterestInTokensShortIsLong",
-                "openInterestInTokensShortNotLong",
+                "ShortTokenOpenInterestLong",
+                "ShortTokenOpenInterestShort",
+                "ShortTokenOpenInterestInTokensLong",
+                "ShortTokenOpenInterestInTokensShort",
             ]
         ]
         .astype(float)
         .fillna(0)
     )
     openInterest = (
-        row["openInterestLongIsLong"] + tmp["openInterestShortIsLong"]
+        row["LongTokenOpenInterestLong"] + tmp["ShortTokenOpenInterestLong"]
         if isLong
-        else row["openInterestLongNotLong"] + tmp["openInterestShortNotLong"]
+        else row["LongTokenOpenInterestShort"] + tmp["ShortTokenOpenInterestShort"]
     )
     openInterestInTokens = (
-        row["openInterestInTokensLongIsLong"] + tmp["openInterestInTokensShortIsLong"]
+        row["LongTokenOpenInterestInTokensLong"] + tmp["ShortTokenOpenInterestInTokensLong"]
         if isLong
-        else row["openInterestInTokensLongNotLong"] + tmp["openInterestInTokensShortNotLong"]
+        else row["LongTokenOpenInterestInTokensShort"] + tmp["ShortTokenOpenInterestInTokensShort"]
     )
     # openInterest is the cost of all positions, openInterestValue is the current worth of all positions
     openInterestValue = openInterestInTokens * row["indexPrice"]
