@@ -27,8 +27,7 @@ minute_file_columns = [
     "openInterestShort",
     "openInterestInTokensLong",
     "openInterestInTokensShort",
-    "virtualPositionInventoryLong",
-    "virtualPositionInventoryShort",
+    "virtualPositionInventory",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -58,8 +57,7 @@ columns_to_bfill = [
     "LongTokenOpenInterestInTokensShort",
     "ShortTokenOpenInterestInTokensLong",
     "ShortTokenOpenInterestInTokensShort",
-    "virtualPositionInventoryLong",
-    "virtualPositionInventoryShort",
+    "virtualPositionInventory",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -232,16 +230,14 @@ class GmxV2Minute(DailyNode):
             [
                 "virtualSwapInventoryLong",
                 "virtualSwapInventoryShort",
-                "virtualPositionInventoryLong",
-                "virtualPositionInventoryShort",
+                "virtualPositionInventory",
             ]
         ] = (
             minute_df[
                 [
                     "virtualSwapInventoryLong",
                     "virtualSwapInventoryShort",
-                    "virtualPositionInventoryLong",
-                    "virtualPositionInventoryShort",
+                    "virtualPositionInventory",
                 ]
             ]
             .astype(float)

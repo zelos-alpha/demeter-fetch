@@ -17,6 +17,7 @@ class PoolInfo(NamedTuple):
     index_decimal: int
     long_addr: str
     short_addr: str
+    index_addr: str
 
 
 pool_file_columns = [
@@ -50,8 +51,7 @@ pool_file_columns = [
     "LongTokenOpenInterestInTokensShort",  # 💚
     "ShortTokenOpenInterestInTokensLong",  # 💚
     "ShortTokenOpenInterestInTokensShort",  # 💚
-    "virtualPositionInventoryLong",
-    "virtualPositionInventoryShort",
+    "virtualPositionInventory",
     "cumulativeBorrowingFactorLong",
     "cumulativeBorrowingFactorShort",
     "longTokenFundingFeeAmountPerSizeLong",
@@ -170,24 +170,15 @@ def _add_virtual_swap_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_dat
         last_snapshot["virtualSwapInventoryShort"] = short_list[-1][1] / pool_info.short_decimal
 
 
-def _add_virtual_position_inventory(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
-    logs = find_logs("VirtualPositionInventoryUpdated", tx_data)
-    long_list = []
-    short_list = []
-    for idx, log in logs.iterrows():
-        log_data = ast.literal_eval(log["data"])
-        old_val = log_data["nextValue"] - log_data["delta"]
-        # get amount
-        if log_data["isLongToken"]:
-            long_list.append((old_val, log_data["nextValue"]))
-        else:
-            short_list.append((old_val, log_data["nextValue"]))
-    if len(long_list) > 0:
-        pool_snapshot["virtualPositionInventoryLong"] = long_list[0][0] / pool_info.long_decimal
-        last_snapshot["virtualPositionInventoryLong"] = long_list[-1][1] / pool_info.long_decimal
-    if len(short_list) > 0:
-        pool_snapshot["virtualPositionInventoryShort"] = short_list[0][0] / pool_info.short_decimal
-        last_snapshot["virtualPositionInventoryShort"] = short_list[-1][1] / pool_info.short_decimal
+def _add_virtual_position_inventory(pool_snapshot: Dict, pool_info: PoolInfo, log, last_snapshot):
+    log_data = ast.literal_eval(log["data"])
+    old_val = log_data["nextValue"] - log_data["delta"]
+    # get amount
+    if log_data["token"] == pool_info.index_addr:
+        pool_snapshot["virtualPositionInventory"] = old_val / GMX_FLOAT_DECIMAL
+        last_snapshot["virtualPositionInventory"] = log_data["nextValue"] / GMX_FLOAT_DECIMAL
+    else:
+        raise RuntimeError("VirtualPositionInventoryUpdated should have token")
 
 
 def _add_cumulative_borrowing_factor(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
@@ -527,14 +518,15 @@ class GmxV2PoolTx(DailyNode):
             10**pool_config.index_token.decimal,
             pool_config.long_token.address,
             pool_config.short_token.address,
+            pool_config.index_token.address,
         )
         tick_df["market"] = tick_df["market"].str.lower()
-        tick_df = tick_df[tick_df["market"] == pool_config.GM_address.lower()]
-        tick_df = tick_df[(tick_df["tx_type"] != "") & (~tick_df["tx_type"].isna())]
-        tick_df = tick_df.reset_index(drop=True)
-        txes = tick_df.groupby(["block_number", "tx_index"])
+        market_tick_df = tick_df[tick_df["market"] == pool_config.GM_address.lower()]
+        market_tick_df = market_tick_df[(market_tick_df["tx_type"] != "") & (~market_tick_df["tx_type"].isna())]
+        market_tick_df = market_tick_df.reset_index(drop=True)
+        txes = market_tick_df.groupby(["block_number", "tx_index"])
 
-        row_list = []
+        row_list = {}
         # for the last row of the day
         last_snapshot = {
             "timestamp": datetime.datetime.combine(day, datetime.time(23, 59, 59), tzinfo=datetime.timezone.utc)
@@ -560,7 +552,6 @@ class GmxV2PoolTx(DailyNode):
                 _add_pool_value_prop_last(pool_info_simple, tx_data, last_snapshot)
                 _add_pool_amount_updated(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_virtual_swap_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
-                _add_virtual_position_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_cumulative_borrowing_factor(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 # _add_cumulative_borrowing_factor_updated_at(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
@@ -579,11 +570,18 @@ class GmxV2PoolTx(DailyNode):
                 _add_funding_fee_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_claimable_funding_amount_per_size(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
 
-                row_list.append(pool_snapshot)
+                row_list[pool_snapshot["block_number"]] = pool_snapshot
                 pbar.update()
 
-        row_list.append(last_snapshot)
-        df = pd.DataFrame(row_list)
+        virtual_market_df = tick_df[tick_df["market"] == pool_config.index_token.address]
+        for idx, log_row in virtual_market_df.iterrows():
+            if log_row["block_number"] in row_list:
+                pool_snapshot = row_list[log_row["block_number"]]
+                _add_virtual_position_inventory(pool_snapshot, pool_info_simple, log_row, last_snapshot)
+
+        row_list[999999999999999999999] = last_snapshot
+        df = pd.DataFrame(row_list.values())
+        df.sort_values(["block_number"], inplace=True)
 
         for column_name in pool_file_columns:
             if column_name not in df.columns:

@@ -76,10 +76,8 @@ class GmxV2Tick(DailyNode):
                     block_time[row.block_number] = datetime.datetime.fromtimestamp(
                         log_item["data"]["updatedAtTime"], datetime.timezone.utc
                     )
-                if log_item['event_name'] == "VirtualPositionInventoryUpdated":
-                    virtual_token_id = hash_string(self.from_config.gmx_v2_config.virtual_token).hex()  # "PERP:ETH/USD"
-                    if log_item["data"]["virtualTokenId"].hex() == virtual_token_id:
-                        log_item["market"] = self.from_config.gmx_v2_config.GM_address
+                if log_item["event_name"] == "VirtualPositionInventoryUpdated":
+                    log_item["market"] = log_item["data"]["token"]
                     pass
                 pbar.update()
         for item in result_list:
