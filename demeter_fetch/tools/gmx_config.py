@@ -84,18 +84,18 @@ def get_gmx_pool_config(args):
         "minCollateralFactor": min_collateral_factor_key(pool),
         "minCollateralUsd": MIN_COLLATERAL_USD,
         "minPositionSizeUsd": MIN_POSITION_SIZE_USD,
-        "openInterestReserveFactor_Long": open_interest_reserve_factor_key(pool, True),
-        "openInterestReserveFactor_Short": open_interest_reserve_factor_key(pool, False),
-        "baseBorrowingFactor_Long": base_borrowing_factor_key(pool, False),
-        "baseBorrowingFactor_Short": base_borrowing_factor_key(pool, False),
-        "fundingIncreaseFactorPerSecond": funding_increase_factor_per_second_key(pool),
-        "fundingDecreaseFactorPerSecond": funding_decrease_factor_per_second_key(pool),
-        "fundingExponentFactor": funding_exponent_factor_key(pool),
-        "fundingFactor": funding_factor_key(pool),
-        "thresholdForStableFunding": threshold_for_stable_funding_key(pool),
-        "thresholdForDecreaseFunding": threshold_for_decrease_funding_key(pool),
-        "minFundingFactorPerSecond": min_funding_factor_per_second_key(pool),
-        "maxFundingFactorPerSecond": max_funding_factor_per_second_key(pool),
+        # "openInterestReserveFactor_Long": open_interest_reserve_factor_key(pool, True),
+        # "openInterestReserveFactor_Short": open_interest_reserve_factor_key(pool, False),
+        # "baseBorrowingFactor_Long": base_borrowing_factor_key(pool, False),
+        # "baseBorrowingFactor_Short": base_borrowing_factor_key(pool, False),
+        # "fundingIncreaseFactorPerSecond": funding_increase_factor_per_second_key(pool),
+        # "fundingDecreaseFactorPerSecond": funding_decrease_factor_per_second_key(pool),
+        # "fundingExponentFactor": funding_exponent_factor_key(pool),
+        # "fundingFactor": funding_factor_key(pool),
+        # "thresholdForStableFunding": threshold_for_stable_funding_key(pool),
+        # "thresholdForDecreaseFunding": threshold_for_decrease_funding_key(pool),
+        # "minFundingFactorPerSecond": min_funding_factor_per_second_key(pool),
+        # "maxFundingFactorPerSecond": max_funding_factor_per_second_key(pool),
         "maxPositionImpactFactorForLiquidation": max_position_impact_factor_for_liquidations_key(pool),
         "minCollateralFactorForLiquidation": min_collateral_factor_for_liquidation_key(pool),
     }
@@ -109,14 +109,14 @@ def get_gmx_pool_config(args):
             pbar.update()
             # print(name, values[name])
 
-    pool_configs_bool = {
-        "skip_borrowing_fee_for_smaller_side": SKIP_BORROWING_FEE_FOR_SMALLER_SIDE,
-    }
-    with tqdm(total=len(pool_configs_bool)) as pbar:
-        for name, config_key in pool_configs_bool.items():
-            result = query_data_store("getBool", cfg, key=config_key)
-            values[name] = bool(result)
-            pbar.update()
+    # pool_configs_bool = {
+    #     "skip_borrowing_fee_for_smaller_side": SKIP_BORROWING_FEE_FOR_SMALLER_SIDE,
+    # }
+    # with tqdm(total=len(pool_configs_bool)) as pbar:
+    #     for name, config_key in pool_configs_bool.items():
+    #         result = query_data_store("getBool", cfg, key=config_key)
+    #         values[name] = bool(result)
+    #         pbar.update()
     with open(f"./gmx_config_{pool}.json", "w") as f:
         json.dump(values, f, indent=4)
 
