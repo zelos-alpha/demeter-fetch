@@ -63,8 +63,6 @@ pool_file_columns = [
     "shortTokenClaimableFundingAmountPerSizeLong",
     "shortTokenClaimableFundingAmountPerSizeShort",
     "positionImpactPoolAmount",
-    "cumulativeBorrowingFactorUpdatedAtLong",
-    "cumulativeBorrowingFactorUpdatedAtShort",
 ]
 
 
@@ -199,28 +197,6 @@ def _add_cumulative_borrowing_factor(pool_snapshot: Dict, pool_info: PoolInfo, t
     if len(short_list) > 0:
         pool_snapshot["cumulativeBorrowingFactorShort"] = short_list[0][0] / GMX_FLOAT_DECIMAL
         last_snapshot["cumulativeBorrowingFactorShort"] = short_list[-1][1] / GMX_FLOAT_DECIMAL
-
-
-def _add_cumulative_borrowing_factor_updated_at(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
-    logs = find_logs("CumulativeBorrowingFactorUpdated", tx_data)
-    # 0x32c5070d5abaf7681db911adc20d6c78373ce31a05e4b3d6a1b4fe4b6065e7a2
-    # 0x81040b29c74c45e017b00afaaf7a8a157108acceef581dbb0b995421da4ba064
-    # log['transaction_hash'] in ['0x32c5070d5abaf7681db911adc20d6c78373ce31a05e4b3d6a1b4fe4b6065e7a2', '0x81040b29c74c45e017b00afaaf7a8a157108acceef581dbb0b995421da4ba064']
-    long_list = []
-    short_list = []
-    for idx, log in logs.iterrows():
-        log_data = ast.literal_eval(log["data"])
-        delta = log_data["delta"]
-        if log_data["isLong"] and delta > 0:
-            long_list.append(log["block_timestamp"])
-        if not log_data["isLong"] and delta > 0:
-            short_list.append(log["block_timestamp"])
-        if len(long_list) > 0:
-            pool_snapshot["cumulativeBorrowingFactorUpdatedAtLong"] = long_list[0]
-            last_snapshot["cumulativeBorrowingFactorUpdatedAtLong"] = long_list[-1]
-        if len(short_list) > 0:
-            pool_snapshot["cumulativeBorrowingFactorUpdatedAtShort"] = short_list[0]
-            last_snapshot["cumulativeBorrowingFactorUpdatedAtShort"] = short_list[-1]
 
 
 def _add_unchanged_funding_fee_per_size(pool_snapshot: Dict, pool_info: PoolInfo, tx_data, last_snapshot):
@@ -553,7 +529,6 @@ class GmxV2PoolTx(DailyNode):
                 _add_pool_amount_updated(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_virtual_swap_inventory(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_cumulative_borrowing_factor(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
-                # _add_cumulative_borrowing_factor_updated_at(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_open_interest_in_tokens(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
                 _add_position_impact_pool_amount(pool_snapshot, pool_info_simple, tx_data, last_snapshot)
